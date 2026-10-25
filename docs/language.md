@@ -15,9 +15,12 @@ Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. The only supported
 statement identifier is `println`, with exactly that spelling and case. Unknown
 identifiers are tokens but produce a parser error when used as statement names.
 
-Punctuation tokens are `(`, `)`, and `;`. Any other character outside strings,
-comments, identifiers, and whitespace is a lexical error. A slash is valid only
-as the beginning of a `//` comment. There are no block comments.
+Punctuation tokens are `(`, `)`, and `;`. Arithmetic operator tokens are `+`, `-`,
+`*`, and `/`. Integers contain one or more ASCII decimal digits; leading zeros
+are accepted as decimal. A minus sign is a separate token. Other characters
+outside strings, comments, identifiers, and whitespace are lexical errors.
+`//` starts a comment even immediately after an expression. A single `/` is the
+division operator. There are no block comments.
 
 ## Strings
 
@@ -46,12 +49,18 @@ The following grammar applies after trivia has been removed:
 
 ```ebnf
 program         = { print_statement }, EOF ;
-print_statement = "println", "(", STRING, ")", ";" ;
+print_statement = "println", "(", argument, ")", ";" ;
+argument        = STRING | expression ;
+expression      = sum ;
+sum             = product, { ("+" | "-"), product } ;
+product         = unary, { ("*" | "/"), unary } ;
+unary           = [ "-" ], primary ;
+primary         = INTEGER | "(", expression, ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
-longer identifier. `STRING` is one complete string token, not an expression.
-There is no argument list: a call takes exactly one string literal. Semicolons
+longer identifier. `STRING` is one complete string token, not a general expression.
+There is no argument list: a call takes exactly one string or integer expression. Semicolons
 are mandatory. Newlines do not terminate statements.
 
 ```scarp
@@ -65,17 +74,42 @@ println("two");
 ```
 
 Empty and comment-only files are valid programs. Extra semicolons, concatenated
-strings, multiple arguments, and nested calls are invalid.
+strings, multiple arguments, and nested calls are invalid. Binary operators
+associate left to right. Multiplication and division have higher precedence
+than addition and subtraction. One unary minus is allowed before a primary:
+`--1` is invalid, while `-(-1)` and `1--2` are valid. Unary plus is unsupported.
+
+## Integers and arithmetic
+
+Values range from `-9223372036854775808` to `9223372036854775807`. Literal range
+validation happens during parsing. The magnitude `9223372036854775808` is accepted
+only directly after a unary minus, ignoring trivia, to represent the minimum
+integer. `-(9223372036854775808)` is rejected because its positive literal is
+out of range. Leading zeros do not change these rules.
+
+All operations use checked signed 64-bit arithmetic in debug and release builds.
+Division truncates toward zero. Division by zero, overflowing intermediate
+results, negating the minimum integer, and dividing it by `-1` are errors.
+Diagnostics highlight the responsible operator. Evaluation follows source order
+and postorder within each expression, stopping at the first arithmetic error.
+
+Grouping is limited to 64 nested pairs of parentheses, excluding the `println`
+call itself. Greater depth produces `E0009`. Flat operator chains have no fixed
+language limit and are processed without recursive evaluation or destruction.
+Available memory still limits the size of a program. Floats, numeric separators,
+base prefixes, strings as arithmetic operands, and string concatenation are unsupported.
 
 ## Execution
 
 The complete source file is lexed, then parsed. The first lexical error prevents
 parsing, and the first parser error prevents execution. Consequently, a lexical
 error later in the file can be reported before an earlier syntax error. No
-statement executes until the whole file has passed both stages.
+argument is evaluated until the whole file has passed both stages. All arguments
+are then evaluated before any bytes are written, so arithmetic errors also
+produce no program output.
 
-Each statement writes its decoded string followed by one LF to the supplied
-output stream. Strings containing `\n` can therefore write several lines.
+Each statement writes its decoded string or decimal integer followed by one LF
+to the supplied output stream. Strings containing `\n` can therefore write several lines.
 Statements execute in source order. Empty programs write nothing.
 
 An I/O failure is returned to the caller. Previously written bytes cannot be
@@ -103,6 +137,10 @@ Carets cover the first affected line and remain visible for empty spans at EOF.
 | `E0003` | Unsupported string escape |
 | `E0004` | Unexpected token or missing punctuation/argument |
 | `E0005` | Unknown statement identifier |
+| `E0006` | Integer literal outside the signed 64-bit range |
+| `E0007` | Checked integer arithmetic overflow |
+| `E0008` | Division by zero |
+| `E0009` | Expression nesting limit exceeded |
 
 Diagnostic wording and library types are experimental. Codes are intended to be
 more useful for tests than full platform-dependent file-error strings. Read
@@ -128,6 +166,6 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 
 ## Scope
 
-Expressions, numbers, bindings, functions, types, modules, loops, a compiler
-backend, and a package manager are not implemented. The next proposed slice is
-documented in [the integer expression proposal](proposals/0001-integer-expressions.md).
+Bindings, functions, types, modules, loops, a compiler backend, and a package
+manager are not implemented. The implemented expression semantics are also
+recorded in [the expression design](proposals/0001-integer-expressions.md).

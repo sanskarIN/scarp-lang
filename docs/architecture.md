@@ -17,7 +17,9 @@ parser::parse -> Program
 interpreter::execute -> supplied Write destination
 ```
 
-`compile` combines lexing and parsing. `run` combines compilation and execution.
+`compile` combines lexing and parsing. `evaluator::evaluate` performs checked
+integer evaluation. `interpreter::execute` evaluates every print argument before
+writing any output. `run` combines compilation and execution.
 They do not read files or assume a global stdout destination. The language layer
 returns errors; the CLI renders them using the source and path it already owns.
 
@@ -26,9 +28,10 @@ returns errors; the CLI renders them using the source and path it already owns.
 | Module | Responsibility |
 | --- | --- |
 | `lexer` | Skip trivia, decode strings, retain original byte spans |
-| `parser` | Validate token order and construct print statements |
-| `ast` | Store ordered statements and their spans |
-| `interpreter` | Write decoded text and propagate I/O failures |
+| `parser` | Precedence parsing, literal validation, and nesting limits |
+| `ast` | Ordered statements and flat postorder expression nodes with spans |
+| `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
+| `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
 | `main` | Native arguments, file loading, streams, and process status |
@@ -39,6 +42,14 @@ list. Syntax errors refer to the unexpected token, or an empty EOF span when
 punctuation is missing at the end of a file. The AST owns its strings, allowing
 the source and token vector to be dropped after successful compilation.
 
+Each integer argument owns a vector of expression nodes and a root index. Nodes
+refer only to earlier children. Parser construction is private to the crate,
+while callers can inspect immutable node slices. Binary chains are parsed with
+loops and evaluated in vector order; dropping the vector has no recursive tree
+walk. Grouping uses bounded recursion, with a maximum of 64 nested groups.
+Unary minus is represented explicitly except for the minimum integer literal,
+whose positive magnitude cannot be represented as an `i64`.
+
 Diagnostics accept public spans, so rendering clamps out-of-range offsets and
 rounds offsets inside UTF-8 characters down to valid boundaries. Source control
 characters are escaped in excerpts. This keeps diagnostic rendering safe for
@@ -46,7 +57,9 @@ callers that construct their own diagnostics.
 
 ## Failure boundaries
 
-Lexing and parsing finish before any writes. Output failures are different from
+Lexing, parsing, and arithmetic evaluation finish before any writes. Both source
+and evaluation diagnostics are carried by `RunError::Diagnostic`.
+Output failures are different from
 source errors: earlier writes can succeed before a sink fails. Library callers
 choose a `Write` implementation and handle `RunError::Output` themselves. The CLI
 uses buffered stdout, explicitly flushes it, and reports flush errors too.
@@ -65,18 +78,19 @@ This is acceptable for the current tiny slice and should be profiled before
 adding source-map caching.
 
 Prototype APIs and error wording may change. Keep new semantics in the library
-and new process behavior in the CLI. Add distinct expression AST nodes and value
-types when expressions are accepted; do not turn print statements into ad hoc
-string evaluation.
+and new process behavior in the CLI. Strings remain a distinct print argument
+alternative; the integer evaluator does not parse or interpret strings.
 
 ## Validation
 
 The test suite separates language semantics from CLI process behavior. It checks
 byte spans, Unicode boundaries, truncations of valid source, malformed token
-streams, output sink failures, and long flat statement lists. CLI tests create
+streams, output sink failures, and long flat statement lists. Arithmetic tests
+exercise boundaries, precedence, long chains, excessive nesting, and agreement
+with a bounded reference calculation. CLI tests create
 unique temporary directories and compare observable streams and exit codes.
 The example corpus pairs each `.srp` file with exact expected `.stdout` bytes.
 
 Local shell and PowerShell scripts run formatting, Clippy, tests, builds, rustdoc,
-and smoke commands. CI repeats validation on three operating systems and tests
+and smoke commands in debug and release modes. CI repeats validation on three operating systems and tests
 the declared minimum Rust version. There is no release automation.

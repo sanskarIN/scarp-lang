@@ -44,8 +44,8 @@ tests for language semantics and process tests for arguments, exit codes, and
 standard streams. Keep tests deterministic and independent of their execution
 order; temporary files must be unique and cleaned up.
 
-Check changes using formatting, Clippy with warnings denied, the test suite,
-builds, rustdoc, and example commands. CI repeats the checks on Windows, Linux,
+Check changes using formatting, Clippy with warnings denied, the test suite in
+debug and release modes, builds, rustdoc, and example commands. CI repeats the checks on Windows, Linux,
 and macOS, and tests the minimum Rust version listed in `Cargo.toml`.
 
 Document new syntax and changed limitations. Features listed as planned are not
