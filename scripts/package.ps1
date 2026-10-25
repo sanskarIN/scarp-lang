@@ -32,7 +32,8 @@ try {
     $packageName = "scarp-$version-$Target"
     $isWindowsTarget = $Target -eq 'x86_64-pc-windows-msvc'
     $extension = if ($isWindowsTarget) { '.zip' } else { '.tar.gz' }
-    $outputRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $OutputDirectory))
+    $outputPath = if ([System.IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory } else { Join-Path $projectRoot $OutputDirectory }
+    $outputRoot = [System.IO.Path]::GetFullPath($outputPath)
     $archive = Join-Path $outputRoot ($packageName + $extension)
     if ((Test-Path -LiteralPath $archive) -or (Test-Path -LiteralPath ($archive + '.sha256'))) {
         throw 'Package output already exists; choose a fresh output directory'
@@ -89,6 +90,8 @@ try {
         $actualText = ($actual -join "`n") + "`n"
         $expected = [System.IO.File]::ReadAllText((Join-Path $extractedPackage "examples/$example.stdout"))
         if ($actualText -cne $expected) { throw "Packaged $example output differs" }
+        $checkOutput = & $executable check $source
+        if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
     }
     $invalidSource = Join-Path $stagingRoot 'invalid.srp'
     $errorLog = Join-Path $stagingRoot 'invalid.stderr'
