@@ -5,6 +5,7 @@
 - Immutable integer bindings and names in expressions.
 - Explicit mutable bindings, assignment, and checked `+=`, `-=`, `*=`, `/=`.
 - Immutable-assignment diagnostics and value snapshots for deferred output.
+- Lexical block scopes, shadowing, and bounded block parsing/resolution.
 - Name resolution before evaluation, with fresh storage for every execution.
 - Unknown, duplicate, and reserved-name diagnostics with related declarations.
 - A separate parsed-syntax API and immutable resolved-program API.

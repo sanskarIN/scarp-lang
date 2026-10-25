@@ -34,7 +34,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `lexer` | Skip trivia, decode strings, retain original byte spans |
 | `parser` | Precedence parsing, literal validation, and nesting limits |
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
-| `resolver` | Declaration ordering, name diagnostics, immutable storage plans |
+| `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
@@ -54,6 +54,13 @@ loops and evaluated in vector order; dropping the vector has no recursive tree
 walk. Grouping uses bounded recursion, with a maximum of 64 nested groups.
 Unary minus is represented explicitly except for the minimum integer literal,
 whose positive magnitude cannot be represented as an `i64`.
+
+The resolver keeps a stack of lexical name maps and assigns unique slots to
+declarations. Initializers resolve before insertion, allowing inner declarations
+to read outer names. Block structure is flattened into storage and print
+operations. Runtime state therefore needs no scope stack and never reuses an
+inner slot for a surviving outer binding. Parsed block trees are bounded to 64
+levels; resolved programs and expression evaluation remain flat.
 
 Diagnostics accept public spans, so rendering clamps out-of-range offsets and
 rounds offsets inside UTF-8 characters down to valid boundaries. Source control

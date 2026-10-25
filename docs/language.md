@@ -15,7 +15,7 @@ Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement words ar
 `let` and `println`, with exactly that spelling and case. Variable names are
 resolved after parsing; unknown identifiers at statement starts are syntax errors.
 
-Punctuation tokens are `(`, `)`, `;`, and `=`. Compound assignment tokens use
+Punctuation tokens are `(`, `)`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Integers contain one or more ASCII decimal digits; leading zeros
 are accepted as decimal. A minus sign is a separate token. Other characters
@@ -49,7 +49,9 @@ Trivia means whitespace and line comments. Trivia can appear between tokens.
 The following grammar applies after trivia has been removed:
 
 ```ebnf
-program         = { print_statement | declaration | assignment }, EOF ;
+program         = { statement }, EOF ;
+statement       = print_statement | declaration | assignment | block ;
+block           = "{", { statement }, "}" ;
 declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
@@ -145,6 +147,11 @@ Carets cover the first affected line and remain visible for empty spans at EOF.
 | `E0007` | Checked integer arithmetic overflow |
 | `E0008` | Division by zero |
 | `E0009` | Expression nesting limit exceeded |
+| `E0010` | Unknown variable |
+| `E0011` | Duplicate declaration in the same scope |
+| `E0012` | Reserved variable name |
+| `E0013` | Assignment to an immutable binding |
+| `E0014` | Block nesting limit exceeded |
 
 Diagnostic wording and library types are experimental. Codes are intended to be
 more useful for tests than full platform-dependent file-error strings. Read
@@ -170,7 +177,7 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 
 ## Scope
 
-Integer bindings, explicit mutability, and assignment are implemented on development branches and described
+Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on development branches and described
 in [the variable reference](variables.md). Functions, types, modules, loops, a
 compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).

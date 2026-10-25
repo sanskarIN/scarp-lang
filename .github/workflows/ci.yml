@@ -61,5 +61,5 @@ jobs:
         run: cargo test --locked --offline
       - name: Build minimum toolchain
         run: cargo build --locked --offline
-      - name: Test arithmetic in release mode
-        run: cargo test --locked --offline --release --test expressions
+      - name: Test release mode on minimum Rust
+        run: cargo test --locked --offline --release
