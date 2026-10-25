@@ -90,3 +90,46 @@ fn check_and_run_report_the_same_first_diagnostic() {
         assert!(output.is_empty());
     }
 }
+
+#[test]
+fn alternating_expression_shapes_preserve_state_and_captured_values() {
+    let mut source = "let mut total = 0; let mut label = \"before\";".to_string();
+    let mut expected = String::new();
+    for index in 1..=512 {
+        source.push_str("total += (1 + 2) * (3 + 4); println(total); println(total > 0 and not false); println(label); label = \"after\";");
+        expected.push_str(&format!(
+            "{}\ntrue\n{}\n",
+            index * 21,
+            if index == 1 { "before" } else { "after" }
+        ));
+        source
+            .push_str("if false { println(1 / 0); } else { println((\"selected\")); } println(1);");
+        expected.push_str("selected\n1\n");
+    }
+    let program = compile(&source).unwrap();
+    for _ in 0..3 {
+        interpreter::validate(&program).unwrap();
+        let mut output = Vec::new();
+        interpreter::execute(&program, &mut output).unwrap();
+        assert_eq!(output, expected.as_bytes());
+    }
+}
+
+#[test]
+fn validation_evaluates_print_arguments_after_many_discarded_prints() {
+    let source = format!(
+        "{} if true {{ println(1 / 0); }}",
+        "println(1 + 2); println(\"text\");".repeat(4096)
+    );
+    let program = compile(&source).unwrap();
+    let expected = interpreter::validate(&program).unwrap_err();
+    assert_eq!(expected.kind, DiagnosticKind::DivisionByZero);
+    let mut output = Vec::new();
+    let scarp::RunError::Diagnostic(actual) =
+        interpreter::execute(&program, &mut output).unwrap_err()
+    else {
+        panic!("expected a diagnostic");
+    };
+    assert_eq!(actual, expected);
+    assert!(output.is_empty());
+}
