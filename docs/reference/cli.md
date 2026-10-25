@@ -48,6 +48,12 @@ program. Use `check` rather than a token listing to validate development source.
 
 ## Paths and encoding
 
+Development `run` and `check` accept `--max-steps <count>` and `--max-prints <count>`
+before the path. Defaults are 1,000,000 work steps and 100,000 selected prints.
+Each option can occur once; unsigned decimal zero is allowed. Budget failures use
+status 1 and leave output empty; malformed options use status 2. See
+[loops and budgets](../proposals/0006-bounded-loops.md) for exact accounting.
+
 Relative paths are resolved from the process working directory. Quote paths
 containing spaces:
 

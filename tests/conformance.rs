@@ -66,8 +66,16 @@ fn generated_scoped_programs_match_an_independent_value_model() {
 }
 
 fn observe(source: &str) {
-    let result = std::panic::catch_unwind(|| scarp::check(source))
-        .unwrap_or_else(|_| panic!("source triggered a panic: {source:?}"));
+    let result = std::panic::catch_unwind(|| {
+        scarp::check_with_limits(
+            source,
+            scarp::ExecutionLimits {
+                max_steps: 5000,
+                ..scarp::ExecutionLimits::default()
+            },
+        )
+    })
+    .unwrap_or_else(|_| panic!("source triggered a panic: {source:?}"));
     if let Err(diagnostic) = result {
         for span in
             std::iter::once(diagnostic.span).chain(diagnostic.related.iter().map(|note| note.span))
@@ -85,6 +93,7 @@ fn observe(source: &str) {
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
         "let value = 7; println(value);",
+        "let mut x = 0; while x < 3 { x += 1; if x == 2 { continue; } } println(x);",
         "let mut x = 1; if x < 2 { x += 3; } elif false {} else { x = 9; } println(x);",
         "let ready = true; println(not ready or 1 < 2 and false);",
         "println(false and 1 / 0 == 0); println(\"a\" != \"b\");",

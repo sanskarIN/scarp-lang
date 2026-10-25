@@ -16,7 +16,7 @@ use crate::{
 /// Its private storage plan cannot be changed independently of its expressions.
 #[derive(Debug, Clone)]
 pub struct ResolvedProgram {
-    pub(crate) statements: Vec<ResolvedStatement>,
+    pub(crate) statements: Vec<ResolvedOperation>,
     slot_types: Vec<ValueType>,
     statement_count: usize,
 }
@@ -40,7 +40,16 @@ impl ResolvedProgram {
 }
 
 #[derive(Debug, Clone)]
+pub(crate) struct ResolvedOperation {
+    pub kind: ResolvedStatement,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
 pub(crate) enum ResolvedStatement {
+    LoopControl {
+        target: usize,
+    },
     JumpIfFalse {
         condition: ResolvedExpression,
         target: usize,
@@ -89,12 +98,13 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
         scopes: vec![HashMap::new()],
         statements: Vec::new(),
         slot_types: Vec::new(),
+        loops: Vec::new(),
     };
     resolver.statement_list(program.statements)?;
     let statement_count = resolver
         .statements
         .iter()
-        .filter(|statement| !matches!(statement, ResolvedStatement::Jump { .. }))
+        .filter(|statement| !matches!(statement.kind, ResolvedStatement::Jump { .. }))
         .count();
     Ok(ResolvedProgram {
         statements: resolver.statements,
@@ -105,14 +115,68 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
 
 struct Resolver {
     scopes: Vec<Scope>,
-    statements: Vec<ResolvedStatement>,
+    statements: Vec<ResolvedOperation>,
     slot_types: Vec<ValueType>,
+    loops: Vec<LoopContext>,
+}
+
+struct LoopContext {
+    start: usize,
+    breaks: Vec<usize>,
 }
 
 impl Resolver {
     fn statement_list(&mut self, statements: Vec<Statement>) -> Result<(), Diagnostic> {
         for statement in statements {
+            let span = statement.span();
             match statement {
+                Statement::While {
+                    condition,
+                    statements,
+                    span,
+                } => {
+                    let condition = resolve_expression(condition, &self.scopes)?;
+                    let condition_span = condition.syntax.nodes()[condition.syntax.root()].span;
+                    require_type(condition.kind, ValueType::Boolean, condition_span)?;
+                    let start = self.emit(
+                        ResolvedStatement::JumpIfFalse {
+                            condition,
+                            target: 0,
+                        },
+                        condition_span,
+                    );
+                    self.loops.push(LoopContext {
+                        start,
+                        breaks: Vec::new(),
+                    });
+                    self.scoped_statements(statements, span)?;
+                    let context = self.loops.pop().unwrap();
+                    self.emit(ResolvedStatement::Jump { target: start }, span);
+                    let end = self.statements.len();
+                    if let ResolvedStatement::JumpIfFalse { target, .. } =
+                        &mut self.statements[start].kind
+                    {
+                        *target = end;
+                    }
+                    for index in context.breaks {
+                        if let ResolvedStatement::LoopControl { target } =
+                            &mut self.statements[index].kind
+                        {
+                            *target = end;
+                        }
+                    }
+                }
+                Statement::Break { span } => {
+                    if self.loops.is_empty() {
+                        return Err(loop_control(span));
+                    }
+                    let index = self.emit(ResolvedStatement::LoopControl { target: 0 }, span);
+                    self.loops.last_mut().unwrap().breaks.push(index);
+                }
+                Statement::Continue { span } => {
+                    let start = self.loops.last().ok_or_else(|| loop_control(span))?.start;
+                    self.emit(ResolvedStatement::LoopControl { target: start }, span);
+                }
                 Statement::If {
                     branches,
                     otherwise,
@@ -130,17 +194,18 @@ impl Resolver {
                         let condition = resolve_expression(branch.condition, &self.scopes)?;
                         let condition_span = condition.syntax.nodes()[condition.syntax.root()].span;
                         require_type(condition.kind, ValueType::Boolean, condition_span)?;
-                        let guard = self.statements.len();
-                        self.statements.push(ResolvedStatement::JumpIfFalse {
-                            condition,
-                            target: 0,
-                        });
+                        let guard = self.emit(
+                            ResolvedStatement::JumpIfFalse {
+                                condition,
+                                target: 0,
+                            },
+                            condition_span,
+                        );
                         self.scoped_statements(branch.statements, branch.span)?;
-                        exits.push(self.statements.len());
-                        self.statements.push(ResolvedStatement::Jump { target: 0 });
+                        exits.push(self.emit(ResolvedStatement::Jump { target: 0 }, span));
                         let next = self.statements.len();
                         if let ResolvedStatement::JumpIfFalse { target, .. } =
-                            &mut self.statements[guard]
+                            &mut self.statements[guard].kind
                         {
                             *target = next;
                         }
@@ -148,7 +213,8 @@ impl Resolver {
                     self.scoped_statements(otherwise, span)?;
                     let end = self.statements.len();
                     for exit in exits {
-                        if let ResolvedStatement::Jump { target } = &mut self.statements[exit] {
+                        if let ResolvedStatement::Jump { target } = &mut self.statements[exit].kind
+                        {
                             *target = end;
                         }
                     }
@@ -191,8 +257,7 @@ impl Resolver {
                                 kind,
                             },
                         );
-                    self.statements
-                        .push(ResolvedStatement::Store { slot, value });
+                    self.emit(ResolvedStatement::Store { slot, value }, span);
                 }
                 Statement::Println { argument, .. } => {
                     let argument = match argument {
@@ -201,7 +266,7 @@ impl Resolver {
                             resolve_expression(expression, &self.scopes)?,
                         ),
                     };
-                    self.statements.push(ResolvedStatement::Println(argument));
+                    self.emit(ResolvedStatement::Println(argument), span);
                 }
                 Statement::Assign {
                     name,
@@ -268,15 +333,18 @@ impl Resolver {
                         }
                         _ => {}
                     }
-                    self.statements.push(match operator {
-                        AssignmentOperator::Set => ResolvedStatement::Store { slot, value },
-                        AssignmentOperator::Compound(operator) => ResolvedStatement::Update {
-                            slot,
-                            operator,
-                            value,
-                            operator_span,
+                    self.emit(
+                        match operator {
+                            AssignmentOperator::Set => ResolvedStatement::Store { slot, value },
+                            AssignmentOperator::Compound(operator) => ResolvedStatement::Update {
+                                slot,
+                                operator,
+                                value,
+                                operator_span,
+                            },
                         },
-                    });
+                        span,
+                    );
                 }
             }
         }
@@ -300,6 +368,12 @@ impl Resolver {
         self.statement_list(statements)?;
         self.scopes.pop();
         Ok(())
+    }
+
+    fn emit(&mut self, kind: ResolvedStatement, span: Span) -> usize {
+        let index = self.statements.len();
+        self.statements.push(ResolvedOperation { kind, span });
+        index
     }
 }
 
@@ -422,6 +496,9 @@ fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
             | "if"
             | "elif"
             | "else"
+            | "while"
+            | "break"
+            | "continue"
     ) {
         Err(Diagnostic::new(
             DiagnosticKind::ReservedName,
@@ -443,4 +520,13 @@ pub(crate) fn unknown_name(name: &str, span: Span) -> Diagnostic {
         format!("unknown variable {name:?}"),
     )
     .with_help("declare the variable with let before using it in this scope")
+}
+
+fn loop_control(span: Span) -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticKind::LoopControl,
+        span,
+        "loop control used outside a while body",
+    )
+    .with_help("put break or continue inside the loop it should control")
 }

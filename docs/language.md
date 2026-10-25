@@ -52,7 +52,9 @@ The following grammar applies after trivia has been removed:
 
 ```ebnf
 program         = { statement }, EOF ;
-statement       = print_statement | declaration | assignment | block | conditional ;
+statement       = print_statement | declaration | assignment | block | conditional | loop | loop_control ;
+loop            = "while", expression, block ;
+loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
                   { "elif", expression, block }, [ "else", block ] ;
 block           = "{", { statement }, "}" ;
@@ -204,7 +206,10 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 
 ## Scope
 
+While loops, nearest-loop control, and per-call deterministic work/print budgets
+are implemented on the loop branch. See [the loop design](proposals/0006-bounded-loops.md).
+
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on development branches and described
-in [the variable reference](variables.md). Functions, types, modules, loops, a
+in [the variable reference](variables.md). Functions, user-defined types, modules, a
 compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).

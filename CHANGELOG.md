@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Scoped while loops, nearest-loop break/continue, per-call work/print budgets,
+  and CLI/embedding controls with atomic budget diagnostics.
+
 - Execution-local expression work buffers, immediate disposal of validation print
   values, and reproducible stage benchmarks with verified workloads.
 

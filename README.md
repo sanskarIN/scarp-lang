@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/execution-workspace
+git switch scarp/bounded-loops
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -187,13 +187,16 @@ The complete check sequence, including rustdoc, is available as
 
 ## Prototype limits and planned roadmap
 
+While loops and `break`/`continue` support iterative computations with explicit
+per-call budgets. See [loops and limits](docs/proposals/0006-bounded-loops.md).
+
 The [performance guide](docs/performance.md) provides stage benchmarks and
 measured execution improvements. C/C++/Rust performance comparisons and native
 code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
-floating-point values, type annotations, user-defined types, imports, loops, standard library,
+floating-point values, type annotations, user-defined types, imports, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -205,7 +208,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Loops and bounded execution controls.
+1. Decimal values and numerical collections.
 2. User-defined functions.
 3. User-defined types and function type checking.
 4. A compiler backend.
