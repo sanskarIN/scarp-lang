@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a focused addition to the Scarp language or tools.
+title: "feature: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What task would this enable, and what is missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Proposed behavior
+      description: Include a small syntax or CLI example and its expected result.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and alternatives
+      description: Describe the smallest useful version and alternatives considered.

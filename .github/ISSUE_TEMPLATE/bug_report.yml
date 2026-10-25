@@ -1,0 +1,32 @@
+name: Bug report
+description: Report an unexpected result in the Scarp prototype.
+title: "bug: "
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the OS, rustc version, and Scarp commit or version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the smallest source file and exact command.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the complete diagnostic and exit code if available.
+    validations:
+      required: true
