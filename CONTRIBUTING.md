@@ -65,8 +65,9 @@ prerequisite merges. Merge the base PR first, then retarget the dependent PR to
 merge instead of squashing the stack.
 
 Releases need a separate readiness review. A version in `Cargo.toml` does not
-mean a release has been published. There is no automated release or package
-publication workflow in this repository.
+mean a release has been published. CI builds and verifies native package
+artifacts; tagging and release publication remain separate maintainer actions.
+See [the release process](docs/releasing.md).
 
 ## License
 

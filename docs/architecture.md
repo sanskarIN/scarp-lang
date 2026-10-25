@@ -93,4 +93,6 @@ The example corpus pairs each `.srp` file with exact expected `.stdout` bytes.
 
 Local shell and PowerShell scripts run formatting, Clippy, tests, builds, rustdoc,
 and smoke commands in debug and release modes. CI repeats validation on three operating systems and tests
-the declared minimum Rust version. There is no release automation.
+the declared minimum Rust version. A separate package workflow builds archives,
+extracts them, and smoke-tests the delivered executables. Release publication
+remains a separate maintainer action.
