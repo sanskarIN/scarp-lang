@@ -147,7 +147,7 @@ fn rejects_unknown_escapes_at_the_escape_span() {
 
 #[test]
 fn rejects_invalid_characters_without_splitting_unicode() {
-    for character in ['@', '%', ',', '🌍', '\0'] {
+    for character in ['@', '%', '?', '🌍', '\0'] {
         let source = format!(" \n{character}");
         let error = lex(&source).unwrap_err();
         assert_eq!(error.kind, DiagnosticKind::InvalidCharacter);

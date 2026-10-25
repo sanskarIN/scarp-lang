@@ -142,7 +142,7 @@ fn malformed_declarations_are_diagnosed_without_panics() {
     }
     assert_eq!(
         error("let x = 1, y = 2;").kind,
-        DiagnosticKind::InvalidCharacter
+        DiagnosticKind::UnexpectedToken
     );
 }
 

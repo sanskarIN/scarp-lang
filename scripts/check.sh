@@ -39,3 +39,7 @@ cargo run --locked -- run examples/loops.srp
 cargo run --locked -- check examples/loops.srp
 cargo run --locked -- run examples/decimals.srp
 cargo run --locked -- check examples/decimals.srp
+cargo run --locked -- run examples/numerics.srp
+cargo run --locked -- check examples/numerics.srp
+cargo run --locked -- run examples/linear_fit.srp
+cargo run --locked -- check examples/linear_fit.srp

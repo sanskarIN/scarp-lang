@@ -48,6 +48,28 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
+fn numerical_kernels_run_and_shape_failures_keep_stdout_empty() {
+    let fixture = Fixture::new();
+    let valid = fixture.file(
+        "kernels.srp",
+        "println(dot([1.0, 2.0], [3.0, 4.0])); println(softmax([1000.0, 1000.0]));",
+    );
+    let invalid = fixture.file(
+        "invalid.srp",
+        "println(\"before\"); println(dot([1.0], []));",
+    );
+    let result = command().arg("run").arg(&valid).output().unwrap();
+    assert!(result.status.success(), "{}", stderr(&result));
+    assert_eq!(result.stdout, b"11.0\n[0.5, 0.5]\n");
+    for mode in ["run", "check"] {
+        let result = command().arg(mode).arg(&invalid).output().unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(stderr(&result).contains("E0021"));
+    }
+}
+
+#[test]
 fn loop_budgets_are_available_to_run_and_check_without_partial_output() {
     let fixture = Fixture::new();
     let infinite = fixture.file("infinite.srp", "println(\"before\"); while true {}");

@@ -48,6 +48,8 @@ fn main() {
         ("branches", branches, "2048\n".to_string()),
         ("prints", prints, "7\n".repeat(4096)),
         ("long_expression", chain, "4096\n".to_string()),
+        ("native_dot", "let a = fill(4096, 1.0); let b = fill(4096, 2.0); println(dot(a, b));".to_string(), "8192.0\n".to_string()),
+        ("indexed_dot", "let a = fill(4096, 1.0); let b = fill(4096, 2.0); let mut index = 0; let mut total = 0.0; while index < len(a) { total += a[index] * b[index]; index += 1; } println(total);".to_string(), "8192.0\n".to_string()),
     ] {
         let program = scarp::compile(&source).unwrap();
         let mut actual = Vec::new();
