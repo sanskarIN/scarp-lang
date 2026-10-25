@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/bounded-loops
+git switch scarp/finite-decimals
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -72,7 +72,7 @@ the CLI does not reject other filename extensions.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
-- Immutable integer/string/boolean bindings with `let name = expression;` and resolved names.
+- Immutable integer/float/string/boolean bindings with `let name = expression;` and resolved names.
 - Explicit `let mut` bindings, assignment, and checked compound assignment.
 - Lexical block scopes, shadowing, and nearest-binding assignment.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
@@ -156,7 +156,7 @@ The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
 `compile` validates syntax and resolves names into an immutable `ResolvedProgram`.
 `check` and `interpreter::validate` also evaluate without an output destination.
 `evaluator::evaluate` preserves an integer result, while `evaluate_value` returns
-an integer/string/boolean `Value`. `execute` and `run` validate all
+an integer/float/string/boolean `Value`. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
 
@@ -196,7 +196,7 @@ code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
-floating-point values, type annotations, user-defined types, imports, standard library,
+type annotations, user-defined types, imports, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -208,7 +208,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Decimal values and numerical collections.
+1. Numerical collections and native reductions.
 2. User-defined functions.
 3. User-defined types and function type checking.
 4. A compiler backend.

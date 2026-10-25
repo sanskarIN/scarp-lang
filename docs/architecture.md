@@ -36,7 +36,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
 | `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
-| `value` | Integer/string/boolean values, immutable string storage, primitive type names |
+| `value` | Integer/float/string/boolean values, immutable string storage, primitive type names |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
@@ -95,8 +95,8 @@ order, avoiding repeated prefix scans on large single-line files.
 
 Prototype APIs and error wording may change. Keep new semantics in the library
 and new process behavior in the CLI. Direct string literal prints retain a fast
-path. General expressions infer an integer, string, or boolean type; arithmetic and
-compound assignment stay integer-only. The resolver fixes each slot's type,
+path. General expressions infer integer, float, string, or boolean types; arithmetic
+and compound assignment require same-kind numbers. The resolver fixes each slot's type,
 and strings share immutable storage so snapshots survive later reassignment.
 Boolean logic traverses only the required operands at runtime. Both operands
 still participate in static name and type checks. No runtime traversal recurses

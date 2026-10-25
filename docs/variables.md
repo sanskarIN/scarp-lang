@@ -15,8 +15,8 @@ println(area); // 42
 Declarations require `let`, an ASCII identifier, `=`, a value expression, and
 `;`. Names are case-sensitive. `_` is an ordinary name. `let`, `mut`, `println`,
 `true`, `false`, `and`, `or`, `not`, `if`, `elif`, and `else` are reserved binding names. A binding
-infers `integer`, `string`, or `boolean` from its initializer. Parenthesized values and names are value
-expressions; arithmetic remains integer-only.
+infers `integer`, `float`, `string`, or `boolean` from its initializer. Parenthesized
+values and names are value expressions; arithmetic requires same-kind numbers.
 
 A declaration becomes visible after its initializer. Initializers and print
 expressions can reference earlier bindings. Forward and self-references are

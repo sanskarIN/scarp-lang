@@ -32,6 +32,7 @@ the `v0.0.1` tag; development uses `0.0.2-dev` package metadata and has no v0.0.
 | Boolean values, comparisons, short-circuit logic | No | Yes |
 | `if`/`elif`/`else` statements with scoped bodies | No | Yes |
 | While loops and deterministic execution budgets | No | Yes |
+| Finite binary64 decimals and scientific literals | No | Yes |
 | User functions, imports | No | No |
 | Native compilation of Scarp programs | No | No |
 
@@ -40,7 +41,7 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/bounded-loops`.
+The complete development stack is available on `scarp/finite-decimals`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
