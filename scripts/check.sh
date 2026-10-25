@@ -18,7 +18,9 @@ export RUSTDOCFLAGS="${RUSTDOCFLAGS-} -D warnings"
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
+cargo test --locked --release
 cargo build --locked
 cargo doc --locked --no-deps
 cargo run --locked -- run examples/hello.srp
 cargo run --locked -- tokens examples/hello.srp
+cargo run --locked -- run examples/arithmetic.srp

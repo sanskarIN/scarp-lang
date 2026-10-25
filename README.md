@@ -26,6 +26,7 @@ git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
 cargo build --locked
 cargo run -- run examples/hello.srp
+cargo run -- run examples/arithmetic.srp
 cargo run -- tokens examples/hello.srp
 cargo run -- --help
 cargo run -- --version
@@ -52,6 +53,8 @@ the CLI does not reject other filename extensions.
 
 - `println("text");` statements, executed in source order.
 - Multiple statements, empty strings, and empty or comment-only files.
+- Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
+- Operator precedence, left-associative binary operators, and checked arithmetic.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -64,10 +67,23 @@ use `\n` instead. Identifiers use ASCII letters, digits, and underscores, cannot
 start with a digit, and are case-sensitive. Only `println` is recognized as a
 statement name. Escapes other than the three listed above are rejected.
 
-The entire file is lexed and parsed before execution. Invalid source therefore
-produces no program output. Output stream failures propagate as errors; an output
+The entire file is lexed, parsed, and evaluated before any program output is
+written. Syntax and arithmetic errors therefore produce no program output.
+Output stream failures propagate as errors; an output
 failure can occur after earlier statements have been written. A closed output
 pipe is treated as normal CLI termination.
+
+```scarp
+println(1 + 2 * 3);           // 7
+println((1 + 2) * 3);         // 9
+println(-7 / 2);              // -3, division truncates toward zero
+println(-9223372036854775808); // the minimum signed 64-bit integer
+```
+
+Integer overflow, division by zero, and out-of-range literals are errors in both
+debug and release builds. Grouping is limited to 64 nested parentheses; long
+binary chains use a flat syntax tree. Strings remain direct print arguments,
+with no concatenation or mixed string/integer arithmetic.
 
 `tokens` checks lexical validity without parsing or executing the file. It prints
 one token per line, including decoded string text, one-based line/column ranges,
@@ -87,7 +103,7 @@ error[E0004]: expected ';', found <eof>
   |
 1 | println("hello")
   |                 ^
- = help: a print statement has the form println("text");
+ = help: use println("text"); or println(1 + 2);
 ```
 
 Exit codes are `0` for success, `1` for source, file, or output errors, and `2` for
@@ -97,7 +113,9 @@ token listings go to standard output.
 ## Library
 
 The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
-`interpreter::execute`, and `run`. The output destination is explicit, making
+`evaluator::evaluate`, `interpreter::execute`, and `run`. `compile` validates
+syntax; `evaluator::evaluate` checks arithmetic. `execute` and `run` validate all
+arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
 
 ```rust
@@ -112,13 +130,15 @@ assert_eq!(output, b"Hello from Scarp!\n");
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
+cargo test --locked --release
 cargo build --locked
 cargo run --locked -- run examples/hello.srp
 cargo run --locked -- tokens examples/hello.srp
 ```
 
 Tests cover source spans, escapes, Unicode, missing punctuation, invalid files,
-command-line usage, output failures, and execution of the real hello example.
+command-line usage, output failures, arithmetic boundaries, precedence, nesting,
+long expression chains, and all shipped examples.
 The complete check sequence, including rustdoc, is available as
 `sh scripts/check.sh --offline` or `./scripts/check.ps1 -Offline`. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development and PR workflow.
@@ -126,8 +146,9 @@ The complete check sequence, including rustdoc, is available as
 ## Prototype limits and planned roadmap
 
 This is a small tree-walking interpreter. It reads a complete file into memory
-and reports the first error. It has no expressions, variables, user-defined
-functions, types, imports, loops, standard library, package manager, native code
+and reports the first error. It has no variables, user-defined functions,
+booleans, floating-point values, types, imports, loops, standard library,
+package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
 
@@ -138,18 +159,17 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Expressions and literal values.
-2. Variables and lexical scope.
-3. User-defined functions.
-4. Type checking.
-5. A compiler backend.
-6. Developer tooling.
-7. Domain-specific libraries.
+1. Variables and lexical scope.
+2. User-defined functions.
+3. Type checking.
+4. A compiler backend.
+5. Developer tooling.
+6. Domain-specific libraries.
 
-These capabilities are not implemented. The best next small milestone is integer
-literal expressions with `+`, `-`, `*`, `/`, parentheses, and focused diagnostics.
-Its scope and acceptance cases are described in the
-[draft expression proposal](docs/proposals/0001-integer-expressions.md).
+These capabilities are not implemented. Integer expressions are implemented as
+specified in the [expression design](docs/proposals/0001-integer-expressions.md).
+The best next small milestone is immutable integer bindings with name-resolution
+diagnostics, before introducing nested scope or user-defined functions.
 
 ## License
 

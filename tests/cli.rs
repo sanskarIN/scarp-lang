@@ -206,6 +206,51 @@ fn rejects_invalid_command_lines_with_usage_exit_code() {
     }
 }
 
+#[test]
+fn runs_integer_expressions_and_existing_strings_together() {
+    let fixture = Fixture::new();
+    let path = fixture.file(
+        "expressions.srp",
+        "println(1 + 2 * 3); println((1 + 2) * 3); println(\"done\");",
+    );
+    let output = command().arg("run").arg(path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(output.stdout, b"7\n9\ndone\n");
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn reports_arithmetic_errors_without_partial_program_output() {
+    let fixture = Fixture::new();
+    for (argument, code) in [
+        ("1 / 0", "E0008"),
+        ("9223372036854775807 + 1", "E0007"),
+        ("9223372036854775808", "E0006"),
+    ] {
+        let path = fixture.file(
+            "arithmetic-error.srp",
+            format!("println(\"first\");\nprintln({argument});"),
+        );
+        let output = command().arg("run").arg(path).output().unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+        assert!(stderr(&output).contains(code));
+        assert!(stderr(&output).contains("arithmetic-error.srp:2:"));
+        assert!(!stderr(&output).contains("panicked"));
+    }
+}
+
+#[test]
+fn token_inspection_does_not_evaluate_or_range_check_integers() {
+    let fixture = Fixture::new();
+    let path = fixture.file("tokens.srp", "println(9223372036854775808 / 0);");
+    let output = command().arg("tokens").arg(path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    let tokens = String::from_utf8(output.stdout).unwrap();
+    assert!(tokens.contains("integer(9223372036854775808)"));
+    assert!(tokens.contains("  /  "));
+}
+
 #[cfg(unix)]
 #[test]
 fn handles_non_unicode_native_paths_according_to_the_filesystem() {

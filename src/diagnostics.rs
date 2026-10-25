@@ -45,6 +45,10 @@ pub enum DiagnosticKind {
     InvalidEscape,
     UnexpectedToken,
     UnknownStatement,
+    InvalidInteger,
+    ArithmeticOverflow,
+    DivisionByZero,
+    ExpressionNesting,
 }
 
 impl DiagnosticKind {
@@ -55,6 +59,10 @@ impl DiagnosticKind {
             Self::InvalidEscape => "E0003",
             Self::UnexpectedToken => "E0004",
             Self::UnknownStatement => "E0005",
+            Self::InvalidInteger => "E0006",
+            Self::ArithmeticOverflow => "E0007",
+            Self::DivisionByZero => "E0008",
+            Self::ExpressionNesting => "E0009",
         }
     }
 }
