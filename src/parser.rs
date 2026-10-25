@@ -146,6 +146,7 @@ impl Parser<'_> {
                                     | TokenKind::String(_)
                                     | TokenKind::Identifier(_)
                                     | TokenKind::Minus
+                                    | TokenKind::BitNot
                                     | TokenKind::LeftParen
                             )
                         ) {
@@ -345,14 +346,14 @@ impl Parser<'_> {
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
     ) -> Result<usize, Diagnostic> {
-        let left = self.sum(nodes, depth)?;
+        let left = self.arithmetic(nodes, depth)?;
         if let Some(operator) = self
             .current()
             .and_then(|token| comparison_operator(&token.kind))
         {
             let operator_span = self.current().unwrap().span;
             self.cursor += 1;
-            let right = self.sum(nodes, depth)?;
+            let right = self.arithmetic(nodes, depth)?;
             if self
                 .current()
                 .and_then(|token| comparison_operator(&token.kind))
@@ -367,40 +368,44 @@ impl Parser<'_> {
         Ok(left)
     }
 
-    fn sum(&mut self, nodes: &mut Vec<ExpressionNode>, depth: usize) -> Result<usize, Diagnostic> {
-        let mut left = self.product(nodes, depth)?;
-        while let Some(token) = self.current() {
-            let operator = match token.kind {
-                TokenKind::Plus => BinaryOperator::Add,
-                TokenKind::Minus => BinaryOperator::Subtract,
-                _ => break,
-            };
-            let operator_span = token.span;
-            self.cursor += 1;
-            let right = self.product(nodes, depth)?;
-            left = binary(nodes, left, operator, right, operator_span);
-        }
-        Ok(left)
-    }
-
-    fn product(
+    fn arithmetic(
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
     ) -> Result<usize, Diagnostic> {
-        let mut left = self.unary(nodes, depth)?;
-        while let Some(token) = self.current() {
-            let operator = match token.kind {
-                TokenKind::Star => BinaryOperator::Multiply,
-                TokenKind::Slash => BinaryOperator::Divide,
-                _ => break,
-            };
-            let operator_span = token.span;
-            self.cursor += 1;
-            let right = self.unary(nodes, depth)?;
-            left = binary(nodes, left, operator, right, operator_span);
+        let first = self.unary(nodes, depth)?;
+        if self
+            .current()
+            .and_then(|token| infix_operator(&token.kind))
+            .is_none()
+        {
+            return Ok(first);
         }
-        Ok(left)
+        let mut operands = vec![first];
+        let mut operators: Vec<(BinaryOperator, Span, u8)> = Vec::new();
+        while let Some((operator, precedence)) =
+            self.current().and_then(|token| infix_operator(&token.kind))
+        {
+            let span = self.current().unwrap().span;
+            while operators
+                .last()
+                .is_some_and(|(_, _, previous)| *previous >= precedence)
+            {
+                let (operator, span, _) = operators.pop().unwrap();
+                let right = operands.pop().unwrap();
+                let left = operands.pop().unwrap();
+                operands.push(binary(nodes, left, operator, right, span));
+            }
+            operators.push((operator, span, precedence));
+            self.cursor += 1;
+            operands.push(self.unary(nodes, depth)?);
+        }
+        while let Some((operator, span, _)) = operators.pop() {
+            let right = operands.pop().unwrap();
+            let left = operands.pop().unwrap();
+            operands.push(binary(nodes, left, operator, right, span));
+        }
+        Ok(operands.pop().unwrap())
     }
 
     fn unary(
@@ -408,6 +413,23 @@ impl Parser<'_> {
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
     ) -> Result<usize, Diagnostic> {
+        if matches!(
+            self.current().map(|token| &token.kind),
+            Some(TokenKind::BitNot)
+        ) {
+            let operator_span = self.current().unwrap().span;
+            self.cursor += 1;
+            let operand = self.postfix(nodes, depth)?;
+            let span = Span::new(operator_span.start, nodes[operand].span.end);
+            return Ok(push(
+                nodes,
+                ExpressionKind::BitNot {
+                    operand,
+                    operator_span,
+                },
+                span,
+            ));
+        }
         if let Some(Token {
             kind: TokenKind::Minus,
             span,
@@ -422,7 +444,7 @@ impl Parser<'_> {
                 span,
             }) = self.current()
             {
-                if digits.parse::<u64>() == Ok(1_u64 << 63) {
+                if integer_magnitude(digits) == Some(1_u64 << 63) {
                     let span = Span::new(operator_span.start, span.end);
                     self.cursor += 1;
                     return Ok(push(nodes, ExpressionKind::Integer(i64::MIN), span));
@@ -615,14 +637,16 @@ impl Parser<'_> {
                 span,
             }) => {
                 let span = *span;
-                let value = digits.parse::<i64>().map_err(|_| {
-                    Diagnostic::new(
-                        DiagnosticKind::InvalidInteger,
-                        span,
-                        "integer literal is outside the signed 64-bit range",
-                    )
-                    .with_help("use a value from -9223372036854775808 to 9223372036854775807")
-                })?;
+                let value = integer_magnitude(digits)
+                    .and_then(|value| i64::try_from(value).ok())
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::InvalidInteger,
+                            span,
+                            "integer literal is outside the signed 64-bit range",
+                        )
+                        .with_help("use a value from -9223372036854775808 to 9223372036854775807")
+                    })?;
                 self.cursor += 1;
                 Ok(push(nodes, ExpressionKind::Integer(value), span))
             }
@@ -660,6 +684,46 @@ fn assignment_operator(kind: &TokenKind) -> Option<AssignmentOperator> {
         TokenKind::MinusEqual => AssignmentOperator::Compound(BinaryOperator::Subtract),
         TokenKind::StarEqual => AssignmentOperator::Compound(BinaryOperator::Multiply),
         TokenKind::SlashEqual => AssignmentOperator::Compound(BinaryOperator::Divide),
+        TokenKind::PercentEqual => AssignmentOperator::Compound(BinaryOperator::Remainder),
+        TokenKind::AndEqual => AssignmentOperator::Compound(BinaryOperator::BitAnd),
+        TokenKind::OrEqual => AssignmentOperator::Compound(BinaryOperator::BitOr),
+        TokenKind::XorEqual => AssignmentOperator::Compound(BinaryOperator::BitXor),
+        TokenKind::LeftEqual => AssignmentOperator::Compound(BinaryOperator::ShiftLeft),
+        TokenKind::RightEqual => AssignmentOperator::Compound(BinaryOperator::ShiftRight),
+        TokenKind::UnsignedEqual => AssignmentOperator::Compound(BinaryOperator::UnsignedRight),
+        _ => return None,
+    })
+}
+
+fn integer_magnitude(digits: &str) -> Option<u64> {
+    if let Some(digits) = digits
+        .strip_prefix("0x")
+        .or_else(|| digits.strip_prefix("0X"))
+    {
+        u64::from_str_radix(digits, 16).ok()
+    } else if let Some(digits) = digits
+        .strip_prefix("0b")
+        .or_else(|| digits.strip_prefix("0B"))
+    {
+        u64::from_str_radix(digits, 2).ok()
+    } else {
+        digits.parse().ok()
+    }
+}
+
+fn infix_operator(kind: &TokenKind) -> Option<(BinaryOperator, u8)> {
+    Some(match kind {
+        TokenKind::BitOr => (BinaryOperator::BitOr, 1),
+        TokenKind::BitXor => (BinaryOperator::BitXor, 2),
+        TokenKind::BitAnd => (BinaryOperator::BitAnd, 3),
+        TokenKind::ShiftLeft => (BinaryOperator::ShiftLeft, 4),
+        TokenKind::ShiftRight => (BinaryOperator::ShiftRight, 4),
+        TokenKind::UnsignedRight => (BinaryOperator::UnsignedRight, 4),
+        TokenKind::Plus => (BinaryOperator::Add, 5),
+        TokenKind::Minus => (BinaryOperator::Subtract, 5),
+        TokenKind::Star => (BinaryOperator::Multiply, 6),
+        TokenKind::Slash => (BinaryOperator::Divide, 6),
+        TokenKind::Percent => (BinaryOperator::Remainder, 6),
         _ => return None,
     })
 }

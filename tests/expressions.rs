@@ -199,10 +199,10 @@ fn rejects_malformed_expressions_and_deferred_syntax() {
         "1 2",
         "x",
         "1.2.3",
-        "0xff",
+        "0xgg",
         "1_000",
         "1, 2",
-        "1 % 2",
+        "1 %",
         "\"a\" + \"b\"",
         "1 + \"text\"",
         "1 /* block */ 2",
@@ -237,6 +237,7 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
         match &node.kind {
             ExpressionKind::Integer(_) => {}
             ExpressionKind::Name(_)
+            | ExpressionKind::BitNot { .. }
             | ExpressionKind::Vector { .. }
             | ExpressionKind::Index { .. }
             | ExpressionKind::Call { .. }

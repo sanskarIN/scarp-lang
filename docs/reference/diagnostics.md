@@ -33,6 +33,7 @@ codes belong to the development variable stack.
 | `E0023` | Invalid kernel domain | Supply nonempty required input and ordered clamp bounds |
 | `E0024` | Unknown built-in call | Use a supported numerical function name |
 | `E0025` | Wrong argument count | Follow the kernel's fixed signature |
+| `E0026` | Shift count outside 0..63 | Use a valid fixed-width shift count |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

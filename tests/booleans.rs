@@ -154,11 +154,9 @@ fn comparison_tokens_use_longest_match_and_exact_byte_spans() {
         assert_eq!((token.span.start, token.span.end), (start, end));
     }
     assert_eq!(tokens.len(), 8);
-    for source in ["!", "&&", "||"] {
-        assert_eq!(
-            lex(source).unwrap_err().kind,
-            DiagnosticKind::InvalidCharacter
-        );
+    assert_eq!(lex("!").unwrap_err().kind, DiagnosticKind::InvalidCharacter);
+    for source in ["println(true && false);", "println(true || false);"] {
+        assert!(scarp::parse(source).is_err());
     }
 }
 

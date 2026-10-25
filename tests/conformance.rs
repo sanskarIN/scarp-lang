@@ -93,6 +93,7 @@ fn observe(source: &str) {
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
         "let value = 7; println(value);",
+        "let mut flags = 0xA0; flags |= 0b11; println(flags >>> 4); println(~flags);",
         "let v = [1.0, 2.0]; println(sum(v)); println(softmax(v)[0] < 1.0);",
         "let mut estimate = 1.25; estimate *= 2.0; println(estimate >= 2.5 and 1e-3 < 1.0);",
         "let mut x = 0; while x < 3 { x += 1; if x == 2 { continue; } } println(x);",

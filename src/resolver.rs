@@ -277,13 +277,7 @@ impl Resolver {
                     ..
                 } => {
                     if let AssignmentOperator::Compound(operator) = operator {
-                        if !matches!(
-                            operator,
-                            BinaryOperator::Add
-                                | BinaryOperator::Subtract
-                                | BinaryOperator::Multiply
-                                | BinaryOperator::Divide
-                        ) {
+                        if operator.is_comparison() {
                             return Err(Diagnostic::new(
                                 DiagnosticKind::UnexpectedToken,
                                 operator_span,
@@ -311,6 +305,17 @@ impl Resolver {
                     let declaration = binding.declaration;
                     let value = resolve_expression(value, &self.scopes)?;
                     match operator {
+                        AssignmentOperator::Compound(operator)
+                            if operator.is_integer_only()
+                                && expected_type != ValueType::Integer =>
+                        {
+                            return Err(type_mismatch(
+                                operator_span,
+                                ValueType::Integer,
+                                expected_type,
+                            )
+                            .with_related(declaration, "the target binding is declared here"));
+                        }
                         AssignmentOperator::Set if value.kind != expected_type => {
                             let span = value.syntax.nodes()[value.syntax.root()].span;
                             return Err(type_mismatch(span, expected_type, value.kind)
@@ -439,6 +444,13 @@ fn resolve_expression(
                 (binding.kind, Some(binding.slot))
             }
             ExpressionKind::Group { expression } => (types[*expression], None),
+            ExpressionKind::BitNot {
+                operand,
+                operator_span,
+            } => {
+                require_type(types[*operand], ValueType::Integer, *operator_span)?;
+                (ValueType::Integer, None)
+            }
             ExpressionKind::Negate {
                 operand,
                 operator_span,
@@ -479,6 +491,10 @@ fn resolve_expression(
                     BinaryOperator::Equal | BinaryOperator::NotEqual => {
                         require_type(types[*right], types[*left], *operator_span)?;
                     }
+                    operator if operator.is_integer_only() => {
+                        require_type(types[*left], ValueType::Integer, *operator_span)?;
+                        require_type(types[*right], ValueType::Integer, *operator_span)?;
+                    }
                     _ => {
                         if !types[*left].is_numeric() {
                             return Err(type_mismatch(
@@ -490,12 +506,10 @@ fn resolve_expression(
                         require_type(types[*right], types[*left], *operator_span)?;
                     }
                 }
-                let kind = match operator {
-                    BinaryOperator::Add
-                    | BinaryOperator::Subtract
-                    | BinaryOperator::Multiply
-                    | BinaryOperator::Divide => types[*left],
-                    _ => ValueType::Boolean,
+                let kind = if operator.is_comparison() {
+                    ValueType::Boolean
+                } else {
+                    types[*left]
                 };
                 (kind, None)
             }

@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Hexadecimal/binary integer literals, masks, explicit shifts, remainder, and
+  integer-only compound bit operations with checked counts.
+
 - Immutable finite numeric vectors, checked indexing, compensated reductions,
   stable softmax, mean squared error, and budgeted native element operations.
 

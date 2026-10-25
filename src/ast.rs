@@ -136,6 +136,10 @@ pub enum ExpressionKind {
         operand: usize,
         operator_span: Span,
     },
+    BitNot {
+        operand: usize,
+        operator_span: Span,
+    },
     Not {
         operand: usize,
         operator_span: Span,
@@ -163,12 +167,45 @@ pub enum BinaryOperator {
     Subtract,
     Multiply,
     Divide,
+    Remainder,
+    BitAnd,
+    BitOr,
+    BitXor,
+    ShiftLeft,
+    ShiftRight,
+    UnsignedRight,
     Equal,
     NotEqual,
     Less,
     LessEqual,
     Greater,
     GreaterEqual,
+}
+
+impl BinaryOperator {
+    pub(crate) fn is_comparison(self) -> bool {
+        matches!(
+            self,
+            Self::Equal
+                | Self::NotEqual
+                | Self::Less
+                | Self::LessEqual
+                | Self::Greater
+                | Self::GreaterEqual
+        )
+    }
+    pub(crate) fn is_integer_only(self) -> bool {
+        matches!(
+            self,
+            Self::Remainder
+                | Self::BitAnd
+                | Self::BitOr
+                | Self::BitXor
+                | Self::ShiftLeft
+                | Self::ShiftRight
+                | Self::UnsignedRight
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

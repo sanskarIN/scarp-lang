@@ -48,6 +48,7 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/numerics.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/linear_fit.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/linear_fit.srp')
+    Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/bit_fields.srp')
 }
 finally {
     $env:CARGO_INCREMENTAL = $previousIncremental
