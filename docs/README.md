@@ -17,6 +17,7 @@ they are not claims that a v0.0.2 release has been published.
 | [Loops and budgets](proposals/0006-bounded-loops.md) | Repeat computations with scoped state, loop control, and per-call bounds |
 | [Finite decimals](proposals/0007-finite-decimals.md) | Use explicit floating-point arithmetic with finite-result checks |
 | [Numerical vectors](proposals/0008-numeric-vectors.md) | Use native reductions, softmax, squared error, and immutable vector updates |
+| [Integer bit operations](proposals/0009-integer-bit-operations.md) | Pack flags and inspect fixed-width integer patterns |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |

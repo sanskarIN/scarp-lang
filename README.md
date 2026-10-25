@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/numeric-vectors
+git switch scarp/integer-bit-operations
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -186,6 +186,10 @@ The complete check sequence, including rustdoc, is available as
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development and PR workflow.
 
 ## Prototype limits and planned roadmap
+
+Signed 64-bit masks, hexadecimal/binary literals, remainder, and explicit
+arithmetic/logical shifts support bit-field work. See
+[integer bit operations](docs/proposals/0009-integer-bit-operations.md).
 
 Immutable float vectors provide native `sum`, `mean`, `dot`, `mse`, `softmax`,
 `add`, `scale`, `clamp`, `fill`, and `len` operations. Work is charged to the same
