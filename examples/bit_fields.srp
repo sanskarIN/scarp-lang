@@ -1,0 +1,7 @@
+// Pack and inspect a 64-bit word without implicit numeric conversions.
+let mut flags = 0xA0;
+flags |= 0b0011;
+println(flags & 0x0F);
+println(flags >>> 4);
+println(1 << 63);
+println(~0);
