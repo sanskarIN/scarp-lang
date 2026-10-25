@@ -3,8 +3,8 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains the **v0.0.1 development prototype**: a working lexer, parser, interpreter,
-and command-line interface. There is no published release yet.
+contains the **v0.0.1 experimental prerelease**: a working lexer, parser,
+interpreter, and command-line interface. Syntax and library APIs may change.
 
 ```scarp
 // My first Scarp program
@@ -16,6 +16,13 @@ Hello from Scarp!
 ```
 
 ## Build and run
+
+Binary archives and checksums are available through
+[GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
+[v0.0.1 notes](docs/releases/v0.0.1.md) for platform support, verification, and
+running an extracted package. The [changelog](CHANGELOG.md) records this version.
+
+To build from source:
 
 Install a stable Rust toolchain with Cargo using the instructions at
 [rustup.rs](https://rustup.rs/). On Windows, use the MSVC toolchain and install the
