@@ -18,12 +18,14 @@ use crate::{
 pub struct ResolvedProgram {
     pub(crate) statements: Vec<ResolvedStatement>,
     slot_types: Vec<ValueType>,
+    statement_count: usize,
 }
 
 impl ResolvedProgram {
-    /// Number of executable statements, including declarations, excluding block containers.
+    /// Number of executable operations, including branch guards and declarations,
+    /// excluding block containers and unconditional bookkeeping jumps.
     pub fn statement_count(&self) -> usize {
-        self.statements.len()
+        self.statement_count
     }
 
     /// Number of distinct storage slots required by one execution.
@@ -39,6 +41,13 @@ impl ResolvedProgram {
 
 #[derive(Debug, Clone)]
 pub(crate) enum ResolvedStatement {
+    JumpIfFalse {
+        condition: ResolvedExpression,
+        target: usize,
+    },
+    Jump {
+        target: usize,
+    },
     Store {
         slot: usize,
         value: ResolvedExpression,
@@ -82,9 +91,15 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
         slot_types: Vec::new(),
     };
     resolver.statement_list(program.statements)?;
+    let statement_count = resolver
+        .statements
+        .iter()
+        .filter(|statement| !matches!(statement, ResolvedStatement::Jump { .. }))
+        .count();
     Ok(ResolvedProgram {
         statements: resolver.statements,
         slot_types: resolver.slot_types,
+        statement_count,
     })
 }
 
@@ -98,18 +113,48 @@ impl Resolver {
     fn statement_list(&mut self, statements: Vec<Statement>) -> Result<(), Diagnostic> {
         for statement in statements {
             match statement {
-                Statement::Block { statements, span } => {
-                    if self.scopes.len() > MAX_BLOCK_DEPTH {
+                Statement::If {
+                    branches,
+                    otherwise,
+                    span,
+                } => {
+                    if branches.is_empty() {
                         return Err(Diagnostic::new(
-                            DiagnosticKind::BlockNesting,
-                            Span::new(span.start, span.start.saturating_add(1)),
-                            format!("block nesting exceeds {MAX_BLOCK_DEPTH} levels"),
-                        )
-                        .with_help("reduce the number of nested statement blocks"));
+                            DiagnosticKind::UnexpectedToken,
+                            span,
+                            "an if statement requires a condition and body",
+                        ));
                     }
-                    self.scopes.push(HashMap::new());
-                    self.statement_list(statements)?;
-                    self.scopes.pop();
+                    let mut exits = Vec::new();
+                    for branch in branches {
+                        let condition = resolve_expression(branch.condition, &self.scopes)?;
+                        let condition_span = condition.syntax.nodes()[condition.syntax.root()].span;
+                        require_type(condition.kind, ValueType::Boolean, condition_span)?;
+                        let guard = self.statements.len();
+                        self.statements.push(ResolvedStatement::JumpIfFalse {
+                            condition,
+                            target: 0,
+                        });
+                        self.scoped_statements(branch.statements, branch.span)?;
+                        exits.push(self.statements.len());
+                        self.statements.push(ResolvedStatement::Jump { target: 0 });
+                        let next = self.statements.len();
+                        if let ResolvedStatement::JumpIfFalse { target, .. } =
+                            &mut self.statements[guard]
+                        {
+                            *target = next;
+                        }
+                    }
+                    self.scoped_statements(otherwise, span)?;
+                    let end = self.statements.len();
+                    for exit in exits {
+                        if let ResolvedStatement::Jump { target } = &mut self.statements[exit] {
+                            *target = end;
+                        }
+                    }
+                }
+                Statement::Block { statements, span } => {
+                    self.scoped_statements(statements, span)?;
                 }
                 Statement::Let {
                     name,
@@ -237,6 +282,25 @@ impl Resolver {
         }
         Ok(())
     }
+
+    fn scoped_statements(
+        &mut self,
+        statements: Vec<Statement>,
+        span: Span,
+    ) -> Result<(), Diagnostic> {
+        if self.scopes.len() > MAX_BLOCK_DEPTH {
+            return Err(Diagnostic::new(
+                DiagnosticKind::BlockNesting,
+                Span::new(span.start, span.start.saturating_add(1)),
+                format!("block nesting exceeds {MAX_BLOCK_DEPTH} levels"),
+            )
+            .with_help("reduce the number of nested statement blocks"));
+        }
+        self.scopes.push(HashMap::new());
+        self.statement_list(statements)?;
+        self.scopes.pop();
+        Ok(())
+    }
 }
 
 fn lookup<'a>(scopes: &'a [Scope], name: &str) -> Option<&'a Binding> {
@@ -347,7 +411,17 @@ pub(crate) fn require_type(
 fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
     if matches!(
         name,
-        "let" | "mut" | "println" | "true" | "false" | "and" | "or" | "not"
+        "let"
+            | "mut"
+            | "println"
+            | "true"
+            | "false"
+            | "and"
+            | "or"
+            | "not"
+            | "if"
+            | "elif"
+            | "else"
     ) {
         Err(Diagnostic::new(
             DiagnosticKind::ReservedName,

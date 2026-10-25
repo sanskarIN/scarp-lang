@@ -9,6 +9,11 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
+    If {
+        branches: Vec<ConditionalBranch>,
+        otherwise: Vec<Statement>,
+        span: Span,
+    },
     Block {
         statements: Vec<Statement>,
         span: Span,
@@ -32,6 +37,14 @@ pub enum Statement {
         value: Expression,
         span: Span,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConditionalBranch {
+    pub condition: Expression,
+    pub statements: Vec<Statement>,
+    /// The branch's brace-delimited body, including both braces.
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
