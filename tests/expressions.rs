@@ -204,7 +204,6 @@ fn rejects_malformed_expressions_and_deferred_syntax() {
         "1, 2",
         "1 % 2",
         "\"a\" + \"b\"",
-        "(\"text\")",
         "1 + \"text\"",
         "1 /* block */ 2",
     ] {
@@ -225,7 +224,7 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
     let source = "println(-(1 + 2) * 3);";
     let program = scarp::parse(source).unwrap();
     let Statement::Println {
-        argument: PrintArgument::Integer(expression),
+        argument: PrintArgument::Expression(expression),
         ..
     } = &program.statements[0]
     else {
@@ -237,7 +236,9 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
     for (id, node) in expression.nodes().iter().enumerate() {
         match &node.kind {
             ExpressionKind::Integer(_) => {}
-            ExpressionKind::Name(_) => panic!("unexpected variable"),
+            ExpressionKind::Name(_) | ExpressionKind::String(_) => {
+                panic!("unexpected non-integer node")
+            }
             ExpressionKind::Negate { operand, .. } => assert!(*operand < id),
             ExpressionKind::Group { expression } => assert!(*expression < id),
             ExpressionKind::Binary {

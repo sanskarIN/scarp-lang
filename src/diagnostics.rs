@@ -91,6 +91,7 @@ pub enum DiagnosticKind {
     ReservedName,
     ImmutableAssignment,
     BlockNesting,
+    TypeMismatch,
 }
 
 impl DiagnosticKind {
@@ -110,6 +111,7 @@ impl DiagnosticKind {
             Self::ReservedName => "E0012",
             Self::ImmutableAssignment => "E0013",
             Self::BlockNesting => "E0014",
+            Self::TypeMismatch => "E0015",
         }
     }
 }

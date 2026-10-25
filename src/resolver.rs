@@ -9,6 +9,7 @@ use crate::{
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     parser::MAX_BLOCK_DEPTH,
+    value::{type_mismatch, ValueType},
 };
 
 /// An immutable executable program produced by name resolution.
@@ -16,7 +17,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct ResolvedProgram {
     pub(crate) statements: Vec<ResolvedStatement>,
-    pub(crate) slots: usize,
+    slot_types: Vec<ValueType>,
 }
 
 impl ResolvedProgram {
@@ -27,7 +28,12 @@ impl ResolvedProgram {
 
     /// Number of distinct storage slots required by one execution.
     pub fn binding_count(&self) -> usize {
-        self.slots
+        self.slot_types.len()
+    }
+
+    /// Inferred types in declaration/slot order, including declarations in blocks.
+    pub fn binding_types(&self) -> &[ValueType] {
+        &self.slot_types
     }
 }
 
@@ -49,19 +55,21 @@ pub(crate) enum ResolvedStatement {
 #[derive(Debug, Clone)]
 pub(crate) enum ResolvedArgument {
     String(String),
-    Integer(ResolvedExpression),
+    Expression(ResolvedExpression),
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct ResolvedExpression {
     pub syntax: Expression,
     pub slots: Vec<Option<usize>>,
+    pub kind: ValueType,
 }
 
 struct Binding {
     slot: usize,
     declaration: Span,
     mutable: bool,
+    kind: ValueType,
 }
 type Scope = HashMap<String, Binding>;
 
@@ -71,19 +79,19 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
     let mut resolver = Resolver {
         scopes: vec![HashMap::new()],
         statements: Vec::new(),
-        next_slot: 0,
+        slot_types: Vec::new(),
     };
     resolver.statement_list(program.statements)?;
     Ok(ResolvedProgram {
         statements: resolver.statements,
-        slots: resolver.next_slot,
+        slot_types: resolver.slot_types,
     })
 }
 
 struct Resolver {
     scopes: Vec<Scope>,
     statements: Vec<ResolvedStatement>,
-    next_slot: usize,
+    slot_types: Vec<ValueType>,
 }
 
 impl Resolver {
@@ -123,8 +131,9 @@ impl Resolver {
                     }
                     // Resolve before insertion: a shadowing initializer sees the outer name.
                     let value = resolve_expression(initializer, &self.scopes)?;
-                    let slot = self.next_slot;
-                    self.next_slot += 1;
+                    let slot = self.slot_types.len();
+                    let kind = value.kind;
+                    self.slot_types.push(kind);
                     self.scopes
                         .last_mut()
                         .expect("a file scope always exists")
@@ -134,6 +143,7 @@ impl Resolver {
                                 slot,
                                 declaration: name_span,
                                 mutable,
+                                kind,
                             },
                         );
                     self.statements
@@ -142,9 +152,9 @@ impl Resolver {
                 Statement::Println { argument, .. } => {
                     let argument = match argument {
                         PrintArgument::String(value) => ResolvedArgument::String(value),
-                        PrintArgument::Integer(expression) => {
-                            ResolvedArgument::Integer(resolve_expression(expression, &self.scopes)?)
-                        }
+                        PrintArgument::Expression(expression) => ResolvedArgument::Expression(
+                            resolve_expression(expression, &self.scopes)?,
+                        ),
                     };
                     self.statements.push(ResolvedStatement::Println(argument));
                 }
@@ -172,7 +182,32 @@ impl Resolver {
                         .with_help("declare this binding with let mut to allow assignment"));
                     }
                     let slot = binding.slot;
+                    let expected_type = binding.kind;
+                    let declaration = binding.declaration;
                     let value = resolve_expression(value, &self.scopes)?;
+                    match operator {
+                        AssignmentOperator::Set if value.kind != expected_type => {
+                            let span = value.syntax.nodes()[value.syntax.root()].span;
+                            return Err(type_mismatch(span, expected_type, value.kind)
+                                .with_related(
+                                    declaration,
+                                    "the binding's type is established here",
+                                ));
+                        }
+                        AssignmentOperator::Compound(_)
+                            if expected_type != ValueType::Integer
+                                || value.kind != ValueType::Integer =>
+                        {
+                            let found = if expected_type != ValueType::Integer {
+                                expected_type
+                            } else {
+                                value.kind
+                            };
+                            return Err(type_mismatch(operator_span, ValueType::Integer, found)
+                                .with_related(declaration, "the target binding is declared here"));
+                        }
+                        _ => {}
+                    }
                     self.statements.push(match operator {
                         AssignmentOperator::Set => ResolvedStatement::Store { slot, value },
                         AssignmentOperator::Compound(operator) => ResolvedStatement::Update {
@@ -198,19 +233,57 @@ fn resolve_expression(
     scopes: &[Scope],
 ) -> Result<ResolvedExpression, Diagnostic> {
     let mut slots = Vec::with_capacity(syntax.nodes().len());
+    let mut types: Vec<ValueType> = Vec::with_capacity(syntax.nodes().len());
     for node in syntax.nodes() {
-        slots.push(if let ExpressionKind::Name(name) = &node.kind {
-            check_name(name, node.span)?;
-            Some(
-                lookup(scopes, name)
-                    .ok_or_else(|| unknown_name(name, node.span))?
-                    .slot,
-            )
-        } else {
-            None
-        });
+        let (kind, slot) = match &node.kind {
+            ExpressionKind::Integer(_) => (ValueType::Integer, None),
+            ExpressionKind::String(_) => (ValueType::String, None),
+            ExpressionKind::Name(name) => {
+                check_name(name, node.span)?;
+                let binding = lookup(scopes, name).ok_or_else(|| unknown_name(name, node.span))?;
+                (binding.kind, Some(binding.slot))
+            }
+            ExpressionKind::Group { expression } => (types[*expression], None),
+            ExpressionKind::Negate {
+                operand,
+                operator_span,
+            } => {
+                if types[*operand] != ValueType::Integer {
+                    return Err(type_mismatch(
+                        *operator_span,
+                        ValueType::Integer,
+                        types[*operand],
+                    ));
+                }
+                (ValueType::Integer, None)
+            }
+            ExpressionKind::Binary {
+                left,
+                right,
+                operator_span,
+                ..
+            } => {
+                for operand in [*left, *right] {
+                    if types[operand] != ValueType::Integer {
+                        return Err(type_mismatch(
+                            *operator_span,
+                            ValueType::Integer,
+                            types[operand],
+                        ));
+                    }
+                }
+                (ValueType::Integer, None)
+            }
+        };
+        types.push(kind);
+        slots.push(slot);
     }
-    Ok(ResolvedExpression { syntax, slots })
+    let kind = types[syntax.root()];
+    Ok(ResolvedExpression {
+        syntax,
+        slots,
+        kind,
+    })
 }
 
 fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
