@@ -9,6 +9,10 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
+    Block {
+        statements: Vec<Statement>,
+        span: Span,
+    },
     Println {
         argument: PrintArgument,
         span: Span,

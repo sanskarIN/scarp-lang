@@ -53,6 +53,7 @@ pub enum DiagnosticKind {
     DuplicateBinding,
     ReservedName,
     ImmutableAssignment,
+    BlockNesting,
 }
 
 impl DiagnosticKind {
@@ -71,6 +72,7 @@ impl DiagnosticKind {
             Self::DuplicateBinding => "E0011",
             Self::ReservedName => "E0012",
             Self::ImmutableAssignment => "E0013",
+            Self::BlockNesting => "E0014",
         }
     }
 }

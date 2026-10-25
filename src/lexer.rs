@@ -20,6 +20,8 @@ pub enum TokenKind {
     SlashEqual,
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
     Semicolon,
     Eof,
 }
@@ -41,6 +43,8 @@ impl fmt::Display for TokenKind {
             Self::SlashEqual => f.write_str("/="),
             Self::LeftParen => f.write_str("("),
             Self::RightParen => f.write_str(")"),
+            Self::LeftBrace => f.write_str("{"),
+            Self::RightBrace => f.write_str("}"),
             Self::Semicolon => f.write_str(";"),
             Self::Eof => f.write_str("<eof>"),
         }
@@ -92,6 +96,14 @@ impl Lexer<'_> {
                 continue;
             }
             let kind = match character {
+                '{' => {
+                    self.bump();
+                    TokenKind::LeftBrace
+                }
+                '}' => {
+                    self.bump();
+                    TokenKind::RightBrace
+                }
                 '=' => {
                     self.bump();
                     TokenKind::Equal
