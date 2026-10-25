@@ -85,6 +85,7 @@ fn observe(source: &str) {
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
         "let value = 7; println(value);",
+        "let mut x = 1; if x < 2 { x += 3; } elif false {} else { x = 9; } println(x);",
         "let ready = true; println(not ready or 1 < 2 and false);",
         "println(false and 1 / 0 == 0); println(\"a\" != \"b\");",
         "// नमस्ते 🌍\r\nlet mut x = 2; x += x * 3; println(x);",

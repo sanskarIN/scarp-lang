@@ -48,6 +48,36 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
+fn conditional_programs_run_and_skipped_static_errors_reach_stderr() {
+    let fixture = Fixture::new();
+    let valid = fixture.file(
+        "decisions.srp",
+        "let mut x = 1; if x < 2 and not false { x += 2; } else { println(1 / 0); } println(x);",
+    );
+    let invalid = fixture.file(
+        "invalid.srp",
+        "println(\"before\"); if false { println(missing); }",
+    );
+    for mode in ["run", "check"] {
+        let success = command().arg(mode).arg(&valid).output().unwrap();
+        assert!(success.status.success(), "{}", stderr(&success));
+        assert_eq!(
+            success.stdout,
+            if mode == "run" {
+                b"3\n".as_slice()
+            } else {
+                b"".as_slice()
+            }
+        );
+        assert!(success.stderr.is_empty());
+        let failure = command().arg(mode).arg(&invalid).output().unwrap();
+        assert_eq!(failure.status.code(), Some(1));
+        assert!(failure.stdout.is_empty());
+        assert!(stderr(&failure).contains("E0010"));
+    }
+}
+
+#[test]
 fn runs_the_repository_hello_example() {
     let output = command()
         .args(["run", "examples/hello.srp"])

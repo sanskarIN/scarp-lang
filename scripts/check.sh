@@ -32,3 +32,5 @@ cargo run --locked -- run examples/string_bindings.srp
 cargo run --locked -- check examples/string_bindings.srp
 cargo run --locked -- run examples/booleans.srp
 cargo run --locked -- check examples/booleans.srp
+cargo run --locked -- run examples/decisions.srp
+cargo run --locked -- check examples/decisions.srp
