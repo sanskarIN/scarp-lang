@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/documentation-guides
+git switch scarp/boolean-expressions
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -72,7 +72,7 @@ the CLI does not reject other filename extensions.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
-- Immutable integer/string bindings with `let name = expression;` and resolved names.
+- Immutable integer/string/boolean bindings with `let name = expression;` and resolved names.
 - Explicit `let mut` bindings, assignment, and checked compound assignment.
 - Lexical block scopes, shadowing, and nearest-binding assignment.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
@@ -108,6 +108,12 @@ debug and release builds. Grouping is limited to 64 nested parentheses; long
 binary chains use a flat syntax tree. Strings can be bound, copied, reassigned
 with the same type, and printed. Concatenation and mixed string/integer arithmetic
 are unsupported.
+
+Booleans use `true` and `false`. Comparisons support same-type `==` and `!=`,
+and integer `<`, `<=`, `>`, `>=`. Readable `not`, `and`, and `or` operators require
+booleans; `and` and `or` short-circuit at runtime while all operands are checked
+for names and types during compilation. See the
+[boolean design](docs/proposals/0004-boolean-expressions.md).
 
 `check` validates syntax, names, mutability, scopes, primitive types, and arithmetic without writing
 program output. It returns zero and remains silent on success. In this pure
@@ -147,7 +153,7 @@ The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
 `compile` validates syntax and resolves names into an immutable `ResolvedProgram`.
 `check` and `interpreter::validate` also evaluate without an output destination.
 `evaluator::evaluate` preserves an integer result, while `evaluate_value` returns
-an integer/string `Value`. `execute` and `run` validate all
+an integer/string/boolean `Value`. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
 
@@ -180,7 +186,7 @@ The complete check sequence, including rustdoc, is available as
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
-booleans, floating-point values, type annotations, user-defined types, imports, loops, standard library,
+floating-point values, type annotations, user-defined types, imports, loops, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -192,7 +198,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Boolean values and comparisons.
+1. Conditional statements and loops.
 2. User-defined functions.
 3. User-defined types and function type checking.
 4. A compiler backend.

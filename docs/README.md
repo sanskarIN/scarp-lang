@@ -48,6 +48,8 @@ Design records cover [integer expressions](proposals/0001-integer-expressions.md
 [variables](proposals/0002-variables.md), and
 [string values](proposals/0003-string-bindings.md). Read each record's status;
 a proposed capability is not implemented merely because it appears in a roadmap.
+The [boolean design](proposals/0004-boolean-expressions.md) records comparison,
+precedence, and short-circuit rules in the next dependent feature slice.
 
 Published behavior is recorded in the [v0.0.1 notes](releases/v0.0.1.md).
 The [v0.0.2 notes](releases/v0.0.2.md) are a development draft.

@@ -43,6 +43,7 @@ cargo doc --locked --no-deps
 | Assignment and state isolation | `tests/mutability.rs` |
 | Shadowing, scope exit, and nesting | `tests/scopes.rs` |
 | String snapshots and inferred types | `tests/string_bindings.rs` |
+| Boolean types, comparisons, and skipped arithmetic | `tests/booleans.rs` |
 | Validation and incremental locations | `tests/validation.rs` |
 | Arguments, paths, streams, and exit codes | `tests/cli.rs` |
 | Generated programs and malformed input | `tests/conformance.rs` |

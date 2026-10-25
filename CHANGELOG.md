@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Boolean values, same-type equality, integer ordering, and short-circuit `and`,
+  `or`, and `not` expressions on a separate dependent feature branch.
+
 - Immutable integer bindings and names in expressions.
 - Explicit mutable bindings, assignment, and checked `+=`, `-=`, `*=`, `/=`.
 - Immutable-assignment diagnostics and value snapshots for deferred output.

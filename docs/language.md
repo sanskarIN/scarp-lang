@@ -18,7 +18,8 @@ resolved after parsing. An identifier at a statement start must introduce `let`,
 
 Punctuation tokens are `(`, `)`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
-`*`, and `/`. Integers contain one or more ASCII decimal digits; leading zeros
+`*`, and `/`. Comparison tokens use longest match: `==`, `!=`, `<`, `<=`, `>`,
+and `>=`. Integers contain one or more ASCII decimal digits; leading zeros
 are accepted as decimal. A minus sign is a separate token. Other characters
 outside strings, comments, identifiers, and whitespace are lexical errors.
 `//` starts a comment even immediately after an expression. A single `/` is the
@@ -58,11 +59,15 @@ assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
 print_statement = "println", "(", argument, ")", ";" ;
 argument        = expression ;
-expression      = sum ;
+expression      = logical_or ;
+logical_or      = logical_and, { "or", logical_and } ;
+logical_and     = logical_not, { "and", logical_not } ;
+logical_not     = { "not" }, comparison ;
+comparison      = sum, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), sum ] ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
 unary           = [ "-" ], primary ;
-primary         = INTEGER | STRING | IDENTIFIER | "(", expression, ")" ;
+primary         = INTEGER | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
@@ -107,6 +112,13 @@ Available memory still limits the size of a program. Floats, numeric separators,
 base prefixes, strings as arithmetic operands, and string concatenation are unsupported.
 
 ## Execution
+
+Booleans are explicit `true`/`false` values, with no integer/string truthiness.
+Equality requires matching primitive kinds; ordering requires integers. `not`
+binds after comparisons, followed by `and`, then `or`. All operands resolve and
+type-check during compilation. Runtime `and` skips its right operand when false;
+`or` skips it when true. Chained comparisons need explicit `and` composition.
+See [the boolean design](proposals/0004-boolean-expressions.md) for exact rules.
 
 The complete source file is lexed, parsed, resolved, and checked for primitive
 type consistency in that order. Name resolution and primitive inference share

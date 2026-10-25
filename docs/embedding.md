@@ -117,8 +117,8 @@ your writer if writes must be committed separately.
 
 ## Standalone values and API boundaries
 
-`value::Value` represents integers and immutable strings. It exposes `kind`,
-`as_integer`, and `as_str`, and implements display formatting. Constructing a
+`value::Value` represents integers, booleans, and immutable strings. It exposes
+`kind`, `as_integer`, `as_boolean`, and `as_str`, and implements display formatting. Constructing a
 host `Value` does not inject a variable into an existing resolved program.
 
 `evaluator::evaluate` retains an integer-result API. `evaluate_value` returns
