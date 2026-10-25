@@ -1,0 +1,20 @@
+[package]
+name = "scarp"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.74"
+description = "The Scarp programming language prototype"
+license = "Apache-2.0"
+repository = "https://github.com/sanskarIN/scarp-lang"
+publish = false
+
+[lib]
+name = "scarp"
+path = "src/lib.rs"
+
+[[bin]]
+name = "scarp"
+path = "src/main.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
