@@ -9,6 +9,7 @@ bindings and string-valued expressions require the development stack.
 | Kind | Examples | Rules |
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
+| Float | `1.25`, `1e2` | Finite binary64; no implicit integer conversions |
 | Boolean | `true`, `false` | Development only; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text with three supported escapes |
 
@@ -16,7 +17,7 @@ Development bindings infer their kind from the initializer. Mutable assignment
 must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
-There are no floating-point, collection, or user-defined values yet.
+There are no collection or user-defined values yet.
 Type annotations and explicit conversion functions are also not implemented.
 
 ## Precedence and associativity
@@ -27,7 +28,7 @@ Type annotations and explicit conversion functions are also not implemented.
 | Unary minus | `-primary` | Checked integer negation |
 | Multiplication/division | `*`, `/` | Left-associative checked integer arithmetic |
 | Addition/subtraction | `+`, `-` | Left-associative checked integer arithmetic |
-| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` | One comparison; ordering is integer-only |
+| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` | One comparison; ordering needs same-kind numbers |
 | Boolean negation | `not` | Negate a boolean, including a complete comparison |
 | Boolean conjunction | `and` | Skip the right boolean if the left is false |
 | Boolean disjunction | `or` | Skip the right boolean if the left is true |
@@ -87,6 +88,9 @@ builds. Negating the minimum integer or dividing it by `-1` overflows.
 
 ## Assignment operators
 
+Finite decimal spelling, rounding, checked results, and distinct numeric types
+are specified in [the decimal design](../proposals/0007-finite-decimals.md).
+
 The comparison and logical operators require the development boolean extension.
 Equality requires matching primitive types; strings compare decoded contents.
 Chained comparisons are rejected: write `low < x and x < high`. There is no
@@ -115,7 +119,7 @@ inside the right-hand expression identify that expression's operator instead.
 Strings support `\\`, `\"`, and `\n`. Other escapes are errors. A physical CR or LF
 inside a string is invalid. Parenthesized strings are supported in development.
 
-Arithmetic and compound assignment remain integer-only. There is no string
+Arithmetic and compound assignment require matching numeric kinds. There is no string
 concatenation, indexing, interpolation, or automatic formatting of placeholders.
 Print labels and values with separate statements:
 

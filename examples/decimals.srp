@@ -1,0 +1,9 @@
+// Refine a finite decimal estimate with a bounded loop.
+let mut estimate = 1.0;
+let mut iteration = 0;
+while iteration < 5 {
+    estimate = (estimate + 2.0 / estimate) / 2.0;
+    iteration += 1;
+}
+println(estimate > 1.414 and estimate < 1.415);
+println(1.5 * 2.0);

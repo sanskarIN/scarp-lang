@@ -7,6 +7,7 @@ use crate::{
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
+    value::FiniteFloat,
 };
 
 /// Maximum nested expression parentheses, excluding the println call itself.
@@ -138,6 +139,7 @@ impl Parser<'_> {
                             self.current().map(|token| &token.kind),
                             Some(
                                 TokenKind::Integer(_)
+                                    | TokenKind::Float(_)
                                     | TokenKind::String(_)
                                     | TokenKind::Identifier(_)
                                     | TokenKind::Minus
@@ -444,6 +446,25 @@ impl Parser<'_> {
         depth: usize,
     ) -> Result<usize, Diagnostic> {
         match self.current() {
+            Some(Token {
+                kind: TokenKind::Float(digits),
+                span,
+            }) => {
+                let value = digits
+                    .parse::<f64>()
+                    .ok()
+                    .and_then(FiniteFloat::new)
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::InvalidFloat,
+                            *span,
+                            "decimal literal is not a finite binary64 value",
+                        )
+                    })?;
+                let span = *span;
+                self.cursor += 1;
+                Ok(push(nodes, ExpressionKind::Float(value), span))
+            }
             Some(Token {
                 kind: TokenKind::String(value),
                 span,

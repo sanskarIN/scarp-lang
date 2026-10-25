@@ -15,6 +15,7 @@ they are not claims that a v0.0.2 release has been published.
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
 | [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |
 | [Loops and budgets](proposals/0006-bounded-loops.md) | Repeat computations with scoped state, loop control, and per-call bounds |
+| [Finite decimals](proposals/0007-finite-decimals.md) | Use explicit floating-point arithmetic with finite-result checks |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |

@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Distinct finite binary64 values, scientific literals, same-kind numeric
+  operators, and checked nonfinite-result diagnostics.
+
 - Scoped while loops, nearest-loop break/continue, per-call work/print budgets,
   and CLI/embedding controls with atomic budget diagnostics.
 

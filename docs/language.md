@@ -71,7 +71,7 @@ comparison      = sum, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), sum ] ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
 unary           = [ "-" ], primary ;
-primary         = INTEGER | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
+primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
@@ -97,6 +97,11 @@ than addition and subtraction. One unary minus is allowed before a primary:
 
 ## Integers and arithmetic
 
+The decimal extension adds a distinct finite binary64 kind. It requires explicit
+decimal/exponent spelling and same-kind operands. See the
+[decimal design](proposals/0007-finite-decimals.md) for literal grammar,
+rounding, underflow, formatting, and checked nonfinite results.
+
 Values range from `-9223372036854775808` to `9223372036854775807`. Literal range
 validation happens during parsing. The magnitude `9223372036854775808` is accepted
 only directly after a unary minus, ignoring trivia, to represent the minimum
@@ -112,13 +117,13 @@ and postorder within each expression, stopping at the first arithmetic error.
 Grouping is limited to 64 nested pairs of parentheses, excluding the `println`
 call itself. Greater depth produces `E0009`. Flat operator chains have no fixed
 language limit and are processed without recursive evaluation or destruction.
-Available memory still limits the size of a program. Floats, numeric separators,
+Available memory still limits the size of a program. Numeric separators,
 base prefixes, strings as arithmetic operands, and string concatenation are unsupported.
 
 ## Execution
 
 Booleans are explicit `true`/`false` values, with no integer/string truthiness.
-Equality requires matching primitive kinds; ordering requires integers. `not`
+Equality requires matching primitive kinds; ordering requires same-kind numbers. `not`
 binds after comparisons, followed by `and`, then `or`. All operands resolve and
 type-check during compilation. Runtime `and` skips its right operand when false;
 `or` skips it when true. Chained comparisons need explicit `and` composition.

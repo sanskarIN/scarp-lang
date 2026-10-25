@@ -198,7 +198,7 @@ fn rejects_malformed_expressions_and_deferred_syntax() {
         "1)",
         "1 2",
         "x",
-        "1.0",
+        "1.2.3",
         "0xff",
         "1_000",
         "1, 2",
@@ -237,6 +237,7 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
         match &node.kind {
             ExpressionKind::Integer(_) => {}
             ExpressionKind::Name(_)
+            | ExpressionKind::Float(_)
             | ExpressionKind::String(_)
             | ExpressionKind::Boolean(_)
             | ExpressionKind::Not { .. }
