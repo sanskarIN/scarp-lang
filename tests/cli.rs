@@ -100,7 +100,7 @@ fn reports_syntax_errors_on_stderr_with_a_failure_code() {
 fn lexical_errors_never_leak_partial_output() {
     let fixture = Fixture::new();
     let path = fixture.file("invalid.srp", "println(\"first\"); @");
-    for subcommand in ["run", "tokens"] {
+    for subcommand in ["run", "tokens", "check"] {
         let output = command().arg(subcommand).arg(&path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
@@ -109,10 +109,10 @@ fn lexical_errors_never_leak_partial_output() {
 }
 
 #[test]
-fn reports_missing_files_for_both_commands() {
+fn reports_missing_files_for_all_file_commands() {
     let fixture = Fixture::new();
     let missing = fixture.directory.join("missing.srp");
-    for subcommand in ["run", "tokens"] {
+    for subcommand in ["run", "tokens", "check"] {
         let output = command().arg(subcommand).arg(&missing).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
@@ -125,7 +125,7 @@ fn reports_missing_files_for_both_commands() {
 fn reports_non_utf8_files_as_read_errors() {
     let fixture = Fixture::new();
     let path = fixture.file("bytes.srp", [0xff, 0xfe, 0x80]);
-    for subcommand in ["run", "tokens"] {
+    for subcommand in ["run", "tokens", "check"] {
         let output = command().arg(subcommand).arg(&path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
@@ -193,6 +193,8 @@ fn rejects_invalid_command_lines_with_usage_exit_code() {
         vec![],
         vec!["run"],
         vec!["tokens"],
+        vec!["check"],
+        vec!["check", "--unknown"],
         vec!["build", "example.srp"],
         vec!["run", "one.srp", "two.srp"],
         vec!["run", "--unknown"],
@@ -304,6 +306,72 @@ fn runs_scoped_variables_and_reports_names_that_leave_scope() {
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     assert!(stderr(&output).contains("E0010"));
+}
+
+#[test]
+fn check_is_silent_on_success_and_validates_arithmetic() {
+    let fixture = Fixture::new();
+    let path = fixture.file("check.srp", "let mut x = 1; x += 2; println(x);");
+    let output = command().arg("check").arg(path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(output.stdout.is_empty() && output.stderr.is_empty());
+    for (source, code) in [
+        ("println(1); println(missing);", "E0010"),
+        ("let x = 1; x = 2;", "E0013"),
+        ("println(1); let mut x = 1; x /= 0;", "E0008"),
+        ("let x = 9223372036854775807 + 1;", "E0007"),
+    ] {
+        let path = fixture.file("check-error.srp", source);
+        let output = command().arg("check").arg(path).output().unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+        assert!(stderr(&output).contains(code));
+    }
+}
+
+#[test]
+fn check_supports_unicode_paths_and_an_explicit_separator() {
+    let fixture = Fixture::new();
+    fixture.file("-café.srp", "println(\"नमस्ते\");");
+    let output = command()
+        .args(["check", "--", "-café.srp"])
+        .current_dir(&fixture.directory)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(output.stdout.is_empty());
+}
+
+#[test]
+fn large_single_line_token_dumps_retain_exact_eof_locations() {
+    let fixture = Fixture::new();
+    let source = "let v = 1;".repeat(5_000);
+    let path = fixture.file("large.srp", &source);
+    let output = command().arg("tokens").arg(path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    let tokens = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(tokens.lines().count(), 25_001);
+    assert!(tokens.ends_with(&format!(
+        "1:{}..1:{}  <eof>  [{}..{}]\n",
+        source.len() + 1,
+        source.len() + 1,
+        source.len(),
+        source.len()
+    )));
+}
+
+#[test]
+fn each_file_command_exposes_help_before_requiring_a_path() {
+    for subcommand in ["run", "tokens", "check"] {
+        for flag in ["--help", "-h"] {
+            let output = command().args([subcommand, flag]).output().unwrap();
+            assert!(output.status.success());
+            assert!(output.stderr.is_empty());
+            assert!(String::from_utf8(output.stdout)
+                .unwrap()
+                .contains("scarp check"));
+        }
+    }
 }
 
 #[cfg(unix)]
