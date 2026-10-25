@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/integer-bit-operations
+git switch scarp/freestanding-c-backend
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -187,6 +187,11 @@ The complete check sequence, including rustdoc, is available as
 
 ## Prototype limits and planned roadmap
 
+`scarp emit-c file.srp` emits an experimental freestanding C11 computation unit
+for the integer/boolean subset. A caller supplies fixed workspace and output.
+The [backend guide](docs/proposals/0010-freestanding-c.md) covers supported syntax,
+object builds, checks, and the systems features still needed for an operating system.
+
 Signed 64-bit masks, hexadecimal/binary literals, remainder, and explicit
 arithmetic/logical shifts support bit-field work. See
 [integer bit operations](docs/proposals/0009-integer-bit-operations.md).
@@ -202,14 +207,13 @@ While loops and `break`/`continue` support iterative computations with explicit
 per-call budgets. See [loops and limits](docs/proposals/0006-bounded-loops.md).
 
 The [performance guide](docs/performance.md) provides stage benchmarks and
-measured execution improvements. C/C++/Rust performance comparisons and native
-code generation remain future work.
+measured execution improvements. General native compilation and C/C++/Rust
+performance comparisons remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
 type annotations, user-defined types, imports, general standard library,
-package manager, native code
-generation, or self-hosting support. It does not execute arbitrary Rust code.
+package manager, a general native backend, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
 
 Read the [implemented language reference](docs/language.md) and

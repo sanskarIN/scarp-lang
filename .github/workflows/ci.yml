@@ -67,3 +67,28 @@ jobs:
         run: cargo test --locked --offline --release
       - name: Smoke-test benchmark on minimum Rust
         run: cargo bench --locked --offline --bench runtime -- --quick
+
+  freestanding:
+    name: Freestanding C and undefined behavior checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SCARP_CC: clang
+      SCARP_REQUIRE_C: '1'
+      SCARP_FREESTANDING: '1'
+      SCARP_C_SANITIZE: '1'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
+        with:
+          toolchain: stable
+      - name: Install compiler and object inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes clang llvm
+      - name: Compare native behavior and inspect freestanding targets
+        run: cargo test --locked --offline --test c_backend

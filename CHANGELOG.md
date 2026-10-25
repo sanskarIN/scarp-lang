@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Freestanding C11 emission for integer/boolean computation units, caller-owned
+  workspace/output adapters, and native/sanitized/cross-target verification.
+
 - Hexadecimal/binary integer literals, masks, explicit shifts, remainder, and
   integer-only compound bit operations with checked counts.
 

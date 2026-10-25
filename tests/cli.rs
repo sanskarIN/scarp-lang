@@ -48,6 +48,37 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
+fn emit_c_generates_supported_units_and_rejects_unsupported_values_atomically() {
+    let fixture = Fixture::new();
+    let valid = fixture.file("bits.srp", "println(1 << 63);");
+    let invalid = fixture.file("float.srp", "println(1.0);");
+    let result = command().arg("emit-c").arg(&valid).output().unwrap();
+    assert!(result.status.success(), "{}", stderr(&result));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("uint32_t scarp_run"));
+    assert!(result.stderr.is_empty());
+    let result = command().arg("emit-c").arg(&invalid).output().unwrap();
+    assert_eq!(result.status.code(), Some(1));
+    assert!(result.stdout.is_empty());
+    assert!(stderr(&result).contains("E0027"));
+    assert!(command()
+        .args(["emit-c", "--help"])
+        .output()
+        .unwrap()
+        .status
+        .success());
+    assert_eq!(
+        command()
+            .args(["emit-c", "--max-steps", "1"])
+            .arg(&valid)
+            .output()
+            .unwrap()
+            .status
+            .code(),
+        Some(2)
+    );
+}
+
+#[test]
 fn numerical_kernels_run_and_shape_failures_keep_stdout_empty() {
     let fixture = Fixture::new();
     let valid = fixture.file(

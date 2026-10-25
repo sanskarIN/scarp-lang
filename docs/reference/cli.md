@@ -11,6 +11,7 @@ development stack; see [compatibility](../compatibility.md).
 | `scarp run <path>` | Read, validate, and execute a source file | Yes | Yes |
 | `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes |
 | `scarp check <path>` | Validate names, types, and arithmetic without printing | No | Yes |
+| `scarp emit-c <path>` | Emit supported source as a freestanding C11 unit | No | Yes |
 | `scarp --help` or `scarp -h` | Show usage | Yes | Yes |
 | `scarp --version` or `scarp -V` | Print the package version | Yes | Yes |
 | `scarp run --help` | Show usage before requiring a file | No | Yes |
@@ -18,6 +19,9 @@ development stack; see [compatibility](../compatibility.md).
 Development `tokens` and `check` commands also accept `--help` and `-h` after the
 command name. Only one source path is accepted. There is no stdin input mode,
 watch mode, import path, or `scarp build` command.
+The separate `emit-c` command generates source without running it or invoking a
+C compiler. It accepts one path and an optional filename separator, but no
+execution-limit flags. See [the backend guide](../proposals/0010-freestanding-c.md).
 
 From a source checkout, place Cargo's separator before the Scarp arguments:
 
