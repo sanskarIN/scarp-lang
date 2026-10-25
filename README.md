@@ -131,6 +131,11 @@ functions, types, imports, loops, standard library, package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
 
+Read the [implemented language reference](docs/language.md) and
+[architecture notes](docs/architecture.md) for precise rules. Runnable programs
+in [`examples/`](examples/) are paired with `.stdout` files and checked by the
+test suite.
+
 Future work is **planned**, in this order:
 
 1. Expressions and literal values.
@@ -143,6 +148,8 @@ Future work is **planned**, in this order:
 
 These capabilities are not implemented. The best next small milestone is integer
 literal expressions with `+`, `-`, `*`, `/`, parentheses, and focused diagnostics.
+Its scope and acceptance cases are described in the
+[draft expression proposal](docs/proposals/0001-integer-expressions.md).
 
 ## License
 
