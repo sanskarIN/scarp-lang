@@ -1,0 +1,13 @@
+workload,stage,before_us,after_us,paired_speedup,p05_speedup,p95_speedup
+assignments,compile,3578.570,3656.730,0.987,0.770,1.251
+assignments,validate,1196.343,191.668,4.205,2.757,7.173
+assignments,execute,1475.825,368.362,4.132,2.848,10.805
+branches,compile,7248.100,6722.180,1.021,0.906,1.948
+branches,validate,718.101,236.404,2.886,1.637,3.886
+branches,execute,793.714,258.611,3.195,2.018,6.780
+prints,compile,7781.580,8450.650,0.975,0.563,1.321
+prints,validate,2403.818,686.352,3.598,2.696,5.066
+prints,execute,2404.357,551.394,3.828,2.471,5.234
+long_expression,compile,1348.240,1324.530,1.000,0.778,1.205
+long_expression,validate,437.135,437.555,1.005,0.626,1.342
+long_expression,execute,211.050,188.717,1.074,0.829,1.874

@@ -109,3 +109,7 @@ Package CI builds native archives, extracts them, and smoke-tests the delivered
 executables. That complements the language suite; it does not replace it.
 An uploaded development artifact is not a published prerelease. See
 [the release process](releasing.md) for the separate publication gate.
+
+For execution changes, use `cargo bench --locked --offline --bench runtime` and
+follow the [performance guide](performance.md). The quick workload smoke run is
+checked on CI, including minimum Rust. Timing thresholds are not correctness tests.

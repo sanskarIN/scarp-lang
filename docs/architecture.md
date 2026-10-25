@@ -112,11 +112,17 @@ with a bounded reference calculation. CLI tests create
 unique temporary directories and compare observable streams and exit codes.
 The example corpus pairs each `.srp` file with exact expected `.stdout` bytes.
 
-`check` uses the same preparation pass as execution and then discards the captured
-print values. It does not format or write those values. Syntax, resolution, and
+`check` uses the same preparation pass as execution and discards each print
+value immediately. It does not retain, format, or write pending output. Syntax, resolution, and
 arithmetic failures therefore agree between validation and execution. Tests also
 generate 2,000 scoped programs against an independent value model and mutate
 source/token streams to verify failure handling and diagnostic boundaries.
+
+The evaluator reuses execution-local task and value buffers between expressions.
+Scratch storage is never shared with another execution or stored in an immutable
+compiled program. This removes repeated vector allocation on common statement
+sequences while keeping fresh slots, concurrent reuse, and captured print values.
+The [performance guide](performance.md) describes reproducible stage benchmarks.
 
 Local shell and PowerShell scripts run formatting, Clippy, tests, builds, rustdoc,
 and smoke commands in debug and release modes. CI repeats validation on three operating systems and tests

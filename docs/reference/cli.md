@@ -36,8 +36,8 @@ native executable.
 validation includes names, scopes, mutability, and primitive types. Arithmetic
 is checked before any pending prints are written.
 
-`check` uses the same preparation pass as execution, then discards the print
-values. It evaluates declarations and assignments in fresh local storage, so
+`check` uses the same preparation pass as execution, discarding each print value
+immediately instead of retaining pending output. It evaluates declarations and assignments in fresh local storage, so
 reachable unused initializers can still fail. Unselected conditional bodies do
 not evaluate arithmetic, but they still undergo static checks. A successful check is silent. It does not
 format or write the program's print values.

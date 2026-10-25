@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/conditional-statements
+git switch scarp/execution-workspace
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -186,6 +186,10 @@ The complete check sequence, including rustdoc, is available as
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development and PR workflow.
 
 ## Prototype limits and planned roadmap
+
+The [performance guide](docs/performance.md) provides stage benchmarks and
+measured execution improvements. C/C++/Rust performance comparisons and native
+code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,

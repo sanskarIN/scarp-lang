@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Execution-local expression work buffers, immediate disposal of validation print
+  values, and reproducible stage benchmarks with verified workloads.
+
 - Conditional `if`/`elif`/`else` statements with boolean guards, scoped bodies,
   static checking of all paths, and execution of the selected path only.
 
