@@ -1,0 +1,8 @@
+// Comments and whitespace may separate tokens.
+println // statement name
+(
+    "// inside a string is text"
+)
+;
+println(""); // An empty string still writes a newline.
+println("done");

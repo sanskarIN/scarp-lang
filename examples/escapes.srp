@@ -1,0 +1,3 @@
+println("line one\nline two");
+println("a quote: \"Scarp\"");
+println("a backslash: \\");

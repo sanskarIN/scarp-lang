@@ -1,0 +1,3 @@
+// UTF-8 text is preserved.
+println("नमस्ते 🌍");
+println("café — Scarp");
