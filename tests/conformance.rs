@@ -85,6 +85,8 @@ fn observe(source: &str) {
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
         "let value = 7; println(value);",
+        "let ready = true; println(not ready or 1 < 2 and false);",
+        "println(false and 1 / 0 == 0); println(\"a\" != \"b\");",
         "// नमस्ते 🌍\r\nlet mut x = 2; x += x * 3; println(x);",
         "let mut total = 1; { let total = total + 1; println(total); } total /= -2;",
         "let x = 1; { let x = x + 1; let x = 2; }",
@@ -129,6 +131,9 @@ fn altered_public_token_streams_and_spans_do_not_panic() {
             TokenKind::LeftBrace,
             TokenKind::RightBrace,
             TokenKind::Equal,
+            TokenKind::EqualEqual,
+            TokenKind::LessEqual,
+            TokenKind::Identifier("not".into()),
             TokenKind::Identifier("let".into()),
             TokenKind::Identifier("mut".into()),
             TokenKind::Identifier("missing".into()),

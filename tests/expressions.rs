@@ -236,7 +236,11 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
     for (id, node) in expression.nodes().iter().enumerate() {
         match &node.kind {
             ExpressionKind::Integer(_) => {}
-            ExpressionKind::Name(_) | ExpressionKind::String(_) => {
+            ExpressionKind::Name(_)
+            | ExpressionKind::String(_)
+            | ExpressionKind::Boolean(_)
+            | ExpressionKind::Not { .. }
+            | ExpressionKind::Logical { .. } => {
                 panic!("unexpected non-integer node")
             }
             ExpressionKind::Negate { operand, .. } => assert!(*operand < id),
