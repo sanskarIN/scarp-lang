@@ -47,7 +47,7 @@ try {
     $binaryName = if ($isWindowsTarget) { 'scarp.exe' } else { 'scarp' }
     $binary = Join-Path $projectRoot "target/$Target/release/$binaryName"
     Copy-Item -LiteralPath $binary -Destination $packageRoot
-    foreach ($filename in @('LICENSE', 'README.md', 'CHANGELOG.md')) {
+    foreach ($filename in @('LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md')) {
         Copy-Item -LiteralPath (Join-Path $projectRoot $filename) -Destination $packageRoot
     }
     foreach ($directory in @('examples', 'docs')) {
