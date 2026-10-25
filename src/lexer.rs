@@ -14,6 +14,10 @@ pub enum TokenKind {
     Star,
     Slash,
     Equal,
+    PlusEqual,
+    MinusEqual,
+    StarEqual,
+    SlashEqual,
     LeftParen,
     RightParen,
     Semicolon,
@@ -31,6 +35,10 @@ impl fmt::Display for TokenKind {
             Self::Star => f.write_str("*"),
             Self::Slash => f.write_str("/"),
             Self::Equal => f.write_str("="),
+            Self::PlusEqual => f.write_str("+="),
+            Self::MinusEqual => f.write_str("-="),
+            Self::StarEqual => f.write_str("*="),
+            Self::SlashEqual => f.write_str("/="),
             Self::LeftParen => f.write_str("("),
             Self::RightParen => f.write_str(")"),
             Self::Semicolon => f.write_str(";"),
@@ -103,11 +111,21 @@ impl Lexer<'_> {
                 '"' => TokenKind::String(self.string()?),
                 '+' | '-' | '*' | '/' => {
                     self.bump();
-                    match character {
-                        '+' => TokenKind::Plus,
-                        '-' => TokenKind::Minus,
-                        '*' => TokenKind::Star,
-                        _ => TokenKind::Slash,
+                    if self.peek() == Some('=') {
+                        self.bump();
+                        match character {
+                            '+' => TokenKind::PlusEqual,
+                            '-' => TokenKind::MinusEqual,
+                            '*' => TokenKind::StarEqual,
+                            _ => TokenKind::SlashEqual,
+                        }
+                    } else {
+                        match character {
+                            '+' => TokenKind::Plus,
+                            '-' => TokenKind::Minus,
+                            '*' => TokenKind::Star,
+                            _ => TokenKind::Slash,
+                        }
                     }
                 }
                 ch if ch.is_ascii_digit() => {

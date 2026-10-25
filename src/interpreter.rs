@@ -19,6 +19,17 @@ fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic>
     let mut output = Vec::new();
     for statement in &program.statements {
         match statement {
+            ResolvedStatement::Update {
+                slot,
+                operator,
+                value,
+                operator_span,
+            } => {
+                let previous = environment[*slot];
+                let right = evaluator::evaluate_resolved(value, &environment)?;
+                environment[*slot] =
+                    evaluator::apply_binary(*operator, previous, right, *operator_span)?;
+            }
             ResolvedStatement::Store { slot, value } => {
                 environment[*slot] = evaluator::evaluate_resolved(value, &environment)?;
             }

@@ -16,9 +16,24 @@ pub enum Statement {
     Let {
         name: String,
         name_span: Span,
+        mutable: bool,
         initializer: Expression,
         span: Span,
     },
+    Assign {
+        name: String,
+        name_span: Span,
+        operator: AssignmentOperator,
+        operator_span: Span,
+        value: Expression,
+        span: Span,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssignmentOperator {
+    Set,
+    Compound(BinaryOperator),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
