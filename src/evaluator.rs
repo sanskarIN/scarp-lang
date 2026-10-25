@@ -4,8 +4,9 @@ use crate::{
     ast::{BinaryOperator, Expression, ExpressionKind, LogicalOperator},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     limits::Budget,
+    numeric::{self, Builtin},
     resolver::{self, ResolvedExpression},
-    value::{type_mismatch, FiniteFloat, Value, ValueType},
+    value::{finite_number, type_mismatch, NumericVector, Value, ValueType},
 };
 
 /// Evaluate a standalone integer expression, preserving the v0.0.1 return type.
@@ -31,6 +32,9 @@ pub(crate) struct Workspace {
 }
 
 enum Task {
+    Vector(usize, Span),
+    Index(Span),
+    Call(Builtin, usize, Span),
     Visit(usize),
     Negate(Span),
     Not(Span),
@@ -53,7 +57,10 @@ impl Workspace {
         while let Some(task) = tasks.pop() {
             let span = match &task {
                 Task::Visit(index) => expression.syntax.nodes()[*index].span,
-                Task::Negate(span)
+                Task::Vector(_, span)
+                | Task::Index(span)
+                | Task::Call(_, _, span)
+                | Task::Negate(span)
                 | Task::Not(span)
                 | Task::Boolean(span)
                 | Task::Binary(_, span)
@@ -64,6 +71,31 @@ impl Workspace {
                 Task::Visit(index) => {
                     let node = &expression.syntax.nodes()[index];
                     match &node.kind {
+                        ExpressionKind::Vector { elements } => {
+                            tasks.push(Task::Vector(elements.len(), node.span));
+                            for element in elements.iter().rev() {
+                                tasks.push(Task::Visit(*element));
+                            }
+                        }
+                        ExpressionKind::Index {
+                            vector,
+                            index,
+                            operator_span,
+                        } => {
+                            tasks.push(Task::Index(*operator_span));
+                            tasks.push(Task::Visit(*index));
+                            tasks.push(Task::Visit(*vector));
+                        }
+                        ExpressionKind::Call {
+                            function,
+                            arguments,
+                            function_span,
+                        } => {
+                            tasks.push(Task::Call(*function, arguments.len(), *function_span));
+                            for argument in arguments.iter().rev() {
+                                tasks.push(Task::Visit(*argument));
+                            }
+                        }
                         ExpressionKind::Integer(value) => values.push(Value::Integer(*value)),
                         ExpressionKind::Float(value) => values.push(Value::Float(*value)),
                         ExpressionKind::Boolean(value) => values.push(Value::Boolean(*value)),
@@ -113,6 +145,38 @@ impl Workspace {
                         }
                     }
                 }
+                Task::Vector(count, span) => {
+                    budget.charge(count as u64, span)?;
+                    let start = values.len() - count;
+                    let elements = values[start..]
+                        .iter()
+                        .map(|value| finite_number(value.require_float(span)?, span))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    values.truncate(start);
+                    values.push(Value::Vector(NumericVector::from_finite(elements)));
+                }
+                Task::Index(span) => {
+                    let index = values.pop().unwrap().require_integer(span)?;
+                    let vector = values.pop().unwrap();
+                    let vector = vector.require_vector(span)?;
+                    let value = usize::try_from(index)
+                        .ok()
+                        .and_then(|index| vector.as_slice().get(index))
+                        .ok_or_else(|| {
+                            Diagnostic::new(
+                                DiagnosticKind::VectorIndex,
+                                span,
+                                "vector index is outside its bounds",
+                            )
+                        })?;
+                    values.push(Value::Float(*value));
+                }
+                Task::Call(function, count, span) => {
+                    let start = values.len() - count;
+                    let value = numeric::evaluate(function, &values[start..], budget, span)?;
+                    values.truncate(start);
+                    values.push(value);
+                }
                 Task::Negate(span) => {
                     let value = values.pop().unwrap();
                     values.push(match value {
@@ -136,6 +200,9 @@ impl Workspace {
                 Task::Binary(operator, span) => {
                     let right = values.pop().unwrap();
                     let left = values.pop().unwrap();
+                    if let Some(vector) = left.as_vector() {
+                        budget.charge(vector.len() as u64, span)?;
+                    }
                     values.push(apply_binary(operator, &left, &right, span)?);
                 }
                 Task::Logical(operator, right, span) => {
@@ -235,12 +302,5 @@ fn overflow(span: Span) -> Diagnostic {
 }
 
 pub(crate) fn finite(value: f64, span: Span) -> Result<Value, Diagnostic> {
-    FiniteFloat::new(value).map(Value::Float).ok_or_else(|| {
-        Diagnostic::new(
-            DiagnosticKind::NonFiniteNumber,
-            span,
-            "numeric operation produced a non-finite result",
-        )
-        .with_help("keep every intermediate result finite")
-    })
+    finite_number(value, span).map(Value::Float)
 }

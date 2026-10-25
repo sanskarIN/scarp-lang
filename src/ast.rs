@@ -1,6 +1,7 @@
 //! The syntax tree for the currently supported language slice.
 
 use crate::diagnostics::Span;
+use crate::numeric::Builtin;
 use crate::value::FiniteFloat;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -113,6 +114,19 @@ pub struct ExpressionNode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionKind {
+    Vector {
+        elements: Vec<usize>,
+    },
+    Index {
+        vector: usize,
+        index: usize,
+        operator_span: Span,
+    },
+    Call {
+        function: Builtin,
+        arguments: Vec<usize>,
+        function_span: Span,
+    },
     Integer(i64),
     Float(FiniteFloat),
     Boolean(bool),

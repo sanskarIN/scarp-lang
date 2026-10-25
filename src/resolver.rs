@@ -388,6 +388,47 @@ fn resolve_expression(
     let mut types: Vec<ValueType> = Vec::with_capacity(syntax.nodes().len());
     for node in syntax.nodes() {
         let (kind, slot) = match &node.kind {
+            ExpressionKind::Vector { elements } => {
+                for element in elements {
+                    require_type(
+                        types[*element],
+                        ValueType::Float,
+                        syntax.nodes()[*element].span,
+                    )?;
+                }
+                (ValueType::Vector, None)
+            }
+            ExpressionKind::Index {
+                vector,
+                index,
+                operator_span,
+            } => {
+                require_type(types[*vector], ValueType::Vector, *operator_span)?;
+                require_type(types[*index], ValueType::Integer, *operator_span)?;
+                (ValueType::Float, None)
+            }
+            ExpressionKind::Call {
+                function,
+                arguments,
+                function_span,
+            } => {
+                let parameters = function.parameter_types();
+                if arguments.len() != parameters.len() {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::ArgumentCount,
+                        *function_span,
+                        format!(
+                            "expected {} arguments, found {}",
+                            parameters.len(),
+                            arguments.len()
+                        ),
+                    ));
+                }
+                for (argument, expected) in arguments.iter().zip(parameters) {
+                    require_type(types[*argument], *expected, syntax.nodes()[*argument].span)?;
+                }
+                (function.result_type(), None)
+            }
             ExpressionKind::Integer(_) => (ValueType::Integer, None),
             ExpressionKind::Float(_) => (ValueType::Float, None),
             ExpressionKind::Boolean(_) => (ValueType::Boolean, None),
