@@ -103,6 +103,7 @@ pub enum DiagnosticKind {
     UnknownFunction,
     ArgumentCount,
     InvalidShift,
+    BackendUnsupported,
 }
 
 impl DiagnosticKind {
@@ -134,6 +135,7 @@ impl DiagnosticKind {
             Self::UnknownFunction => "E0024",
             Self::ArgumentCount => "E0025",
             Self::InvalidShift => "E0026",
+            Self::BackendUnsupported => "E0027",
         }
     }
 }

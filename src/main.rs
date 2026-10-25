@@ -18,6 +18,7 @@ Usage:
   scarp run <file.srp>       Execute a Scarp program
   scarp check <file.srp>     Validate syntax, names, and arithmetic without printing
   scarp tokens <file.srp>    Inspect lexer tokens and source locations
+  scarp emit-c <file.srp>    Emit a freestanding C11 unit for the supported subset
   scarp --help               Show this help
   scarp --version            Show the prototype version
 
@@ -81,7 +82,12 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             return 1;
         }
     };
-    if command == "tokens" {
+    if command == "emit-c" {
+        match scarp::c_backend::emit_c(&source) {
+            Ok(unit) => write_output(output.write_all(unit.as_bytes()), errors),
+            Err(error) => report_diagnostic(&error, path, &source, errors),
+        }
+    } else if command == "tokens" {
         match lexer::lex(&source) {
             Ok(tokens) => {
                 let mut locations = LocationTracker::new(&source);
@@ -121,7 +127,10 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
 }
 
 fn file_command(command: &OsStr) -> bool {
-    matches!(command.to_str(), Some("run" | "tokens" | "check"))
+    matches!(
+        command.to_str(),
+        Some("run" | "tokens" | "check" | "emit-c")
+    )
 }
 
 fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'static str> {
