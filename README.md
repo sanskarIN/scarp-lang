@@ -19,6 +19,10 @@ println("Hello from Scarp!");
 Hello from Scarp!
 ```
 
+The [documentation hub](docs/README.md) provides setup, tutorials, command and
+diagnostic references, Rust embedding, testing, troubleshooting, and compatibility
+guides. Start there for a reading path matched to your task.
+
 ## Build and run
 
 Binary archives and checksums are available through
@@ -35,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/string-bindings
+git switch scarp/documentation-guides
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -81,11 +85,13 @@ the CLI does not reject other filename extensions.
 
 `println` appends a newline. Physical line breaks inside a string are rejected;
 use `\n` instead. Identifiers use ASCII letters, digits, and underscores, cannot
-start with a digit, and are case-sensitive. Only `println` is recognized as a
-statement name. Escapes other than the three listed above are rejected.
+start with a digit, and are case-sensitive. Statements include declarations,
+assignments, blocks, and `println` calls. Escapes other than the three listed
+above are rejected.
 
-The entire file is lexed, parsed, and evaluated before any program output is
-written. Syntax and arithmetic errors therefore produce no program output.
+The entire file is lexed, parsed, resolved, checked for primitive type consistency,
+and evaluated before any program output is written. Source and semantic errors
+therefore produce no program output.
 Output stream failures propagate as errors; an output
 failure can occur after earlier statements have been written. A closed output
 pipe is treated as normal CLI termination.
