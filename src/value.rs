@@ -7,6 +7,7 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueType {
     Integer,
+    Float,
     Boolean,
     String,
 }
@@ -15,9 +16,38 @@ impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Integer => "integer",
+            Self::Float => "float",
             Self::Boolean => "boolean",
             Self::String => "string",
         })
+    }
+}
+
+impl ValueType {
+    pub(crate) fn is_numeric(self) -> bool {
+        matches!(self, Self::Integer | Self::Float)
+    }
+}
+
+/// A finite binary64 value. Private storage keeps NaN out of equality contracts.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FiniteFloat(f64);
+
+impl Eq for FiniteFloat {}
+
+impl FiniteFloat {
+    pub fn new(value: f64) -> Option<Self> {
+        value.is_finite().then_some(Self(value))
+    }
+    pub fn get(self) -> f64 {
+        self.0
+    }
+}
+
+impl fmt::Display for FiniteFloat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }
 
@@ -26,6 +56,7 @@ impl fmt::Display for ValueType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Integer(i64),
+    Float(FiniteFloat),
     Boolean(bool),
     String(Arc<str>),
 }
@@ -34,6 +65,7 @@ impl Value {
     pub fn kind(&self) -> ValueType {
         match self {
             Self::Integer(_) => ValueType::Integer,
+            Self::Float(_) => ValueType::Float,
             Self::Boolean(_) => ValueType::Boolean,
             Self::String(_) => ValueType::String,
         }
@@ -44,6 +76,18 @@ impl Value {
             Self::Integer(value) => Some(*value),
             _ => None,
         }
+    }
+
+    pub fn as_float(&self) -> Option<f64> {
+        match self {
+            Self::Float(value) => Some(value.get()),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn require_float(&self, span: Span) -> Result<f64, Diagnostic> {
+        self.as_float()
+            .ok_or_else(|| type_mismatch(span, ValueType::Float, self.kind()))
     }
 
     pub fn as_str(&self) -> Option<&str> {
@@ -87,6 +131,7 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Integer(value) => value.fmt(f),
+            Self::Float(value) => value.fmt(f),
             Self::Boolean(value) => value.fmt(f),
             Self::String(value) => f.write_str(value),
         }
@@ -99,5 +144,5 @@ pub(crate) fn type_mismatch(span: Span, expected: ValueType, found: ValueType) -
         span,
         format!("expected {expected}, found {found}"),
     )
-    .with_help("keep primitive types consistent; arithmetic and ordering require integers, logic requires booleans")
+    .with_help("keep primitive types consistent; numeric operands must share a numeric kind, logic requires booleans")
 }

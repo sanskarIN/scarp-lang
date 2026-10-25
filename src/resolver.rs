@@ -320,15 +320,14 @@ impl Resolver {
                                 ));
                         }
                         AssignmentOperator::Compound(_)
-                            if expected_type != ValueType::Integer
-                                || value.kind != ValueType::Integer =>
+                            if !expected_type.is_numeric() || value.kind != expected_type =>
                         {
-                            let found = if expected_type != ValueType::Integer {
-                                expected_type
+                            let (expected, found) = if expected_type.is_numeric() {
+                                (expected_type, value.kind)
                             } else {
-                                value.kind
+                                (ValueType::Integer, expected_type)
                             };
-                            return Err(type_mismatch(operator_span, ValueType::Integer, found)
+                            return Err(type_mismatch(operator_span, expected, found)
                                 .with_related(declaration, "the target binding is declared here"));
                         }
                         _ => {}
@@ -390,6 +389,7 @@ fn resolve_expression(
     for node in syntax.nodes() {
         let (kind, slot) = match &node.kind {
             ExpressionKind::Integer(_) => (ValueType::Integer, None),
+            ExpressionKind::Float(_) => (ValueType::Float, None),
             ExpressionKind::Boolean(_) => (ValueType::Boolean, None),
             ExpressionKind::String(_) => (ValueType::String, None),
             ExpressionKind::Name(name) => {
@@ -402,14 +402,14 @@ fn resolve_expression(
                 operand,
                 operator_span,
             } => {
-                if types[*operand] != ValueType::Integer {
+                if !types[*operand].is_numeric() {
                     return Err(type_mismatch(
                         *operator_span,
                         ValueType::Integer,
                         types[*operand],
                     ));
                 }
-                (ValueType::Integer, None)
+                (types[*operand], None)
             }
             ExpressionKind::Not {
                 operand,
@@ -439,15 +439,21 @@ fn resolve_expression(
                         require_type(types[*right], types[*left], *operator_span)?;
                     }
                     _ => {
-                        require_type(types[*left], ValueType::Integer, *operator_span)?;
-                        require_type(types[*right], ValueType::Integer, *operator_span)?;
+                        if !types[*left].is_numeric() {
+                            return Err(type_mismatch(
+                                *operator_span,
+                                ValueType::Integer,
+                                types[*left],
+                            ));
+                        }
+                        require_type(types[*right], types[*left], *operator_span)?;
                     }
                 }
                 let kind = match operator {
                     BinaryOperator::Add
                     | BinaryOperator::Subtract
                     | BinaryOperator::Multiply
-                    | BinaryOperator::Divide => ValueType::Integer,
+                    | BinaryOperator::Divide => types[*left],
                     _ => ValueType::Boolean,
                 };
                 (kind, None)
