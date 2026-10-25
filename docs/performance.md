@@ -24,6 +24,8 @@ Execution includes formatting into `std::io::sink`, rather than terminal I/O.
 | branches | 1,024 decisions, one final print | Boolean guards, short-circuiting, and forward jumps |
 | prints | 4,096 arithmetic print statements | Evaluation, captured values, and output formatting |
 | long_expression | One sum of 4,096 literals | A deep flat expression and iterative traversal |
+| native_dot | Two fresh vectors of 4,096 elements | A compensated native dot kernel |
+| indexed_dot | The same input values and expected output | An indexed Scarp loop with a scalar accumulator |
 
 Record the commit, compiler, target, profile, workload sizes, and command with
 results. Compare identical workloads and stages on the same host. Repeat runs
@@ -89,3 +91,28 @@ Sample ranges remain wide on this shared host; the CSV's 5th/95th sample
 percentiles describe timing variation, not confidence intervals. These results
 apply to these workloads, snapshots, compiler, and machine. They do not establish
 relative performance against C, C++, Rust, or other language implementations.
+
+## Native numerical workload sample
+
+The vector extension adds two verified dot-product workloads. Both create fresh
+4,096-element vectors filled with 1.0 and 2.0, and both must output `8192.0` before
+timing begins. The native reduction uses compensation; the indexed loop uses
+ordinary scalar accumulation. These exactly representable inputs make both
+results agree without hiding their different numerical algorithms.
+
+Recorded with engine commit `f29a3c899ceeb1e20619374606006af67e7b3ba7`, Rust 1.99.1,
+Windows x64 MSVC, and the same i5-1235U host. The standard harness uses seven
+samples and 200 repetitions for runtime stages. Input allocation and fresh state
+are included. [Raw CSV](benchmarks/2026-10-25-numeric-kernels.csv) retains all six
+workloads, their dimensions, and all measured stages.
+
+| Workload | Validation, median µs | Execution to sink, median µs |
+| --- | --- | --- |
+| native dot | 163.759 | 156.025 |
+| indexed loop | 4576.287 | 6375.687 |
+
+This sample illustrates avoiding interpreter dispatch per element. It is a
+single-host observation, with scheduling variation and no timing threshold.
+It is not a native-language comparison or evidence that all numerical programs
+have the same relative speed. The earlier paired snapshot measurements remain
+specific to their recorded commits and four original workloads.

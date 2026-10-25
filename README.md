@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/finite-decimals
+git switch scarp/numeric-vectors
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -187,6 +187,13 @@ The complete check sequence, including rustdoc, is available as
 
 ## Prototype limits and planned roadmap
 
+Immutable float vectors provide native `sum`, `mean`, `dot`, `mse`, `softmax`,
+`add`, `scale`, `clamp`, `fill`, and `len` operations. Work is charged to the same
+budget as loops. See [numeric vectors](docs/proposals/0008-numeric-vectors.md)
+and run `examples/numerics.srp` for checked numerical building blocks.
+`examples/linear_fit.srp` combines the kernels and loops to fit a known linear
+coefficient with an explicit squared-error gradient and tolerance checks.
+
 While loops and `break`/`continue` support iterative computations with explicit
 per-call budgets. See [loops and limits](docs/proposals/0006-bounded-loops.md).
 
@@ -196,7 +203,7 @@ code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
-type annotations, user-defined types, imports, standard library,
+type annotations, user-defined types, imports, general standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -208,7 +215,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Numerical collections and native reductions.
+1. Functions and richer numerical data structures.
 2. User-defined functions.
 3. User-defined types and function type checking.
 4. A compiler backend.

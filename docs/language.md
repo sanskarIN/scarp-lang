@@ -16,7 +16,7 @@ Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms us
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
-Punctuation tokens are `(`, `)`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
+Punctuation tokens are `(`, `)`, `[`, `]`, `,`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Comparison tokens use longest match: `==`, `!=`, `<`, `<=`, `>`,
 and `>=`. Integers contain one or more ASCII decimal digits; leading zeros
@@ -70,13 +70,18 @@ logical_not     = { "not" }, comparison ;
 comparison      = sum, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), sum ] ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
-unary           = [ "-" ], primary ;
-primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
+unary           = [ "-" ], postfix ;
+postfix         = primary, { "[", expression, "]" } ;
+primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER
+                  | "(", expression, ")" | vector | builtin_call ;
+vector          = "[", [ expression, { ",", expression }, [ "," ] ], "]" ;
+builtin_call    = BUILTIN, "(", [ expression, { ",", expression }, [ "," ] ], ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
 longer identifier. `STRING` is one complete string token and a primitive value.
-There is no argument list: a call takes exactly one value expression. Semicolons
+`println` takes exactly one value expression. Native built-ins have fixed argument
+lists described in [the vector design](proposals/0008-numeric-vectors.md). Semicolons
 are mandatory. Newlines do not terminate statements.
 
 ```scarp
@@ -90,7 +95,8 @@ println("two");
 ```
 
 Empty and comment-only files are valid programs. Extra semicolons, concatenated
-strings, multiple arguments, and nested calls are invalid. Binary operators
+strings and multiple arguments to `println` are invalid. Built-in calls can nest.
+Binary operators
 associate left to right. Multiplication and division have higher precedence
 than addition and subtraction. One unary minus is allowed before a primary:
 `--1` is invalid, while `-(-1)` and `1--2` are valid. Unary plus is unsupported.

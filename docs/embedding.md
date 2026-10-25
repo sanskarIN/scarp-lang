@@ -120,12 +120,13 @@ your writer if writes must be committed separately.
 
 ## Standalone values and API boundaries
 
-`value::Value` represents integers, finite floats, booleans, and immutable strings.
-It exposes `kind`, `as_integer`, `as_float`, `as_boolean`, and `as_str`, and implements display formatting. Constructing a
+`value::Value` represents integers, finite floats, booleans, immutable strings,
+and numerical vectors. It exposes `kind`, `as_integer`, `as_float`, `as_boolean`,
+`as_vector`, and `as_str`, and implements display formatting. Constructing a
 host `Value` does not inject a variable into an existing resolved program.
 
 `evaluator::evaluate` retains an integer-result API. `evaluate_value` returns
-either primitive kind from a standalone syntax expression. Without a program's
+any supported value kind from a standalone syntax expression. Without a program's
 binding context, references to names return `E0010`; use compilation and
 execution for complete programs with declarations.
 

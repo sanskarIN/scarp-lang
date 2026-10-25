@@ -22,12 +22,17 @@ codes belong to the development variable stack.
 | `E0012` | Reserved variable name | Avoid statement words, boolean literals, and logical operator words |
 | `E0013` | Assignment to an immutable binding | Declare the intended target with `let mut` |
 | `E0014` | Block nesting exceeds 64 levels | Flatten unnecessary statement blocks |
-| `E0015` | Primitive type mismatch | Keep assignment types fixed; arithmetic/order use integers and logic uses booleans |
+| `E0015` | Value type mismatch | Keep kinds fixed; numeric operands must match, logic uses booleans, and kernels have fixed signatures |
 | `E0016` | Loop control outside a loop | Place break/continue in a while body |
 | `E0017` | Execution work budget exhausted | Check loop progress or raise the explicit budget |
 | `E0018` | Selected print count exhausted | Reduce prints or raise the explicit print budget |
 | `E0019` | Invalid/nonfinite decimal literal | Use a finite literal with digits after the point/exponent |
 | `E0020` | Arithmetic produced a nonfinite number | Keep every intermediate numerical result finite |
+| `E0021` | Invalid vector length or mismatched shapes | Stay within the size limit and match binary input lengths |
+| `E0022` | Invalid vector index | Use an integer from zero up to length minus one |
+| `E0023` | Invalid kernel domain | Supply nonempty required input and ordered clamp bounds |
+| `E0024` | Unknown built-in call | Use a supported numerical function name |
+| `E0025` | Wrong argument count | Follow the kernel's fixed signature |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid
