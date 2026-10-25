@@ -88,6 +88,8 @@ fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
         "// नमस्ते 🌍\r\nlet mut x = 2; x += x * 3; println(x);",
         "let mut total = 1; { let total = total + 1; println(total); } total /= -2;",
         "let x = 1; { let x = x + 1; let x = 2; }",
+        "let mut text = \"नमस्ते 🌍\"; let copy = text; text = \"done\"; println(copy);",
+        "let mut text = \"hello\"; { let text = 1; println(text); } text = 2;",
     ] {
         let offsets: Vec<_> = source
             .char_indices()

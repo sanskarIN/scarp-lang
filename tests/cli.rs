@@ -374,6 +374,29 @@ fn each_file_command_exposes_help_before_requiring_a_path() {
     }
 }
 
+#[test]
+fn string_variables_run_and_type_errors_are_checked_before_output() {
+    let fixture = Fixture::new();
+    let path = fixture.file(
+        "strings.srp",
+        "let mut text = \"first\"; println(text); text = \"second\"; println(text);",
+    );
+    let output = command().arg("run").arg(&path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(output.stdout, b"first\nsecond\n");
+    fixture.file(
+        "strings.srp",
+        "println(1); let mut text = \"hello\"; text = 1;",
+    );
+    for subcommand in ["run", "check"] {
+        let output = command().arg(subcommand).arg(&path).output().unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+        assert!(stderr(&output).contains("E0015"));
+        assert!(stderr(&output).contains("type is established here"));
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn handles_non_unicode_native_paths_according_to_the_filesystem() {
