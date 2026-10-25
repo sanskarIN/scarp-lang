@@ -12,6 +12,7 @@
 
 pub mod ast;
 pub mod diagnostics;
+pub mod evaluator;
 pub mod interpreter;
 pub mod lexer;
 pub mod parser;
@@ -26,7 +27,7 @@ pub fn compile(source: &str) -> Result<Program, Diagnostic> {
     parser::parse(&lexer::lex(source)?)
 }
 
-/// A syntax error or a failure writing program output.
+/// A source/evaluation diagnostic or a failure writing program output.
 #[derive(Debug)]
 pub enum RunError {
     Diagnostic(Diagnostic),
@@ -54,5 +55,5 @@ impl std::error::Error for RunError {
 /// Compile the entire file, then execute it into the provided output stream.
 pub fn run(source: &str, output: &mut impl io::Write) -> Result<(), RunError> {
     let program = compile(source).map_err(RunError::Diagnostic)?;
-    interpreter::execute(&program, output).map_err(RunError::Output)
+    interpreter::execute(&program, output)
 }

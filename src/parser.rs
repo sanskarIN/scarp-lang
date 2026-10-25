@@ -1,10 +1,16 @@
-//! Parse print statements without executing them.
+//! Parse print statements and integer expressions without executing them.
 
 use crate::{
-    ast::{Program, Statement},
+    ast::{
+        BinaryOperator, Expression, ExpressionKind, ExpressionNode, PrintArgument, Program,
+        Statement,
+    },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
 };
+
+/// Maximum nested expression parentheses, excluding the println call itself.
+pub const MAX_EXPRESSION_DEPTH: usize = 64;
 
 /// Parse a token stream. An omitted EOF token is treated as the end of input.
 pub fn parse(tokens: &[Token]) -> Result<Program, Diagnostic> {
@@ -21,14 +27,12 @@ impl Parser<'_> {
         self.tokens.get(self.cursor)
     }
 
-    fn eof_span(&self) -> Span {
-        let end = self.tokens.last().map_or(0, |token| token.span.end);
-        Span::new(end, end)
-    }
-
     fn expected(&self, expected: &str) -> Diagnostic {
         let (found, span) = self.current().map_or_else(
-            || ("<eof>".to_string(), self.eof_span()),
+            || {
+                let end = self.tokens.last().map_or(0, |token| token.span.end);
+                ("<eof>".to_string(), Span::new(end, end))
+            },
             |token| (token.kind.to_string(), token.span),
         );
         Diagnostic::new(
@@ -36,7 +40,7 @@ impl Parser<'_> {
             span,
             format!("expected {expected}, found {found}"),
         )
-        .with_help("a print statement has the form println(\"text\");")
+        .with_help("use println(\"text\"); or println(1 + 2);")
     }
 
     fn punctuation(&mut self, kind: TokenKind, label: &str) -> Result<Span, Diagnostic> {
@@ -55,7 +59,6 @@ impl Parser<'_> {
         while let Some(token) = self.current() {
             match &token.kind {
                 TokenKind::Eof => {
-                    // Reject malformed externally supplied streams with tokens after EOF.
                     if self.cursor + 1 != self.tokens.len() {
                         return Err(self.expected("the end of the token stream"));
                     }
@@ -65,15 +68,29 @@ impl Parser<'_> {
                     let start = token.span.start;
                     self.cursor += 1;
                     self.punctuation(TokenKind::LeftParen, "'('")?;
-                    let value = match self.current().map(|token| &token.kind) {
-                        Some(TokenKind::String(value)) => value.clone(),
-                        _ => return Err(self.expected("a string literal")),
+                    let argument = if let Some(Token {
+                        kind: TokenKind::String(value),
+                        ..
+                    }) = self.current()
+                    {
+                        let argument = PrintArgument::String(value.clone());
+                        self.cursor += 1;
+                        argument
+                    } else {
+                        if !matches!(
+                            self.current().map(|token| &token.kind),
+                            Some(TokenKind::Integer(_) | TokenKind::Minus | TokenKind::LeftParen)
+                        ) {
+                            return Err(self.expected("a string literal or integer expression"));
+                        }
+                        let mut nodes = Vec::new();
+                        let root = self.sum(&mut nodes, 0)?;
+                        PrintArgument::Integer(Expression { nodes, root })
                     };
-                    self.cursor += 1;
                     self.punctuation(TokenKind::RightParen, "')'")?;
                     let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
                     statements.push(Statement::Println {
-                        value,
+                        argument,
                         span: Span::new(start, end),
                     });
                 }
@@ -83,11 +100,161 @@ impl Parser<'_> {
                         token.span,
                         format!("unknown statement {name:?}"),
                     )
-                    .with_help("only println(\"text\"); is supported in this prototype"));
+                    .with_help("only println is supported as a statement name"));
                 }
                 _ => return Err(self.expected("a println statement")),
             }
         }
         Ok(Program { statements })
     }
+
+    fn sum(&mut self, nodes: &mut Vec<ExpressionNode>, depth: usize) -> Result<usize, Diagnostic> {
+        let mut left = self.product(nodes, depth)?;
+        while let Some(token) = self.current() {
+            let operator = match token.kind {
+                TokenKind::Plus => BinaryOperator::Add,
+                TokenKind::Minus => BinaryOperator::Subtract,
+                _ => break,
+            };
+            let operator_span = token.span;
+            self.cursor += 1;
+            let right = self.product(nodes, depth)?;
+            left = binary(nodes, left, operator, right, operator_span);
+        }
+        Ok(left)
+    }
+
+    fn product(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let mut left = self.unary(nodes, depth)?;
+        while let Some(token) = self.current() {
+            let operator = match token.kind {
+                TokenKind::Star => BinaryOperator::Multiply,
+                TokenKind::Slash => BinaryOperator::Divide,
+                _ => break,
+            };
+            let operator_span = token.span;
+            self.cursor += 1;
+            let right = self.unary(nodes, depth)?;
+            left = binary(nodes, left, operator, right, operator_span);
+        }
+        Ok(left)
+    }
+
+    fn unary(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        if let Some(Token {
+            kind: TokenKind::Minus,
+            span,
+        }) = self.current()
+        {
+            let operator_span = *span;
+            self.cursor += 1;
+            // The minimum integer has no representable positive i64 magnitude.
+            // Only a direct literal after '-' gets this special treatment.
+            if let Some(Token {
+                kind: TokenKind::Integer(digits),
+                span,
+            }) = self.current()
+            {
+                if digits.parse::<u64>() == Ok(1_u64 << 63) {
+                    let span = Span::new(operator_span.start, span.end);
+                    self.cursor += 1;
+                    return Ok(push(nodes, ExpressionKind::Integer(i64::MIN), span));
+                }
+            }
+            let operand = self.primary(nodes, depth)?;
+            let span = Span::new(operator_span.start, nodes[operand].span.end);
+            Ok(push(
+                nodes,
+                ExpressionKind::Negate {
+                    operand,
+                    operator_span,
+                },
+                span,
+            ))
+        } else {
+            self.primary(nodes, depth)
+        }
+    }
+
+    fn primary(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        match self.current() {
+            Some(Token {
+                kind: TokenKind::Integer(digits),
+                span,
+            }) => {
+                let span = *span;
+                let value = digits.parse::<i64>().map_err(|_| {
+                    Diagnostic::new(
+                        DiagnosticKind::InvalidInteger,
+                        span,
+                        "integer literal is outside the signed 64-bit range",
+                    )
+                    .with_help("use a value from -9223372036854775808 to 9223372036854775807")
+                })?;
+                self.cursor += 1;
+                Ok(push(nodes, ExpressionKind::Integer(value), span))
+            }
+            Some(Token {
+                kind: TokenKind::LeftParen,
+                span,
+            }) => {
+                let start = span.start;
+                if depth >= MAX_EXPRESSION_DEPTH {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::ExpressionNesting,
+                        *span,
+                        format!("expression nesting exceeds {MAX_EXPRESSION_DEPTH} levels"),
+                    )
+                    .with_help("reduce the number of nested parentheses"));
+                }
+                self.cursor += 1;
+                let expression = self.sum(nodes, depth + 1)?;
+                let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
+                Ok(push(
+                    nodes,
+                    ExpressionKind::Group { expression },
+                    Span::new(start, end),
+                ))
+            }
+            _ => Err(self.expected("an integer literal or '('")),
+        }
+    }
+}
+
+fn push(nodes: &mut Vec<ExpressionNode>, kind: ExpressionKind, span: Span) -> usize {
+    let id = nodes.len();
+    nodes.push(ExpressionNode { kind, span });
+    id
+}
+
+fn binary(
+    nodes: &mut Vec<ExpressionNode>,
+    left: usize,
+    operator: BinaryOperator,
+    right: usize,
+    operator_span: Span,
+) -> usize {
+    let span = Span::new(nodes[left].span.start, nodes[right].span.end);
+    push(
+        nodes,
+        ExpressionKind::Binary {
+            left,
+            operator,
+            right,
+            operator_span,
+        },
+        span,
+    )
 }

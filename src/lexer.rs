@@ -8,6 +8,11 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 pub enum TokenKind {
     Identifier(String),
     String(String),
+    Integer(String),
+    Plus,
+    Minus,
+    Star,
+    Slash,
     LeftParen,
     RightParen,
     Semicolon,
@@ -19,6 +24,11 @@ impl fmt::Display for TokenKind {
         match self {
             Self::Identifier(name) => write!(f, "identifier({name})"),
             Self::String(value) => write!(f, "string({value:?})"),
+            Self::Integer(digits) => write!(f, "integer({digits})"),
+            Self::Plus => f.write_str("+"),
+            Self::Minus => f.write_str("-"),
+            Self::Star => f.write_str("*"),
+            Self::Slash => f.write_str("/"),
             Self::LeftParen => f.write_str("("),
             Self::RightParen => f.write_str(")"),
             Self::Semicolon => f.write_str(";"),
@@ -85,6 +95,22 @@ impl Lexer<'_> {
                     TokenKind::Semicolon
                 }
                 '"' => TokenKind::String(self.string()?),
+                '+' | '-' | '*' | '/' => {
+                    self.bump();
+                    match character {
+                        '+' => TokenKind::Plus,
+                        '-' => TokenKind::Minus,
+                        '*' => TokenKind::Star,
+                        _ => TokenKind::Slash,
+                    }
+                }
+                ch if ch.is_ascii_digit() => {
+                    self.bump();
+                    while self.peek().is_some_and(|ch| ch.is_ascii_digit()) {
+                        self.bump();
+                    }
+                    TokenKind::Integer(self.source[start..self.cursor].to_string())
+                }
                 ch if ch.is_ascii_alphabetic() || ch == '_' => {
                     self.bump();
                     while self
@@ -101,7 +127,7 @@ impl Lexer<'_> {
                         Span::new(start, start + ch.len_utf8()),
                         format!("unexpected character {ch:?}"),
                     )
-                    .with_help("supported statements look like println(\"text\");"));
+                    .with_help("use println with a string literal or integer expression"));
                 }
             };
             tokens.push(Token {

@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use scarp::{
-    ast::Statement,
+    ast::{PrintArgument, Statement},
     compile,
     diagnostics::{location, Diagnostic, DiagnosticKind, Span},
     interpreter,
@@ -102,7 +102,7 @@ fn parses_a_print_statement_and_its_full_span() {
     assert_eq!(
         program.statements,
         vec![Statement::Println {
-            value: "hello".into(),
+            argument: PrintArgument::String("hello".into()),
             span: Span::new(0, 17),
         }]
     );
@@ -147,7 +147,7 @@ fn rejects_unknown_escapes_at_the_escape_span() {
 
 #[test]
 fn rejects_invalid_characters_without_splitting_unicode() {
-    for character in ['@', '/', '0', '🌍', '\0'] {
+    for character in ['@', '%', '=', '🌍', '\0'] {
         let source = format!(" \n{character}");
         let error = lex(&source).unwrap_err();
         assert_eq!(error.kind, DiagnosticKind::InvalidCharacter);
@@ -262,11 +262,9 @@ impl Write for FailingWriter {
 #[test]
 fn propagates_output_failures_through_the_library() {
     let program = compile("println(\"x\");").unwrap();
-    assert_eq!(
-        interpreter::execute(&program, &mut FailingWriter)
-            .unwrap_err()
-            .kind(),
-        io::ErrorKind::PermissionDenied
+    let error = interpreter::execute(&program, &mut FailingWriter).unwrap_err();
+    assert!(
+        matches!(error, RunError::Output(error) if error.kind() == io::ErrorKind::PermissionDenied)
     );
     assert!(matches!(
         run("println(\"x\");", &mut FailingWriter),
