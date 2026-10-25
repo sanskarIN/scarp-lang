@@ -16,5 +16,9 @@ path = "src/lib.rs"
 name = "scarp"
 path = "src/main.rs"
 
+[[bench]]
+name = "runtime"
+harness = false
+
 [lints.rust]
 unsafe_code = "forbid"
