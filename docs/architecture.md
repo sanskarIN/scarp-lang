@@ -37,6 +37,8 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
 | `value` | Integer/float/string/boolean values, immutable string storage, primitive type names |
+| `numeric` | Typed immutable vector kernels, compensated reductions, and native element work |
+| `limits` | Per-call deterministic execution and print budgets |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
@@ -61,6 +63,9 @@ declarations. Initializers resolve before insertion, allowing inner declarations
 to read outer names. Block structure is flattened into storage and print
 operations. Conditional statements lower to forward branch guards and jumps;
 execution uses a program counter and evaluates only the selected path. Runtime
+loops add budgeted backward jumps and nearest-loop control. Numeric calls use
+native finite-vector kernels; they do not dispatch interpreted expressions per
+element. All instructions retain spans for execution-budget diagnostics. Runtime
 state therefore needs no scope stack and never reuses an
 inner slot for a surviving outer binding. Parsed block trees are bounded to 64
 levels; resolved programs and expression evaluation remain flat.

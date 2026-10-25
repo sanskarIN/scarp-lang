@@ -26,6 +26,9 @@ pub enum TokenKind {
     StarEqual,
     SlashEqual,
     LeftParen,
+    LeftBracket,
+    RightBracket,
+    Comma,
     RightParen,
     LeftBrace,
     RightBrace,
@@ -56,6 +59,9 @@ impl fmt::Display for TokenKind {
             Self::StarEqual => f.write_str("*="),
             Self::SlashEqual => f.write_str("/="),
             Self::LeftParen => f.write_str("("),
+            Self::LeftBracket => f.write_str("["),
+            Self::RightBracket => f.write_str("]"),
+            Self::Comma => f.write_str(","),
             Self::RightParen => f.write_str(")"),
             Self::LeftBrace => f.write_str("{"),
             Self::RightBrace => f.write_str("}"),
@@ -110,6 +116,18 @@ impl Lexer<'_> {
                 continue;
             }
             let kind = match character {
+                '[' => {
+                    self.bump();
+                    TokenKind::LeftBracket
+                }
+                ']' => {
+                    self.bump();
+                    TokenKind::RightBracket
+                }
+                ',' => {
+                    self.bump();
+                    TokenKind::Comma
+                }
                 '{' => {
                     self.bump();
                     TokenKind::LeftBrace

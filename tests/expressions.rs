@@ -237,6 +237,9 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
         match &node.kind {
             ExpressionKind::Integer(_) => {}
             ExpressionKind::Name(_)
+            | ExpressionKind::Vector { .. }
+            | ExpressionKind::Index { .. }
+            | ExpressionKind::Call { .. }
             | ExpressionKind::Float(_)
             | ExpressionKind::String(_)
             | ExpressionKind::Boolean(_)

@@ -9,7 +9,7 @@ you are running matches the documentation. Start with
 | Goal | Choose | What to expect |
 | --- | --- | --- |
 | Try a published interpreter | The v0.0.1 release | Printing and checked integer expressions |
-| Try variables and the current guides | `scarp/finite-decimals` | The complete development stack, including finite numerical iteration |
+| Try variables and the current guides | `scarp/numeric-vectors` | The complete development stack, including native numerical kernels |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
 The development package version is `0.0.2-dev`. It is not a published v0.0.2
@@ -25,7 +25,7 @@ Rust dependencies.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/finite-decimals
+git switch scarp/numeric-vectors
 cargo build --locked --offline
 cargo run -- --version
 ```

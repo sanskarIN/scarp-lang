@@ -97,6 +97,11 @@ pub enum DiagnosticKind {
     OutputLimit,
     InvalidFloat,
     NonFiniteNumber,
+    VectorLength,
+    VectorIndex,
+    InvalidArgument,
+    UnknownFunction,
+    ArgumentCount,
 }
 
 impl DiagnosticKind {
@@ -122,6 +127,11 @@ impl DiagnosticKind {
             Self::OutputLimit => "E0018",
             Self::InvalidFloat => "E0019",
             Self::NonFiniteNumber => "E0020",
+            Self::VectorLength => "E0021",
+            Self::VectorIndex => "E0022",
+            Self::InvalidArgument => "E0023",
+            Self::UnknownFunction => "E0024",
+            Self::ArgumentCount => "E0025",
         }
     }
 }

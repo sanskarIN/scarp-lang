@@ -7,7 +7,9 @@ use crate::{
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
+    numeric::Builtin,
     value::FiniteFloat,
+    value::MAX_VECTOR_LENGTH,
 };
 
 /// Maximum nested expression parentheses, excluding the println call itself.
@@ -140,6 +142,7 @@ impl Parser<'_> {
                             Some(
                                 TokenKind::Integer(_)
                                     | TokenKind::Float(_)
+                                    | TokenKind::LeftBracket
                                     | TokenKind::String(_)
                                     | TokenKind::Identifier(_)
                                     | TokenKind::Minus
@@ -425,7 +428,7 @@ impl Parser<'_> {
                     return Ok(push(nodes, ExpressionKind::Integer(i64::MIN), span));
                 }
             }
-            let operand = self.primary(nodes, depth)?;
+            let operand = self.postfix(nodes, depth)?;
             let span = Span::new(operator_span.start, nodes[operand].span.end);
             Ok(push(
                 nodes,
@@ -436,8 +439,85 @@ impl Parser<'_> {
                 span,
             ))
         } else {
-            self.primary(nodes, depth)
+            self.postfix(nodes, depth)
         }
+    }
+
+    fn postfix(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let mut vector = self.primary(nodes, depth)?;
+        while matches!(
+            self.current().map(|token| &token.kind),
+            Some(TokenKind::LeftBracket)
+        ) {
+            let opening = self.current().unwrap().span;
+            self.expression_depth(depth, opening)?;
+            self.cursor += 1;
+            let index = self.logical_or(nodes, depth + 1)?;
+            let end = self.punctuation(TokenKind::RightBracket, "']'")?.end;
+            let span = Span::new(nodes[vector].span.start, end);
+            vector = push(
+                nodes,
+                ExpressionKind::Index {
+                    vector,
+                    index,
+                    operator_span: Span::new(opening.start, end),
+                },
+                span,
+            );
+        }
+        Ok(vector)
+    }
+
+    fn expression_depth(&self, depth: usize, span: Span) -> Result<(), Diagnostic> {
+        if depth >= MAX_EXPRESSION_DEPTH {
+            return Err(Diagnostic::new(
+                DiagnosticKind::ExpressionNesting,
+                span,
+                "expression nesting exceeds 64 levels",
+            ));
+        }
+        Ok(())
+    }
+
+    fn elements(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+        opening: Span,
+        closing: TokenKind,
+        vector: bool,
+    ) -> Result<Vec<usize>, Diagnostic> {
+        self.expression_depth(depth, opening)?;
+        let mut elements = Vec::new();
+        if self.current().is_some_and(|token| token.kind == closing) {
+            return Ok(elements);
+        }
+        loop {
+            let element = self.logical_or(nodes, depth + 1)?;
+            elements.push(element);
+            if vector && elements.len() > MAX_VECTOR_LENGTH {
+                return Err(Diagnostic::new(
+                    DiagnosticKind::VectorLength,
+                    nodes[element].span,
+                    "vector literal exceeds 65536 elements",
+                ));
+            }
+            if !matches!(
+                self.current().map(|token| &token.kind),
+                Some(TokenKind::Comma)
+            ) {
+                break;
+            }
+            self.cursor += 1;
+            if self.current().is_some_and(|token| token.kind == closing) {
+                break;
+            }
+        }
+        Ok(elements)
     }
 
     fn primary(
@@ -446,6 +526,21 @@ impl Parser<'_> {
         depth: usize,
     ) -> Result<usize, Diagnostic> {
         match self.current() {
+            Some(Token {
+                kind: TokenKind::LeftBracket,
+                span,
+            }) => {
+                let opening = *span;
+                self.cursor += 1;
+                let elements =
+                    self.elements(nodes, depth, opening, TokenKind::RightBracket, true)?;
+                let end = self.punctuation(TokenKind::RightBracket, "']'")?.end;
+                Ok(push(
+                    nodes,
+                    ExpressionKind::Vector { elements },
+                    Span::new(opening.start, end),
+                ))
+            }
             Some(Token {
                 kind: TokenKind::Float(digits),
                 span,
@@ -478,6 +573,34 @@ impl Parser<'_> {
                 kind: TokenKind::Identifier(name),
                 span,
             }) => {
+                if self
+                    .tokens
+                    .get(self.cursor + 1)
+                    .is_some_and(|token| token.kind == TokenKind::LeftParen)
+                {
+                    let function_span = *span;
+                    let function = Builtin::from_name(name).ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::UnknownFunction,
+                            function_span,
+                            format!("unknown built-in function {name:?}"),
+                        )
+                    })?;
+                    self.cursor += 1;
+                    let opening = self.punctuation(TokenKind::LeftParen, "'('")?;
+                    let arguments =
+                        self.elements(nodes, depth, opening, TokenKind::RightParen, false)?;
+                    let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
+                    return Ok(push(
+                        nodes,
+                        ExpressionKind::Call {
+                            function,
+                            arguments,
+                            function_span,
+                        },
+                        Span::new(function_span.start, end),
+                    ));
+                }
                 let kind = match name.as_str() {
                     "true" => ExpressionKind::Boolean(true),
                     "false" => ExpressionKind::Boolean(false),

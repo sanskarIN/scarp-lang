@@ -10,6 +10,7 @@ bindings and string-valued expressions require the development stack.
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
 | Float | `1.25`, `1e2` | Finite binary64; no implicit integer conversions |
+| Vector | `[1.0, 2.0]`, `[]` | Immutable finite float elements, at most 65,536 |
 | Boolean | `true`, `false` | Development only; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text with three supported escapes |
 
@@ -17,7 +18,9 @@ Development bindings infer their kind from the initializer. Mutable assignment
 must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
-There are no collection or user-defined values yet.
+General collections and user-defined values are not implemented. The
+[numerical vector design](../proposals/0008-numeric-vectors.md) specifies the
+specialized float collection, indexing, native signatures, and work bounds.
 Type annotations and explicit conversion functions are also not implemented.
 
 ## Precedence and associativity
@@ -25,7 +28,8 @@ Type annotations and explicit conversion functions are also not implemented.
 | Order, strongest first | Syntax | Behavior |
 | --- | --- | --- |
 | Grouping | `(expression)` | Evaluate the grouped expression |
-| Unary minus | `-primary` | Checked integer negation |
+| Vector indexing | `vector[index]` | Zero-based integer index returning a float |
+| Unary minus | `-primary` | Checked integer or finite float negation |
 | Multiplication/division | `*`, `/` | Left-associative checked integer arithmetic |
 | Addition/subtraction | `+`, `-` | Left-associative checked integer arithmetic |
 | Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` | One comparison; ordering needs same-kind numbers |

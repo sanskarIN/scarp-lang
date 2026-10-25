@@ -74,6 +74,9 @@ fn prepare(
                     }
                     ResolvedArgument::Expression(expression) => {
                         let value = workspace.evaluate(expression, &environment, &mut budget)?;
+                        if let Some(vector) = value.as_vector() {
+                            budget.charge(vector.len() as u64, operation.span)?;
+                        }
                         if capture {
                             output.push(PrintValue::Value(value));
                         }

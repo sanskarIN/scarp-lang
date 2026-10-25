@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Immutable finite numeric vectors, checked indexing, compensated reductions,
+  stable softmax, mean squared error, and budgeted native element operations.
+
 - Distinct finite binary64 values, scientific literals, same-kind numeric
   operators, and checked nonfinite-result diagnostics.
 
