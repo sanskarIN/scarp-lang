@@ -18,6 +18,7 @@ they are not claims that a v0.0.2 release has been published.
 | [Finite decimals](proposals/0007-finite-decimals.md) | Use explicit floating-point arithmetic with finite-result checks |
 | [Numerical vectors](proposals/0008-numeric-vectors.md) | Use native reductions, softmax, squared error, and immutable vector updates |
 | [Integer bit operations](proposals/0009-integer-bit-operations.md) | Pack flags and inspect fixed-width integer patterns |
+| [Freestanding C](proposals/0010-freestanding-c.md) | Emit checked computation units for caller-owned low-level hosts |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |

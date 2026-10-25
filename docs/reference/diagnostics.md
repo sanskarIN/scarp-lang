@@ -34,6 +34,7 @@ codes belong to the development variable stack.
 | `E0024` | Unknown built-in call | Use a supported numerical function name |
 | `E0025` | Wrong argument count | Follow the kernel's fixed signature |
 | `E0026` | Shift count outside 0..63 | Use a valid fixed-width shift count |
+| `E0027` | Unsupported C backend feature or size | Stay within the documented freestanding subset and limits |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

@@ -17,10 +17,12 @@ extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
 Punctuation tokens are `(`, `)`, `[`, `]`, `,`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
-longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
-`*`, and `/`. Comparison tokens use longest match: `==`, `!=`, `<`, `<=`, `>`,
-and `>=`. Integers contain one or more ASCII decimal digits; leading zeros
-are accepted as decimal. A minus sign is a separate token. Other characters
+longest match: `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`,
+and `>>>=`. Arithmetic tokens are `+`, `-`, `*`, `/`, and `%`. Integer bit tokens
+are `&`, `|`, `^`, `~`, `<<`, `>>`, and `>>>`. Comparisons use longest match:
+`==`, `!=`, `<`, `<=`, `>`, and `>=`. Integers use decimal digits, or hexadecimal
+`0x`/`0X` and binary `0b`/`0B` prefixes. Leading zeros without a prefix remain
+decimal. A minus sign is a separate token. Other characters
 outside strings, comments, identifiers, and whitespace are lexical errors.
 `//` starts a comment even immediately after an expression. A single `/` is the
 division operator. There are no block comments.
@@ -60,17 +62,22 @@ conditional     = "if", expression, block,
 block           = "{", { statement }, "}" ;
 declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
-assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
+assign_operator = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
+                  | "<<=" | ">>=" | ">>>=" ;
 print_statement = "println", "(", argument, ")", ";" ;
 argument        = expression ;
 expression      = logical_or ;
 logical_or      = logical_and, { "or", logical_and } ;
 logical_and     = logical_not, { "and", logical_not } ;
 logical_not     = { "not" }, comparison ;
-comparison      = sum, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), sum ] ;
+comparison      = bit_or, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), bit_or ] ;
+bit_or          = bit_xor, { "|", bit_xor } ;
+bit_xor         = bit_and, { "^", bit_and } ;
+bit_and         = shift, { "&", shift } ;
+shift           = sum, { ("<<" | ">>" | ">>>"), sum } ;
 sum             = product, { ("+" | "-"), product } ;
-product         = unary, { ("*" | "/"), unary } ;
-unary           = [ "-" ], postfix ;
+product         = unary, { ("*" | "/" | "%"), unary } ;
+unary           = [ "-" | "~" ], postfix ;
 postfix         = primary, { "[", expression, "]" } ;
 primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER
                   | "(", expression, ")" | vector | builtin_call ;
@@ -97,8 +104,9 @@ println("two");
 Empty and comment-only files are valid programs. Extra semicolons, concatenated
 strings and multiple arguments to `println` are invalid. Built-in calls can nest.
 Binary operators
-associate left to right. Multiplication and division have higher precedence
-than addition and subtraction. One unary minus is allowed before a primary:
+associate left to right. Multiplication, division, and remainder bind above
+addition and subtraction, followed by shifts, `&`, `^`, and `|`. One unary minus
+or complement is allowed before a primary:
 `--1` is invalid, while `-(-1)` and `1--2` are valid. Unary plus is unsupported.
 
 ## Integers and arithmetic
@@ -114,17 +122,22 @@ only directly after a unary minus, ignoring trivia, to represent the minimum
 integer. `-(9223372036854775808)` is rejected because its positive literal is
 out of range. Leading zeros do not change these rules.
 
-All operations use checked signed 64-bit arithmetic in debug and release builds.
+Arithmetic uses checked signed 64-bit operations in debug and release builds.
 Division truncates toward zero. Division by zero, overflowing intermediate
 results, negating the minimum integer, and dividing it by `-1` are errors.
 Diagnostics highlight the responsible operator. Evaluation follows source order
 and postorder within each expression, stopping at the first arithmetic error.
+Remainder follows the dividend's sign and rejects zero and `MIN % -1`.
+Bit operations use the integer's 64-bit representation. Left shift discards high
+bits, `>>` extends the sign, and `>>>` fills with zeros. Shift counts must be
+between 0 and 63 (E0026 otherwise). See the
+[integer bit-operation design](proposals/0009-integer-bit-operations.md).
 
 Grouping is limited to 64 nested pairs of parentheses, excluding the `println`
 call itself. Greater depth produces `E0009`. Flat operator chains have no fixed
 language limit and are processed without recursive evaluation or destruction.
 Available memory still limits the size of a program. Numeric separators,
-base prefixes, strings as arithmetic operands, and string concatenation are unsupported.
+strings as arithmetic operands, and string concatenation are unsupported.
 
 ## Execution
 
@@ -203,10 +216,11 @@ errors, invalid UTF-8, and output errors are CLI errors without source spans.
 | `scarp run <path>` | Read, validate, and execute a file |
 | `scarp check <path>` | Validate syntax, names, and arithmetic without printing |
 | `scarp tokens <path>` | Lex a file and print tokens without parsing |
+| `scarp emit-c <path>` | Emit freestanding C for the supported integer/boolean subset |
 | `scarp --help` or `scarp -h` | Show command usage |
 | `scarp --version` or `scarp -V` | Show the package development version |
 
-The `run`, `check`, and `tokens` commands accept an optional `--` before the path. Exactly
+The file commands accept an optional `--` before the path. Exactly
 one path is required, and stdin is not a source input. The `.srp` extension is a
 convention rather than a filename check. Native non-Unicode paths are accepted
 where supported by the operating system; the file contents must remain UTF-8.
@@ -221,6 +235,9 @@ While loops, nearest-loop control, and per-call deterministic work/print budgets
 are implemented on the loop branch. See [the loop design](proposals/0006-bounded-loops.md).
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on development branches and described
-in [the variable reference](variables.md). Functions, user-defined types, modules, a
-compiler backend, and a package manager are not implemented. The implemented expression semantics are also
+in [the variable reference](variables.md). An experimental
+[freestanding C backend](proposals/0010-freestanding-c.md) supports integer/boolean
+computation units with caller-owned storage and output. Functions, user-defined
+types, modules, raw memory/device access, kernel startup, and a package manager
+remain future work. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).

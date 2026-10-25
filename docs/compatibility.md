@@ -34,15 +34,17 @@ the `v0.0.1` tag; development uses `0.0.2-dev` package metadata and has no v0.0.
 | While loops and deterministic execution budgets | No | Yes |
 | Finite binary64 decimals and scientific literals | No | Yes |
 | Immutable float vectors and native numerical kernels | No | Yes |
+| Hex/binary literals, remainder, integer bit operations | No | Yes |
+| Freestanding C emission for the integer/boolean subset | No | Experimental |
 | User functions, imports | No | No |
-| Native compilation of Scarp programs | No | No |
+| Whole-language native compilation and kernel boot | No | No |
 
 Integer range, precedence, division truncation, mandatory semicolons, and
 no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/integer-bit-operations`.
+The complete development stack is available on `scarp/freestanding-c-backend`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
