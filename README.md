@@ -6,8 +6,9 @@ This development branch adds variables for the planned v0.0.2 milestone. The
 latest published version is v0.0.1; its packages do not contain these additions.
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains the **v0.0.1 experimental prerelease**: a working lexer, parser,
-interpreter, and command-line interface. Syntax and library APIs may change.
+contains **v0.0.2-dev**: a working lexer, parser, name resolver, interpreter,
+and command-line interface. Syntax and library APIs may change. This development
+version has no v0.0.2 tag or published prerelease.
 
 ```scarp
 // My first Scarp program
@@ -34,10 +35,12 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
+git switch scarp/variable-check-tooling
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
 cargo run -- tokens examples/hello.srp
+cargo run -- check examples/scopes.srp
 cargo run -- --help
 cargo run -- --version
 ```
@@ -72,7 +75,7 @@ the CLI does not reject other filename extensions.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
 - Escapes `\\` (backslash), `\"` (double quote), and `\n` (line break).
-- `run`, `tokens`, `--help`/`-h`, and `--version`/`-V` commands.
+- `run`, `check`, `tokens`, `--help`/`-h`, and `--version`/`-V` commands.
 - Syntax errors with a code, filename, line, column, source excerpt, and help.
 
 `println` appends a newline. Physical line breaks inside a string are rejected;
@@ -97,6 +100,12 @@ Integer overflow, division by zero, and out-of-range literals are errors in both
 debug and release builds. Grouping is limited to 64 nested parentheses; long
 binary chains use a flat syntax tree. Strings remain direct print arguments,
 with no concatenation or mixed string/integer arithmetic.
+
+`check` validates syntax, names, mutability, scopes, and arithmetic without writing
+program output. It returns zero and remains silent on success. In this pure
+integer language it evaluates declarations and assignments in fresh local
+storage, so unused arithmetic failures are still reported. `compile` alone does
+not evaluate arithmetic.
 
 `tokens` checks lexical validity without parsing or executing the file. It prints
 one token per line, including decoded string text, one-based line/column ranges,
@@ -128,6 +137,7 @@ token listings go to standard output.
 The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
 `evaluator::evaluate`, `interpreter::execute`, and `run`. `parse` exposes syntax;
 `compile` validates syntax and resolves names into an immutable `ResolvedProgram`.
+`check` and `interpreter::validate` also evaluate without an output destination.
 `evaluator::evaluate` checks standalone literal arithmetic. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
@@ -159,7 +169,7 @@ The complete check sequence, including rustdoc, is available as
 
 ## Prototype limits and planned roadmap
 
-This is a small tree-walking interpreter. It reads a complete file into memory
+This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
 booleans, floating-point values, types, imports, loops, standard library,
 package manager, native code
@@ -173,7 +183,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Validation tooling for the variable milestone.
+1. Additional value types for variables, beginning with strings.
 2. User-defined functions.
 3. Type checking.
 4. A compiler backend.
@@ -184,6 +194,9 @@ These capabilities are not implemented. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Immutable integer bindings are implemented on this branch. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
+The [draft v0.0.2 notes](docs/releases/v0.0.2.md) describe the unmerged milestone
+and remaining integration/publication gates. All variable work remains on
+feature branches until the maintainer explicitly requests integration.
 
 ## License
 

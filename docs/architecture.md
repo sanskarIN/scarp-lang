@@ -84,10 +84,10 @@ error. File extensions do not select parsers.
 ## Current costs and constraints
 
 Source, token strings, and AST strings are owned in memory. There is no streaming
-parser, incremental compilation, error recovery, or optimization pass. Location
-lookup scans source prefixes; large token listings can be slower than execution.
-This is acceptable for the current tiny slice and should be profiled before
-adding source-map caching.
+parser, incremental compilation, error recovery, or optimization pass. Random
+diagnostic location lookup scans source prefixes. Sequential token listings use
+a constant-space location tracker that scans source characters once in token
+order, avoiding repeated prefix scans on large single-line files.
 
 Prototype APIs and error wording may change. Keep new semantics in the library
 and new process behavior in the CLI. Strings remain a distinct print argument
@@ -102,6 +102,12 @@ exercise boundaries, precedence, long chains, excessive nesting, and agreement
 with a bounded reference calculation. CLI tests create
 unique temporary directories and compare observable streams and exit codes.
 The example corpus pairs each `.srp` file with exact expected `.stdout` bytes.
+
+`check` uses the same preparation pass as execution and then discards the captured
+print values. It does not format or write those values. Syntax, resolution, and
+arithmetic failures therefore agree between validation and execution. Tests also
+generate 2,000 scoped programs against an independent value model and mutate
+source/token streams to verify failure handling and diagnostic boundaries.
 
 Local shell and PowerShell scripts run formatting, Clippy, tests, builds, rustdoc,
 and smoke commands in debug and release modes. CI repeats validation on three operating systems and tests

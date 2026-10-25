@@ -13,7 +13,8 @@ LF, CR, or end of file. It recognizes comments only outside strings.
 
 Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement words are
 `let` and `println`, with exactly that spelling and case. Variable names are
-resolved after parsing; unknown identifiers at statement starts are syntax errors.
+resolved after parsing. An identifier at a statement start must introduce `let`,
+`println`, or an assignment; assignment targets are checked during resolution.
 
 Punctuation tokens are `(`, `)`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
@@ -107,14 +108,15 @@ base prefixes, strings as arithmetic operands, and string concatenation are unsu
 
 ## Execution
 
-The complete source file is lexed, then parsed. The first lexical error prevents
-parsing, and the first parser error prevents execution. Consequently, a lexical
-error later in the file can be reported before an earlier syntax error. No
-argument is evaluated until the whole file has passed both stages. All arguments
-are then evaluated before any bytes are written, so arithmetic errors also
-produce no program output.
+The complete source file is lexed, parsed, and resolved in that order. The first
+error in a phase prevents later phases. A later lexical error can therefore be
+reported before an earlier syntax error; a later unknown name can be reported
+before an earlier arithmetic failure. Declarations, assignments, and print
+arguments are then evaluated in source order before any output is written.
+All lexical, syntax, name, mutability, and arithmetic errors produce no program
+output.
 
-Each statement writes its decoded string or decimal integer followed by one LF
+Each print statement writes its decoded string or decimal integer followed by one LF
 to the supplied output stream. Strings containing `\n` can therefore write several lines.
 Statements execute in source order. Empty programs write nothing.
 
@@ -162,11 +164,12 @@ errors, invalid UTF-8, and output errors are CLI errors without source spans.
 | Command | Behavior |
 | --- | --- |
 | `scarp run <path>` | Read, validate, and execute a file |
+| `scarp check <path>` | Validate syntax, names, and arithmetic without printing |
 | `scarp tokens <path>` | Lex a file and print tokens without parsing |
 | `scarp --help` or `scarp -h` | Show command usage |
 | `scarp --version` or `scarp -V` | Show the package development version |
 
-The `run` and `tokens` commands accept an optional `--` before the path. Exactly
+The `run`, `check`, and `tokens` commands accept an optional `--` before the path. Exactly
 one path is required, and stdin is not a source input. The `.srp` extension is a
 convention rather than a filename check. Native non-Unicode paths are accepted
 where supported by the operating system; the file contents must remain UTF-8.
