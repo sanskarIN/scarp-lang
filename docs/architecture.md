@@ -59,7 +59,9 @@ whose positive magnitude cannot be represented as an `i64`.
 The resolver keeps a stack of lexical name maps and assigns unique slots to
 declarations. Initializers resolve before insertion, allowing inner declarations
 to read outer names. Block structure is flattened into storage and print
-operations. Runtime state therefore needs no scope stack and never reuses an
+operations. Conditional statements lower to forward branch guards and jumps;
+execution uses a program counter and evaluates only the selected path. Runtime
+state therefore needs no scope stack and never reuses an
 inner slot for a surviving outer binding. Parsed block trees are bounded to 64
 levels; resolved programs and expression evaluation remain flat.
 

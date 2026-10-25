@@ -9,7 +9,7 @@ you are running matches the documentation. Start with
 | Goal | Choose | What to expect |
 | --- | --- | --- |
 | Try a published interpreter | The v0.0.1 release | Printing and checked integer expressions |
-| Try variables and the current guides | `scarp/boolean-expressions` | The complete development stack, including strings and booleans |
+| Try variables and the current guides | `scarp/conditional-statements` | The complete development stack, including strings, booleans, and decisions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
 The development package version is `0.0.2-dev`. It is not a published v0.0.2
@@ -25,7 +25,7 @@ Rust dependencies.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/boolean-expressions
+git switch scarp/conditional-statements
 cargo build --locked --offline
 cargo run -- --version
 ```

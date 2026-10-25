@@ -36,6 +36,8 @@ these instructions use a local dependency rather than a registry release.
 Compilation resolves names, scopes, mutability, and primitive types. Arithmetic
 failures such as division by zero require validation or execution. Parsing alone
 can therefore succeed for a program whose names or operations are invalid.
+All branches undergo name and type checks, while validation and execution
+evaluate only selected conditions and bodies.
 
 ## Capture output explicitly
 
@@ -81,7 +83,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 `ResolvedProgram` keeps its slot plan private and immutable. Each execution and
 validation allocates fresh variable state. Reusing a compiled program does not
 preserve previous assignments. `statement_count` counts executable operations,
-excluding block containers; `binding_count` includes distinct declarations in
+including branch guards but excluding block containers and bookkeeping jumps;
+`binding_count` includes distinct declarations in
 all scopes. `binding_types` follows declaration/slot order.
 
 ## Preserve source for readable errors

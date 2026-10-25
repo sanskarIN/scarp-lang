@@ -44,6 +44,7 @@ cargo doc --locked --no-deps
 | Shadowing, scope exit, and nesting | `tests/scopes.rs` |
 | String snapshots and inferred types | `tests/string_bindings.rs` |
 | Boolean types, comparisons, and skipped arithmetic | `tests/booleans.rs` |
+| Branch selection, scoped bodies, and unreachable static errors | `tests/conditionals.rs` |
 | Validation and incremental locations | `tests/validation.rs` |
 | Arguments, paths, streams, and exit codes | `tests/cli.rs` |
 | Generated programs and malformed input | `tests/conformance.rs` |

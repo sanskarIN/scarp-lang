@@ -38,7 +38,8 @@ is checked before any pending prints are written.
 
 `check` uses the same preparation pass as execution, then discards the print
 values. It evaluates declarations and assignments in fresh local storage, so
-unused initializers can still fail. A successful check is silent. It does not
+reachable unused initializers can still fail. Unselected conditional bodies do
+not evaluate arithmetic, but they still undergo static checks. A successful check is silent. It does not
 format or write the program's print values.
 
 `tokens` only checks lexical validity. It can succeed when a file has missing
