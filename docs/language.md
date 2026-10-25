@@ -1,6 +1,6 @@
 # Scarp prototype language reference
 
-This reference describes the implemented v0.0.1 development language. It is an
+This reference describes the development language following v0.0.1. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
 
@@ -11,11 +11,11 @@ three source bytes. A mark elsewhere is an invalid character. The lexer skips
 Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
-Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. The only supported
-statement identifier is `println`, with exactly that spelling and case. Unknown
-identifiers are tokens but produce a parser error when used as statement names.
+Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement words are
+`let` and `println`, with exactly that spelling and case. Variable names are
+resolved after parsing; unknown identifiers at statement starts are syntax errors.
 
-Punctuation tokens are `(`, `)`, and `;`. Arithmetic operator tokens are `+`, `-`,
+Punctuation tokens are `(`, `)`, `;`, and `=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Integers contain one or more ASCII decimal digits; leading zeros
 are accepted as decimal. A minus sign is a separate token. Other characters
 outside strings, comments, identifiers, and whitespace are lexical errors.
@@ -48,14 +48,15 @@ Trivia means whitespace and line comments. Trivia can appear between tokens.
 The following grammar applies after trivia has been removed:
 
 ```ebnf
-program         = { print_statement }, EOF ;
+program         = { print_statement | declaration }, EOF ;
+declaration     = "let", IDENTIFIER, "=", expression, ";" ;
 print_statement = "println", "(", argument, ")", ";" ;
 argument        = STRING | expression ;
 expression      = sum ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
 unary           = [ "-" ], primary ;
-primary         = INTEGER | "(", expression, ")" ;
+primary         = INTEGER | IDENTIFIER | "(", expression, ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
@@ -166,6 +167,7 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 
 ## Scope
 
-Bindings, functions, types, modules, loops, a compiler backend, and a package
-manager are not implemented. The implemented expression semantics are also
+Immutable integer bindings are implemented on development branches and described
+in [the variable reference](variables.md). Functions, types, modules, loops, a
+compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
