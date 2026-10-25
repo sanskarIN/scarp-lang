@@ -93,6 +93,7 @@ fn observe(source: &str) {
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
         "let value = 7; println(value);",
+        "let mut estimate = 1.25; estimate *= 2.0; println(estimate >= 2.5 and 1e-3 < 1.0);",
         "let mut x = 0; while x < 3 { x += 1; if x == 2 { continue; } } println(x);",
         "let mut x = 1; if x < 2 { x += 3; } elif false {} else { x = 9; } println(x);",
         "let ready = true; println(not ready or 1 < 2 and false);",
@@ -141,6 +142,8 @@ fn altered_public_token_streams_and_spans_do_not_panic() {
             TokenKind::LeftBrace,
             TokenKind::RightBrace,
             TokenKind::Equal,
+            TokenKind::Float("NaN".into()),
+            TokenKind::Float("1e309".into()),
             TokenKind::EqualEqual,
             TokenKind::LessEqual,
             TokenKind::Identifier("not".into()),
