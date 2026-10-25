@@ -82,7 +82,7 @@ try {
     if ($LASTEXITCODE -ne 0 -or $actualVersion -ne "scarp $version") {
         throw 'Packaged version check failed'
     }
-    foreach ($example in @('hello', 'arithmetic', 'bindings')) {
+    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable')) {
         $source = Join-Path $extractedPackage "examples/$example.srp"
         $actual = & $executable run $source
         if ($LASTEXITCODE -ne 0) { throw "Packaged $example example failed" }
