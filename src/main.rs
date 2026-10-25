@@ -1,18 +1,22 @@
 use std::{
     env,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs,
     io::{self, BufWriter, Write},
     path::Path,
     process::ExitCode,
 };
 
-use scarp::{diagnostics::location, lexer, RunError};
+use scarp::{
+    diagnostics::{Diagnostic, LocationTracker},
+    lexer, RunError,
+};
 
 const HELP: &str = "Scarp — Build Beyond Boundaries.
 
 Usage:
   scarp run <file.srp>       Execute a Scarp program
+  scarp check <file.srp>     Validate syntax, names, and arithmetic without printing
   scarp tokens <file.srp>    Inspect lexer tokens and source locations
   scarp --help               Show this help
   scarp --version            Show the prototype version
@@ -37,6 +41,9 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
         [flag] if flag == "--help" || flag == "-h" => {
             return write_output(output.write_all(HELP.as_bytes()), errors);
         }
+        [command, flag] if file_command(command) && (flag == "--help" || flag == "-h") => {
+            return write_output(output.write_all(HELP.as_bytes()), errors);
+        }
         [flag] if flag == "--version" || flag == "-V" => {
             return write_output(
                 writeln!(output, "scarp {}", env!("CARGO_PKG_VERSION")),
@@ -56,7 +63,7 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             return 2;
         }
     };
-    if command != "run" && command != "tokens" {
+    if !file_command(command) {
         let _ = writeln!(
             errors,
             "error: unknown command {:?}\n\n{HELP}",
@@ -79,9 +86,10 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
     if command == "tokens" {
         match lexer::lex(&source) {
             Ok(tokens) => {
+                let mut locations = LocationTracker::new(&source);
                 for token in tokens {
-                    let start = location(&source, token.span.start);
-                    let end = location(&source, token.span.end);
+                    let start = locations.at(token.span.start);
+                    let end = locations.at(token.span.end);
                     if let Err(error) = writeln!(
                         output,
                         "{}:{}..{}:{}  {}  [{}..{}]",
@@ -98,21 +106,29 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
                 }
                 0
             }
-            Err(error) => {
-                let _ = writeln!(errors, "{}", error.render(&path.to_string_lossy(), &source));
-                1
-            }
+            Err(error) => report_diagnostic(&error, path, &source, errors),
+        }
+    } else if command == "check" {
+        match scarp::check(&source) {
+            Ok(()) => 0,
+            Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else {
         match scarp::run(&source, output) {
             Ok(()) => 0,
-            Err(RunError::Diagnostic(error)) => {
-                let _ = writeln!(errors, "{}", error.render(&path.to_string_lossy(), &source));
-                1
-            }
+            Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
             Err(RunError::Output(error)) => write_output(Err(error), errors),
         }
     }
+}
+
+fn file_command(command: &OsStr) -> bool {
+    matches!(command.to_str(), Some("run" | "tokens" | "check"))
+}
+
+fn report_diagnostic(error: &Diagnostic, path: &Path, source: &str, errors: &mut impl Write) -> u8 {
+    let _ = writeln!(errors, "{}", error.render(&path.to_string_lossy(), source));
+    1
 }
 
 fn write_output(result: io::Result<()>, errors: &mut impl Write) -> u8 {
