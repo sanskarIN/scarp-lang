@@ -208,15 +208,27 @@ fn rejects_invalid_command_lines_with_usage_exit_code() {
 
 #[cfg(unix)]
 #[test]
-fn accepts_non_unicode_native_paths() {
+fn handles_non_unicode_native_paths_according_to_the_filesystem() {
     use std::{ffi::OsString, os::unix::ffi::OsStringExt};
 
     let fixture = Fixture::new();
     let path = fixture
         .directory
         .join(OsString::from_vec(b"file-\xff.srp".to_vec()));
-    fs::write(&path, "println(\"native path\");").unwrap();
+    let creation = fs::write(&path, "println(\"native path\");");
     let output = command().arg("run").arg(path).output().unwrap();
-    assert!(output.status.success(), "{}", stderr(&output));
-    assert_eq!(output.stdout, b"native path\n");
+    match creation {
+        Ok(()) => {
+            assert!(output.status.success(), "{}", stderr(&output));
+            assert_eq!(output.stdout, b"native path\n");
+        }
+        // macOS can reject the filename itself with EILSEQ (illegal byte sequence).
+        Err(error) if cfg!(target_os = "macos") && error.raw_os_error() == Some(92) => {
+            assert_eq!(output.status.code(), Some(1));
+            assert!(output.stdout.is_empty());
+            assert!(stderr(&output).contains("could not read"));
+            assert!(!stderr(&output).contains("panicked"));
+        }
+        Err(error) => panic!("could not create native-path fixture: {error}"),
+    }
 }
