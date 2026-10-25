@@ -1,0 +1,90 @@
+# Version and API compatibility
+
+Use this guide before copying an example into a different Scarp executable or
+updating a Rust embedding host. It compares the published v0.0.1 snapshot with
+the complete `0.0.2-dev` feature stack documented here.
+
+## Identify the code you are running
+
+`scarp --version` identifies the executable on `PATH`.
+`cargo run -- --version` identifies a build from the current checkout. These can
+be different commands with different behavior.
+
+For a source snapshot, `git status --short`, `git branch --show-current`, and
+`git rev-parse HEAD` identify local changes, the branch, and the commit. A branch
+name alone is not an immutable version. The published release is associated with
+the `v0.0.1` tag; development uses `0.0.2-dev` package metadata and has no v0.0.2 tag.
+
+## Language and command matrix
+
+| Capability | v0.0.1 | Complete development stack |
+| --- | --- | --- |
+| UTF-8 source, comments, three string escapes | Yes | Yes |
+| String literal print statements | Yes | Yes |
+| Checked signed 64-bit arithmetic | Yes | Yes |
+| Integer declarations and variable references | No | Yes |
+| Explicit mutability and compound assignment | No | Yes |
+| Block scopes and shadowing | No | Yes |
+| String variables and grouped string values | No | Yes, in the string extension |
+| Primitive type consistency checks | No variable types | Yes |
+| `run`, `tokens`, global help/version | Yes | Yes |
+| `check` and per-command help | No | Yes |
+| User functions, booleans, imports, loops | No | No |
+| Native compilation of Scarp programs | No | No |
+
+Integer range, precedence, division truncation, mandatory semicolons, and
+no-output-on-invalid-source behavior remain consistent. Development adds
+semantic checks before evaluation, so a later unknown name or type mismatch can
+precede an earlier arithmetic failure in the reported diagnostic.
+
+The complete development stack is available on `scarp/documentation-guides`.
+Its implementation prerequisites are split into PRs for immutable bindings,
+mutability, lexical scopes, validation tooling, and an optional string extension.
+Earlier feature branches intentionally contain smaller subsets.
+
+## Library migration
+
+| API or type | v0.0.1 | Development |
+| --- | --- | --- |
+| `compile(source)` | Returns syntax `Program` | Returns immutable `ResolvedProgram` |
+| `parse(source)` convenience function | Absent | Returns unresolved syntax |
+| `parser::parse(tokens)` | Parses tokens | Continues to parse tokens |
+| `interpreter::execute` input | Syntax program | Resolved program |
+| Validation without a writer | No convenience entry point | `check` and `interpreter::validate` |
+| `evaluator::evaluate` result | Integer | Integer, retained for compatibility |
+| Primitive value evaluation | Integer helper only | `evaluate_value`, `Value`, `ValueType` |
+| General print expression variant | `PrintArgument::Integer` | `PrintArgument::Expression` |
+
+Use `parse` when you need syntax inspection or transformation. Use `compile`
+before executing complete programs with declarations. Resolved storage plans
+remain private so callers cannot change slot assignments independently of the
+expressions that reference them.
+
+`statement_count`, `binding_count`, and `binding_types` expose read-only execution
+metadata. The counts include declarations inside blocks; statement counts exclude
+block containers. Repeated execution always starts with fresh storage.
+
+The host `Value` API does not provide external variable injection. Complete
+programs establish their bindings through source declarations.
+
+## Platform and toolchain scope
+
+Both documented snapshots declare Rust 1.74 as the minimum for source builds.
+Published v0.0.1 archives cover Windows x64 MSVC, Linux x64 GNU, and Apple Silicon
+macOS. Native development-package checks cover those targets too; they do not
+constitute a published v0.0.2 release.
+
+A successful source test on one host is not evidence of a universal binary.
+Use the matching archive or build with a compatible local Rust toolchain. The
+[release notes](releases/v0.0.1.md) describe the published archive scope.
+
+## Integration and future changes
+
+Syntax and public Rust APIs remain experimental. Review the
+[draft v0.0.2 notes](releases/v0.0.2.md) when updating a host application. Planned
+features in a roadmap or proposal are not available merely because they are named.
+
+The feature stack and this documentation are reviewed through separate PRs.
+Documentation review does not integrate implementation into main. Follow the
+maintainer's explicit instructions for integration, tagging, and publication;
+the documentation work itself performs none of those release actions.
