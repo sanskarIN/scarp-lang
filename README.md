@@ -119,6 +119,9 @@ cargo run --locked -- tokens examples/hello.srp
 
 Tests cover source spans, escapes, Unicode, missing punctuation, invalid files,
 command-line usage, output failures, and execution of the real hello example.
+The complete check sequence, including rustdoc, is available as
+`sh scripts/check.sh --offline` or `./scripts/check.ps1 -Offline`. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the development and PR workflow.
 
 ## Prototype limits and planned roadmap
 
