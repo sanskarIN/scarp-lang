@@ -36,6 +36,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
 | `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
+| `value` | Integer/string values, immutable string storage, primitive type names |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
@@ -69,7 +70,8 @@ callers that construct their own diagnostics.
 
 ## Failure boundaries
 
-Lexing, parsing, and arithmetic evaluation finish before any writes. Both source
+Lexing, parsing, resolution, primitive type checks, and arithmetic evaluation
+finish before any writes. Both source
 and evaluation diagnostics are carried by `RunError::Diagnostic`.
 Output failures are different from
 source errors: earlier writes can succeed before a sink fails. Library callers
@@ -90,8 +92,10 @@ a constant-space location tracker that scans source characters once in token
 order, avoiding repeated prefix scans on large single-line files.
 
 Prototype APIs and error wording may change. Keep new semantics in the library
-and new process behavior in the CLI. Strings remain a distinct print argument
-alternative; the integer evaluator does not parse or interpret strings.
+and new process behavior in the CLI. Direct string literal prints retain a fast
+path. General expressions infer an integer or string type; arithmetic and
+compound assignment stay integer-only. The resolver fixes each slot's type,
+and strings share immutable storage so snapshots survive later reassignment.
 
 ## Validation
 

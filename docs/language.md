@@ -57,17 +57,17 @@ declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
 print_statement = "println", "(", argument, ")", ";" ;
-argument        = STRING | expression ;
+argument        = expression ;
 expression      = sum ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
 unary           = [ "-" ], primary ;
-primary         = INTEGER | IDENTIFIER | "(", expression, ")" ;
+primary         = INTEGER | STRING | IDENTIFIER | "(", expression, ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
-longer identifier. `STRING` is one complete string token, not a general expression.
-There is no argument list: a call takes exactly one string or integer expression. Semicolons
+longer identifier. `STRING` is one complete string token and a primitive value.
+There is no argument list: a call takes exactly one value expression. Semicolons
 are mandatory. Newlines do not terminate statements.
 
 ```scarp
@@ -108,12 +108,14 @@ base prefixes, strings as arithmetic operands, and string concatenation are unsu
 
 ## Execution
 
-The complete source file is lexed, parsed, and resolved in that order. The first
+The complete source file is lexed, parsed, resolved, and checked for primitive
+type consistency in that order. Name resolution and primitive inference share
+one traversal. The first
 error in a phase prevents later phases. A later lexical error can therefore be
 reported before an earlier syntax error; a later unknown name can be reported
 before an earlier arithmetic failure. Declarations, assignments, and print
 arguments are then evaluated in source order before any output is written.
-All lexical, syntax, name, mutability, and arithmetic errors produce no program
+All lexical, syntax, name, mutability, type, and arithmetic errors produce no program
 output.
 
 Each print statement writes its decoded string or decimal integer followed by one LF
@@ -154,6 +156,7 @@ Carets cover the first affected line and remain visible for empty spans at EOF.
 | `E0012` | Reserved variable name |
 | `E0013` | Assignment to an immutable binding |
 | `E0014` | Block nesting limit exceeded |
+| `E0015` | Primitive type mismatch |
 
 Diagnostic wording and library types are experimental. Codes are intended to be
 more useful for tests than full platform-dependent file-error strings. Read

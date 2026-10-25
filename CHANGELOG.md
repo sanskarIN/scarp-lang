@@ -13,6 +13,8 @@
 - Sequential token locations without repeated source-prefix scans.
 - Generated-program conformance cases and malformed source/token mutation corpora.
 - Development package version `0.0.2-dev`; no v0.0.2 tag or release.
+- A separate draft extension adds string variables, primitive type inference,
+  same-type mutable assignment, and immutable string value snapshots.
 
 These changes are under development on feature branches and are not part of the
 published v0.0.1 release.
