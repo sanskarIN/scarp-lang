@@ -1,31 +1,50 @@
-//! Execute a validated program with an explicit output destination.
+//! Execute a resolved program with fresh variable storage for every call.
 
 use std::io::Write;
 
 use crate::{
-    ast::{PrintArgument, Program, Statement},
-    evaluator, RunError,
+    diagnostics::Diagnostic,
+    evaluator,
+    resolver::{ResolvedArgument, ResolvedProgram, ResolvedStatement},
+    RunError,
 };
 
-/// Evaluate every argument before writing, so arithmetic failures produce no
-/// program output. Already completed writes cannot be rolled back on I/O errors.
-pub fn execute(program: &Program, output: &mut impl Write) -> Result<(), RunError> {
-    let mut values = Vec::with_capacity(program.statements.len());
+enum PrintValue<'a> {
+    String(&'a str),
+    Integer(i64),
+}
+
+fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic> {
+    let mut environment = vec![0; program.slots];
+    let mut output = Vec::new();
     for statement in &program.statements {
         match statement {
-            Statement::Println { argument, .. } => {
-                let value = match argument {
-                    PrintArgument::String(value) => value.clone(),
-                    PrintArgument::Integer(expression) => evaluator::evaluate(expression)
-                        .map_err(RunError::Diagnostic)?
-                        .to_string(),
-                };
-                values.push(value);
+            ResolvedStatement::Store { slot, value } => {
+                environment[*slot] = evaluator::evaluate_resolved(value, &environment)?;
+            }
+            ResolvedStatement::Println(argument) => {
+                output.push(match argument {
+                    ResolvedArgument::String(value) => PrintValue::String(value),
+                    ResolvedArgument::Integer(expression) => {
+                        PrintValue::Integer(evaluator::evaluate_resolved(expression, &environment)?)
+                    }
+                });
             }
         }
     }
+    Ok(output)
+}
+
+/// Resolve and evaluate through `compile` first. Arithmetic failures never write
+/// program output; completed writes cannot be rolled back on an I/O failure.
+pub fn execute(program: &ResolvedProgram, output: &mut impl Write) -> Result<(), RunError> {
+    let values = prepare(program).map_err(RunError::Diagnostic)?;
     for value in values {
-        writeln!(output, "{value}").map_err(RunError::Output)?;
+        match value {
+            PrintValue::String(value) => writeln!(output, "{value}"),
+            PrintValue::Integer(value) => writeln!(output, "{value}"),
+        }
+        .map_err(RunError::Output)?;
     }
     Ok(())
 }

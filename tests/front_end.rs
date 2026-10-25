@@ -92,13 +92,13 @@ fn empty_and_comment_only_programs_are_valid() {
         let mut output = Vec::new();
         run(source, &mut output).unwrap();
         assert!(output.is_empty());
-        assert!(compile(source).unwrap().statements.is_empty());
+        assert_eq!(compile(source).unwrap().statement_count(), 0);
     }
 }
 
 #[test]
 fn parses_a_print_statement_and_its_full_span() {
-    let program = compile(r#"println("hello");"#).unwrap();
+    let program = scarp::parse(r#"println("hello");"#).unwrap();
     assert_eq!(
         program.statements,
         vec![Statement::Println {
@@ -147,7 +147,7 @@ fn rejects_unknown_escapes_at_the_escape_span() {
 
 #[test]
 fn rejects_invalid_characters_without_splitting_unicode() {
-    for character in ['@', '%', '=', '🌍', '\0'] {
+    for character in ['@', '%', ',', '🌍', '\0'] {
         let source = format!(" \n{character}");
         let error = lex(&source).unwrap_err();
         assert_eq!(error.kind, DiagnosticKind::InvalidCharacter);

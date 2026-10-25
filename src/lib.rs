@@ -16,15 +16,22 @@ pub mod evaluator;
 pub mod interpreter;
 pub mod lexer;
 pub mod parser;
+pub mod resolver;
 
 use std::{fmt, io};
 
 use ast::Program;
 use diagnostics::Diagnostic;
+pub use resolver::ResolvedProgram;
 
-/// Validate source and construct its syntax tree without executing it.
-pub fn compile(source: &str) -> Result<Program, Diagnostic> {
+/// Parse source without performing name resolution or arithmetic evaluation.
+pub fn parse(source: &str) -> Result<Program, Diagnostic> {
     parser::parse(&lexer::lex(source)?)
+}
+
+/// Parse and resolve a complete source file without evaluating arithmetic.
+pub fn compile(source: &str) -> Result<ResolvedProgram, Diagnostic> {
+    resolver::resolve(parse(source)?)
 }
 
 /// A source/evaluation diagnostic or a failure writing program output.

@@ -9,7 +9,16 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
-    Println { argument: PrintArgument, span: Span },
+    Println {
+        argument: PrintArgument,
+        span: Span,
+    },
+    Let {
+        name: String,
+        name_span: Span,
+        initializer: Expression,
+        span: Span,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,15 +46,16 @@ impl Expression {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpressionNode {
     pub kind: ExpressionKind,
     pub span: Span,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionKind {
     Integer(i64),
+    Name(String),
     Negate {
         operand: usize,
         operator_span: Span,
