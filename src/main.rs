@@ -9,7 +9,7 @@ use std::{
 
 use scarp::{
     diagnostics::{Diagnostic, LocationTracker},
-    lexer, RunError,
+    lexer, ExecutionLimits, RunError,
 };
 
 const HELP: &str = "Scarp — Build Beyond Boundaries.
@@ -22,6 +22,8 @@ Usage:
   scarp --version            Show the prototype version
 
 Use -- before a filename that begins with a dash.
+run/check options before the path: --max-steps <count>, --max-prints <count>.
+Defaults: 1000000 execution steps, 100000 selected prints.
 ";
 
 fn main() -> ExitCode {
@@ -52,14 +54,10 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
         }
         _ => {}
     }
-    let (command, filename) = match args.as_slice() {
-        [command, filename] if !filename.to_string_lossy().starts_with('-') => (command, filename),
-        [command, separator, filename] if separator == "--" => (command, filename),
-        _ => {
-            let _ = writeln!(
-                errors,
-                "error: expected a command and a file path\n\n{HELP}"
-            );
+    let (command, filename, limits) = match invocation(&args) {
+        Ok(invocation) => invocation,
+        Err(message) => {
+            let _ = writeln!(errors, "error: {message}\n\n{HELP}");
             return 2;
         }
     };
@@ -109,12 +107,12 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else if command == "check" {
-        match scarp::check(&source) {
+        match scarp::check_with_limits(&source, limits) {
             Ok(()) => 0,
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else {
-        match scarp::run(&source, output) {
+        match scarp::run_with_limits(&source, output, limits) {
             Ok(()) => 0,
             Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
             Err(RunError::Output(error)) => write_output(Err(error), errors),
@@ -124,6 +122,58 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
 
 fn file_command(command: &OsStr) -> bool {
     matches!(command.to_str(), Some("run" | "tokens" | "check"))
+}
+
+fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'static str> {
+    let command = args.first().ok_or("expected a command and a file path")?;
+    let mut limits = ExecutionLimits::default();
+    let mut index = 1;
+    let mut seen_steps = false;
+    let mut seen_prints = false;
+    let mut separator = false;
+    while let Some(argument) = args.get(index) {
+        if argument == "--" {
+            separator = true;
+            index += 1;
+            break;
+        }
+        let steps = argument == "--max-steps";
+        let prints = argument == "--max-prints";
+        if !steps && !prints {
+            break;
+        }
+        if command != "run" && command != "check" {
+            return Err("execution limits are available only for run and check");
+        }
+        if (steps && seen_steps) || (prints && seen_prints) {
+            return Err("execution limit options cannot be repeated");
+        }
+        let digits = args
+            .get(index + 1)
+            .and_then(|value| value.to_str())
+            .ok_or("expected a decimal execution limit")?;
+        if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Err("execution limits must contain decimal digits only");
+        }
+        let value = digits
+            .parse::<u64>()
+            .map_err(|_| "execution limit is too large")?;
+        if steps {
+            limits.max_steps = value;
+            seen_steps = true;
+        } else {
+            limits.max_prints = usize::try_from(value).map_err(|_| "print limit is too large")?;
+            seen_prints = true;
+        }
+        index += 2;
+    }
+    let filename = args
+        .get(index)
+        .ok_or("expected a command and a file path")?;
+    if index + 1 != args.len() || (!separator && filename.to_string_lossy().starts_with('-')) {
+        return Err("expected a command and a file path");
+    }
+    Ok((command.as_os_str(), filename.as_os_str(), limits))
 }
 
 fn report_diagnostic(error: &Diagnostic, path: &Path, source: &str, errors: &mut impl Write) -> u8 {
