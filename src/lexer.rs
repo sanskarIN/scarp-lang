@@ -14,6 +14,12 @@ pub enum TokenKind {
     Star,
     Slash,
     Equal,
+    EqualEqual,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
     PlusEqual,
     MinusEqual,
     StarEqual,
@@ -37,6 +43,12 @@ impl fmt::Display for TokenKind {
             Self::Star => f.write_str("*"),
             Self::Slash => f.write_str("/"),
             Self::Equal => f.write_str("="),
+            Self::EqualEqual => f.write_str("=="),
+            Self::NotEqual => f.write_str("!="),
+            Self::Less => f.write_str("<"),
+            Self::LessEqual => f.write_str("<="),
+            Self::Greater => f.write_str(">"),
+            Self::GreaterEqual => f.write_str(">="),
             Self::PlusEqual => f.write_str("+="),
             Self::MinusEqual => f.write_str("-="),
             Self::StarEqual => f.write_str("*="),
@@ -104,9 +116,25 @@ impl Lexer<'_> {
                     self.bump();
                     TokenKind::RightBrace
                 }
-                '=' => {
+                '=' | '<' | '>' => {
                     self.bump();
-                    TokenKind::Equal
+                    let paired = self.peek() == Some('=');
+                    if paired {
+                        self.bump();
+                    }
+                    match (character, paired) {
+                        ('=', false) => TokenKind::Equal,
+                        ('=', true) => TokenKind::EqualEqual,
+                        ('<', false) => TokenKind::Less,
+                        ('<', true) => TokenKind::LessEqual,
+                        ('>', false) => TokenKind::Greater,
+                        _ => TokenKind::GreaterEqual,
+                    }
+                }
+                '!' if self.source[self.cursor..].starts_with("!=") => {
+                    self.bump();
+                    self.bump();
+                    TokenKind::NotEqual
                 }
                 '(' => {
                     self.bump();

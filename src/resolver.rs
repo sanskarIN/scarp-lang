@@ -166,6 +166,21 @@ impl Resolver {
                     value,
                     ..
                 } => {
+                    if let AssignmentOperator::Compound(operator) = operator {
+                        if !matches!(
+                            operator,
+                            BinaryOperator::Add
+                                | BinaryOperator::Subtract
+                                | BinaryOperator::Multiply
+                                | BinaryOperator::Divide
+                        ) {
+                            return Err(Diagnostic::new(
+                                DiagnosticKind::UnexpectedToken,
+                                operator_span,
+                                "compound assignment requires an arithmetic operator",
+                            ));
+                        }
+                    }
                     check_name(&name, name_span)?;
                     let binding = lookup(&self.scopes, &name)
                         .ok_or_else(|| unknown_name(&name, name_span))?;
@@ -237,6 +252,7 @@ fn resolve_expression(
     for node in syntax.nodes() {
         let (kind, slot) = match &node.kind {
             ExpressionKind::Integer(_) => (ValueType::Integer, None),
+            ExpressionKind::Boolean(_) => (ValueType::Boolean, None),
             ExpressionKind::String(_) => (ValueType::String, None),
             ExpressionKind::Name(name) => {
                 check_name(name, node.span)?;
@@ -257,22 +273,46 @@ fn resolve_expression(
                 }
                 (ValueType::Integer, None)
             }
-            ExpressionKind::Binary {
+            ExpressionKind::Not {
+                operand,
+                operator_span,
+            } => {
+                require_type(types[*operand], ValueType::Boolean, *operator_span)?;
+                (ValueType::Boolean, None)
+            }
+            ExpressionKind::Logical {
                 left,
                 right,
                 operator_span,
                 ..
             } => {
-                for operand in [*left, *right] {
-                    if types[operand] != ValueType::Integer {
-                        return Err(type_mismatch(
-                            *operator_span,
-                            ValueType::Integer,
-                            types[operand],
-                        ));
+                require_type(types[*left], ValueType::Boolean, *operator_span)?;
+                require_type(types[*right], ValueType::Boolean, *operator_span)?;
+                (ValueType::Boolean, None)
+            }
+            ExpressionKind::Binary {
+                left,
+                right,
+                operator,
+                operator_span,
+            } => {
+                match operator {
+                    BinaryOperator::Equal | BinaryOperator::NotEqual => {
+                        require_type(types[*right], types[*left], *operator_span)?;
+                    }
+                    _ => {
+                        require_type(types[*left], ValueType::Integer, *operator_span)?;
+                        require_type(types[*right], ValueType::Integer, *operator_span)?;
                     }
                 }
-                (ValueType::Integer, None)
+                let kind = match operator {
+                    BinaryOperator::Add
+                    | BinaryOperator::Subtract
+                    | BinaryOperator::Multiply
+                    | BinaryOperator::Divide => ValueType::Integer,
+                    _ => ValueType::Boolean,
+                };
+                (kind, None)
             }
         };
         types.push(kind);
@@ -286,14 +326,37 @@ fn resolve_expression(
     })
 }
 
+pub(crate) fn resolve_standalone(
+    expression: &Expression,
+) -> Result<ResolvedExpression, Diagnostic> {
+    resolve_expression(expression.clone(), &[])
+}
+
+pub(crate) fn require_type(
+    found: ValueType,
+    expected: ValueType,
+    span: Span,
+) -> Result<(), Diagnostic> {
+    if found != expected {
+        Err(type_mismatch(span, expected, found))
+    } else {
+        Ok(())
+    }
+}
+
 fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
-    if matches!(name, "let" | "mut" | "println") {
+    if matches!(
+        name,
+        "let" | "mut" | "println" | "true" | "false" | "and" | "or" | "not"
+    ) {
         Err(Diagnostic::new(
             DiagnosticKind::ReservedName,
             span,
             format!("{name:?} is reserved and cannot be used as a variable"),
         )
-        .with_help("choose a name other than let, mut, or println"))
+        .with_help(
+            "choose a name that is not a statement word, boolean literal, or logical operator",
+        ))
     } else {
         Ok(())
     }

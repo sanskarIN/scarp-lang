@@ -3,7 +3,7 @@
 use crate::{
     ast::{
         AssignmentOperator, BinaryOperator, Expression, ExpressionKind, ExpressionNode,
-        PrintArgument, Program, Statement,
+        LogicalOperator, PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
@@ -131,7 +131,7 @@ impl Parser<'_> {
                             return Err(self.expected("a string literal or value expression"));
                         }
                         let mut nodes = Vec::new();
-                        let root = self.sum(&mut nodes, 0)?;
+                        let root = self.logical_or(&mut nodes, 0)?;
                         PrintArgument::Expression(Expression { nodes, root })
                     };
                     self.punctuation(TokenKind::RightParen, "')'")?;
@@ -158,7 +158,7 @@ impl Parser<'_> {
                     self.cursor += 1;
                     self.punctuation(TokenKind::Equal, "'='")?;
                     let mut nodes = Vec::new();
-                    let root = self.sum(&mut nodes, 0)?;
+                    let root = self.logical_or(&mut nodes, 0)?;
                     let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
                     statements.push(Statement::Let {
                         name,
@@ -179,7 +179,7 @@ impl Parser<'_> {
                         let operator_span = self.tokens[self.cursor + 1].span;
                         self.cursor += 2;
                         let mut nodes = Vec::new();
-                        let root = self.sum(&mut nodes, 0)?;
+                        let root = self.logical_or(&mut nodes, 0)?;
                         let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
                         statements.push(Statement::Assign {
                             name,
@@ -209,6 +209,92 @@ impl Parser<'_> {
                 .with_help("close the statement block with '}'"));
         }
         Ok(statements)
+    }
+
+    fn keyword(&self, expected: &str) -> bool {
+        matches!(self.current().map(|token| &token.kind), Some(TokenKind::Identifier(name)) if name == expected)
+    }
+
+    fn logical_or(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let mut left = self.logical_and(nodes, depth)?;
+        while self.keyword("or") {
+            let operator_span = self.current().unwrap().span;
+            self.cursor += 1;
+            let right = self.logical_and(nodes, depth)?;
+            left = logical(nodes, left, LogicalOperator::Or, right, operator_span);
+        }
+        Ok(left)
+    }
+
+    fn logical_and(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let mut left = self.logical_not(nodes, depth)?;
+        while self.keyword("and") {
+            let operator_span = self.current().unwrap().span;
+            self.cursor += 1;
+            let right = self.logical_not(nodes, depth)?;
+            left = logical(nodes, left, LogicalOperator::And, right, operator_span);
+        }
+        Ok(left)
+    }
+
+    fn logical_not(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let mut operators = Vec::new();
+        while self.keyword("not") {
+            operators.push(self.current().unwrap().span);
+            self.cursor += 1;
+        }
+        let mut operand = self.comparison(nodes, depth)?;
+        for operator_span in operators.into_iter().rev() {
+            let span = Span::new(operator_span.start, nodes[operand].span.end);
+            operand = push(
+                nodes,
+                ExpressionKind::Not {
+                    operand,
+                    operator_span,
+                },
+                span,
+            );
+        }
+        Ok(operand)
+    }
+
+    fn comparison(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let left = self.sum(nodes, depth)?;
+        if let Some(operator) = self
+            .current()
+            .and_then(|token| comparison_operator(&token.kind))
+        {
+            let operator_span = self.current().unwrap().span;
+            self.cursor += 1;
+            let right = self.sum(nodes, depth)?;
+            if self
+                .current()
+                .and_then(|token| comparison_operator(&token.kind))
+                .is_some()
+            {
+                return Err(self
+                    .expected("'and' between separate comparisons")
+                    .with_help("write a < b and b < c; chained comparisons are not supported"));
+            }
+            return Ok(binary(nodes, left, operator, right, operator_span));
+        }
+        Ok(left)
     }
 
     fn sum(&mut self, nodes: &mut Vec<ExpressionNode>, depth: usize) -> Result<usize, Diagnostic> {
@@ -306,7 +392,11 @@ impl Parser<'_> {
                 kind: TokenKind::Identifier(name),
                 span,
             }) => {
-                let kind = ExpressionKind::Name(name.clone());
+                let kind = match name.as_str() {
+                    "true" => ExpressionKind::Boolean(true),
+                    "false" => ExpressionKind::Boolean(false),
+                    _ => ExpressionKind::Name(name.clone()),
+                };
                 let span = *span;
                 self.cursor += 1;
                 Ok(push(nodes, kind, span))
@@ -341,7 +431,7 @@ impl Parser<'_> {
                     .with_help("reduce the number of nested parentheses"));
                 }
                 self.cursor += 1;
-                let expression = self.sum(nodes, depth + 1)?;
+                let expression = self.logical_or(nodes, depth + 1)?;
                 let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
                 Ok(push(
                     nodes,
@@ -363,6 +453,38 @@ fn assignment_operator(kind: &TokenKind) -> Option<AssignmentOperator> {
         TokenKind::SlashEqual => AssignmentOperator::Compound(BinaryOperator::Divide),
         _ => return None,
     })
+}
+
+fn comparison_operator(kind: &TokenKind) -> Option<BinaryOperator> {
+    Some(match kind {
+        TokenKind::EqualEqual => BinaryOperator::Equal,
+        TokenKind::NotEqual => BinaryOperator::NotEqual,
+        TokenKind::Less => BinaryOperator::Less,
+        TokenKind::LessEqual => BinaryOperator::LessEqual,
+        TokenKind::Greater => BinaryOperator::Greater,
+        TokenKind::GreaterEqual => BinaryOperator::GreaterEqual,
+        _ => return None,
+    })
+}
+
+fn logical(
+    nodes: &mut Vec<ExpressionNode>,
+    left: usize,
+    operator: LogicalOperator,
+    right: usize,
+    operator_span: Span,
+) -> usize {
+    let span = Span::new(nodes[left].span.start, nodes[right].span.end);
+    push(
+        nodes,
+        ExpressionKind::Logical {
+            left,
+            operator,
+            right,
+            operator_span,
+        },
+        span,
+    )
 }
 
 fn push(nodes: &mut Vec<ExpressionNode>, kind: ExpressionKind, span: Span) -> usize {
