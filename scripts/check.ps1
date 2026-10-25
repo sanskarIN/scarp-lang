@@ -22,10 +22,12 @@ try {
     Invoke-Cargo -CargoArguments @('fmt', '--all', '--', '--check')
     Invoke-Cargo -CargoArguments @('clippy', '--locked', '--all-targets', '--', '-D', 'warnings')
     Invoke-Cargo -CargoArguments @('test', '--locked')
+    Invoke-Cargo -CargoArguments @('test', '--locked', '--release')
     Invoke-Cargo -CargoArguments @('build', '--locked')
     Invoke-Cargo -CargoArguments @('doc', '--locked', '--no-deps')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/hello.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'tokens', 'examples/hello.srp')
+    Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/arithmetic.srp')
 }
 finally {
     $env:CARGO_INCREMENTAL = $previousIncremental
