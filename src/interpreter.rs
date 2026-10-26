@@ -4,10 +4,9 @@ use std::io::{self, Write};
 
 use crate::{
     ast::OutputTarget,
-    diagnostics::{Diagnostic, DiagnosticKind},
-    evaluator,
-    limits::{Budget, ExecutionLimits},
-    resolver::{ResolvedArgument, ResolvedProgram, ResolvedStatement},
+    diagnostics::Diagnostic,
+    limits::{ExecutionLimits, ExecutionOptions},
+    resolver::ResolvedProgram,
     value::Value,
     RunError,
 };
@@ -49,102 +48,14 @@ impl OutputEvent<'_> {
     }
 }
 
+mod machine;
+
 fn prepare(
     program: &ResolvedProgram,
     capture: bool,
-    limits: ExecutionLimits,
+    options: ExecutionOptions,
 ) -> Result<Vec<OutputEvent<'_>>, Diagnostic> {
-    let mut environment = vec![Value::Integer(0); program.binding_count()];
-    let mut workspace = evaluator::Workspace::default();
-    let mut output = Vec::new();
-    let mut pc = 0;
-    let mut budget = Budget::new(limits.max_steps);
-    let mut prints = 0;
-    while let Some(operation) = program.statements.get(pc) {
-        budget.charge(1, operation.span)?;
-        match &operation.kind {
-            ResolvedStatement::JumpIfFalse { condition, target } => {
-                let value = workspace.evaluate(condition, &environment, &mut budget)?;
-                let span = condition.syntax.nodes()[condition.syntax.root()].span;
-                if !value.require_boolean(span)? {
-                    pc = *target;
-                    continue;
-                }
-            }
-            ResolvedStatement::Jump { target } | ResolvedStatement::LoopControl { target } => {
-                pc = *target;
-                continue;
-            }
-            ResolvedStatement::Update {
-                slot,
-                operator,
-                value,
-                operator_span,
-            } => {
-                let previous = environment[*slot].clone();
-                let right = workspace.evaluate(value, &environment, &mut budget)?;
-                environment[*slot] =
-                    evaluator::apply_binary(*operator, &previous, &right, *operator_span)?;
-            }
-            ResolvedStatement::Store { slot, value } => {
-                environment[*slot] = workspace.evaluate(value, &environment, &mut budget)?;
-            }
-            ResolvedStatement::Output {
-                arguments,
-                target,
-                newline,
-            } => {
-                if prints >= limits.max_prints {
-                    return Err(Diagnostic::new(
-                        DiagnosticKind::OutputLimit,
-                        operation.span,
-                        "print count limit exceeded",
-                    )
-                    .with_help("reduce printed results or select a larger print budget"));
-                }
-                prints += 1;
-                for (index, argument) in arguments.iter().enumerate() {
-                    if index > 0 {
-                        budget.charge(1, operation.span)?;
-                        if capture {
-                            output.push(OutputEvent {
-                                target: *target,
-                                value: PrintValue::String(" "),
-                                newline: false,
-                            });
-                        }
-                    }
-                    let value = match argument {
-                        ResolvedArgument::String(value) => PrintValue::String(value),
-                        ResolvedArgument::Expression(expression) => {
-                            let value =
-                                workspace.evaluate(expression, &environment, &mut budget)?;
-                            if let Some(vector) = value.as_vector() {
-                                budget.charge(vector.len() as u64, operation.span)?;
-                            }
-                            PrintValue::Value(value)
-                        }
-                    };
-                    if capture {
-                        output.push(OutputEvent {
-                            target: *target,
-                            value,
-                            newline: *newline && index + 1 == arguments.len(),
-                        });
-                    }
-                }
-                if capture && *newline && arguments.is_empty() {
-                    output.push(OutputEvent {
-                        target: *target,
-                        value: PrintValue::String(""),
-                        newline: true,
-                    });
-                }
-            }
-        }
-        pc += 1;
-    }
-    Ok(output)
+    machine::prepare(program, capture, options)
 }
 
 /// Resolve and evaluate through `compile` first. Arithmetic failures never write
@@ -158,7 +69,16 @@ pub fn execute_with_limits(
     output: &mut impl Write,
     limits: ExecutionLimits,
 ) -> Result<(), RunError> {
-    let events = prepare(program, true, limits).map_err(RunError::Diagnostic)?;
+    execute_with_options(program, output, limits.into())
+}
+
+/// Execute with explicit work, call, frame-storage, and output-snapshot budgets.
+pub fn execute_with_options(
+    program: &ResolvedProgram,
+    output: &mut impl Write,
+    options: ExecutionOptions,
+) -> Result<(), RunError> {
+    let events = prepare(program, true, options).map_err(RunError::Diagnostic)?;
     if events
         .iter()
         .any(|event| event.target == OutputTarget::Stderr && event.has_bytes())
@@ -190,7 +110,17 @@ pub fn execute_with_io_and_limits(
     stderr: &mut impl Write,
     limits: ExecutionLimits,
 ) -> Result<(), RunError> {
-    let events = prepare(program, true, limits).map_err(RunError::Diagnostic)?;
+    execute_with_io_and_options(program, stdout, stderr, limits.into())
+}
+
+/// Dual-stream execution with all interpreter resource options.
+pub fn execute_with_io_and_options(
+    program: &ResolvedProgram,
+    stdout: &mut impl Write,
+    stderr: &mut impl Write,
+    options: ExecutionOptions,
+) -> Result<(), RunError> {
+    let events = prepare(program, true, options).map_err(RunError::Diagnostic)?;
     let mut previous = None;
     for event in events.iter().filter(|event| event.has_bytes()) {
         if let Some(previous) = previous.filter(|previous| *previous != event.target) {
@@ -220,5 +150,13 @@ pub fn validate_with_limits(
     program: &ResolvedProgram,
     limits: ExecutionLimits,
 ) -> Result<(), Diagnostic> {
-    prepare(program, false, limits).map(|_| ())
+    validate_with_options(program, limits.into())
+}
+
+/// Execute all selected paths without retaining or replaying output.
+pub fn validate_with_options(
+    program: &ResolvedProgram,
+    options: ExecutionOptions,
+) -> Result<(), Diagnostic> {
+    prepare(program, false, options).map(|_| ())
 }

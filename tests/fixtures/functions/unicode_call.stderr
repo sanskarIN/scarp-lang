@@ -1,0 +1,11 @@
+error[E0008]: division by zero
+ --> unicode_call.srp:2:50
+  |
+2 | funcra divide(n: integer) -> integer { return 10 / n; }
+  |                                                  ^
+ = note: called funcra divide here
+ --> unicode_call.srp:3:7
+  |
+3 | print(divide(0));
+  |       ^^^^^^^^^
+ = help: the divisor must evaluate to a nonzero integer

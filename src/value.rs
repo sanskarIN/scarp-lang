@@ -6,6 +6,8 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueType {
+    /// Function result only; not a source-level primitive value.
+    Unit,
     Integer,
     Float,
     Vector,
@@ -16,6 +18,7 @@ pub enum ValueType {
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            Self::Unit => "unit",
             Self::Integer => "integer",
             Self::Float => "float",
             Self::Vector => "vector",
@@ -110,6 +113,8 @@ pub(crate) fn finite_number(value: f64, span: Span) -> Result<FiniteFloat, Diagn
 /// mutate its copies or values already captured for output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
+    /// Internal no-result marker. The resolver prevents ordinary value use.
+    Unit,
     Integer(i64),
     Float(FiniteFloat),
     Vector(NumericVector),
@@ -120,6 +125,7 @@ pub enum Value {
 impl Value {
     pub fn kind(&self) -> ValueType {
         match self {
+            Self::Unit => ValueType::Unit,
             Self::Integer(_) => ValueType::Integer,
             Self::Float(_) => ValueType::Float,
             Self::Vector(_) => ValueType::Vector,
@@ -199,6 +205,7 @@ impl From<String> for Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Unit => f.write_str("unit"),
             Self::Integer(value) => value.fmt(f),
             Self::Float(value) => value.fmt(f),
             Self::Vector(value) => value.fmt(f),

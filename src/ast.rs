@@ -11,6 +11,15 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
+    Function(FunctionDeclaration),
+    Return {
+        value: Option<Expression>,
+        span: Span,
+    },
+    Call {
+        expression: Expression,
+        span: Span,
+    },
     While {
         condition: Expression,
         statements: Vec<Statement>,
@@ -64,6 +73,8 @@ pub enum Statement {
 impl Statement {
     pub fn span(&self) -> Span {
         match self {
+            Self::Function(function) => function.span,
+            Self::Return { span, .. } | Self::Call { span, .. } => *span,
             Self::While { span, .. }
             | Self::Break { span }
             | Self::Continue { span }
@@ -75,6 +86,39 @@ impl Statement {
             | Self::Assign { span, .. } => *span,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionDeclaration {
+    pub name: String,
+    pub name_span: Span,
+    pub parameters: Vec<Parameter>,
+    pub result: crate::value::ValueType,
+    pub pure: bool,
+    pub contracts: Vec<Contract>,
+    pub statements: Vec<Statement>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Parameter {
+    pub name: String,
+    pub span: Span,
+    pub kind: crate::value::ValueType,
+    pub default: Option<Expression>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Contract {
+    pub postcondition: bool,
+    pub expression: Expression,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CallArgument {
+    pub label: Option<(String, Span)>,
+    pub expression: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,6 +175,11 @@ pub struct ExpressionNode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionKind {
+    UserCall {
+        name: String,
+        arguments: Vec<CallArgument>,
+        function_span: Span,
+    },
     Vector {
         elements: Vec<usize>,
     },

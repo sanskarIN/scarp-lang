@@ -2,14 +2,15 @@
 
 use crate::{
     ast::{
-        AssignmentOperator, BinaryOperator, ConditionalBranch, Expression, ExpressionKind,
-        ExpressionNode, LogicalOperator, OutputTarget, PrintArgument, Program, Statement,
+        AssignmentOperator, BinaryOperator, CallArgument, ConditionalBranch, Contract, Expression,
+        ExpressionKind, ExpressionNode, FunctionDeclaration, LogicalOperator, OutputTarget,
+        Parameter, PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
     numeric::Builtin,
-    value::FiniteFloat,
     value::MAX_VECTOR_LENGTH,
+    value::{FiniteFloat, ValueType},
 };
 
 /// Maximum nested expression parentheses, excluding the println call itself.
@@ -86,6 +87,30 @@ impl Parser<'_> {
                     break;
                 }
                 TokenKind::RightBrace if in_block => break,
+                TokenKind::Identifier(name) if name == "funcra" || name == "pure" => {
+                    if in_block {
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::FunctionUnsupported,
+                            token.span,
+                            "nested function declarations are not supported",
+                        ));
+                    }
+                    statements.push(Statement::Function(self.function()?));
+                }
+                TokenKind::Identifier(name) if name == "return" => {
+                    let start = token.span.start;
+                    self.cursor += 1;
+                    let value = if self.at(&TokenKind::Semicolon) {
+                        None
+                    } else {
+                        Some(self.expression()?)
+                    };
+                    let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                    statements.push(Statement::Return {
+                        value,
+                        span: Span::new(start, end),
+                    });
+                }
                 TokenKind::LeftBrace => {
                     let (inner, span) = self.block(depth)?;
                     statements.push(Statement::Block {
@@ -187,6 +212,26 @@ impl Parser<'_> {
                     });
                 }
                 TokenKind::Identifier(name) => {
+                    if self
+                        .tokens
+                        .get(self.cursor + 1)
+                        .is_some_and(|t| t.kind == TokenKind::LeftParen)
+                    {
+                        let start = token.span.start;
+                        let expression = self.expression()?;
+                        if !matches!(
+                            expression.nodes[expression.root].kind,
+                            ExpressionKind::Call { .. } | ExpressionKind::UserCall { .. }
+                        ) {
+                            return Err(self.expected("a standalone function call"));
+                        }
+                        let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                        statements.push(Statement::Call {
+                            expression,
+                            span: Span::new(start, end),
+                        });
+                        continue;
+                    }
                     if let Some(operator) = self
                         .tokens
                         .get(self.cursor + 1)
@@ -231,6 +276,121 @@ impl Parser<'_> {
 
     fn keyword(&self, expected: &str) -> bool {
         matches!(self.current().map(|token| &token.kind), Some(TokenKind::Identifier(name)) if name == expected)
+    }
+
+    fn at(&self, kind: &TokenKind) -> bool {
+        self.current().is_some_and(|token| &token.kind == kind)
+    }
+
+    fn expression(&mut self) -> Result<Expression, Diagnostic> {
+        let mut nodes = Vec::new();
+        let root = self.logical_or(&mut nodes, 0)?;
+        Ok(Expression { nodes, root })
+    }
+
+    fn identifier(&mut self) -> Result<(String, Span), Diagnostic> {
+        match self.current() {
+            Some(Token {
+                kind: TokenKind::Identifier(name),
+                span,
+            }) => {
+                let result = (name.clone(), *span);
+                self.cursor += 1;
+                Ok(result)
+            }
+            _ => Err(self.expected("an identifier")),
+        }
+    }
+
+    fn value_type(&mut self, result: bool) -> Result<ValueType, Diagnostic> {
+        let (name, span) = self.identifier()?;
+        match name.as_str() {
+            "integer" => Ok(ValueType::Integer),
+            "float" => Ok(ValueType::Float),
+            "boolean" => Ok(ValueType::Boolean),
+            "string" => Ok(ValueType::String),
+            "vector" => Ok(ValueType::Vector),
+            "unit" if result => Ok(ValueType::Unit),
+            "funcra" | "pure" => Err(Diagnostic::new(
+                DiagnosticKind::FunctionUnsupported,
+                span,
+                "function types and first-class functions are not supported yet",
+            )),
+            _ => Err(Diagnostic::new(
+                DiagnosticKind::FunctionDefinition,
+                span,
+                format!(
+                    "invalid {} type {name:?}",
+                    if result { "result" } else { "parameter" }
+                ),
+            )
+            .with_help("use integer, float, boolean, string, vector, or unit for a result")),
+        }
+    }
+
+    fn function(&mut self) -> Result<FunctionDeclaration, Diagnostic> {
+        let start = self.current().unwrap().span.start;
+        let pure = self.keyword("pure");
+        if pure {
+            self.cursor += 1;
+        }
+        if !self.keyword("funcra") {
+            return Err(self.expected("funcra"));
+        }
+        self.cursor += 1;
+        let (name, name_span) = self.identifier()?;
+        self.punctuation(TokenKind::LeftParen, "'('")?;
+        let mut parameters = Vec::new();
+        while !self.at(&TokenKind::RightParen) {
+            let (name, span) = self.identifier()?;
+            self.punctuation(TokenKind::Colon, "':' before the parameter type")?;
+            let kind = self.value_type(false)?;
+            let default = if self.at(&TokenKind::Equal) {
+                self.cursor += 1;
+                Some(self.expression()?)
+            } else {
+                None
+            };
+            parameters.push(Parameter {
+                name,
+                span,
+                kind,
+                default,
+            });
+            if !self.at(&TokenKind::Comma) {
+                break;
+            }
+            self.cursor += 1;
+        }
+        self.punctuation(TokenKind::RightParen, "')'")?;
+        self.punctuation(TokenKind::Arrow, "'->' before the result type")?;
+        let result = self.value_type(true)?;
+        let mut contracts = Vec::new();
+        while self.keyword("needs") || self.keyword("ensures") {
+            let start = self.current().unwrap().span.start;
+            let postcondition = self.keyword("ensures");
+            self.cursor += 1;
+            let expression = self.expression()?;
+            let end = self
+                .punctuation(TokenKind::Semicolon, "';' after the contract")?
+                .end;
+            contracts.push(Contract {
+                postcondition,
+                expression,
+                span: Span::new(start, end),
+            });
+        }
+        let (statements, body) = self.block(0)?;
+        Ok(FunctionDeclaration {
+            name,
+            name_span,
+            parameters,
+            result,
+            pure,
+            contracts,
+            statements,
+            span: Span::new(start, body.end),
+        })
     }
 
     fn output_statement(&mut self) -> Result<Statement, Diagnostic> {
@@ -676,33 +836,60 @@ impl Parser<'_> {
                 kind: TokenKind::Identifier(name),
                 span,
             }) => {
+                if name == "funcra" || name == "pure" {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::FunctionUnsupported,
+                        *span,
+                        "anonymous funcra expressions are not supported yet",
+                    ));
+                }
                 if self
                     .tokens
                     .get(self.cursor + 1)
                     .is_some_and(|token| token.kind == TokenKind::LeftParen)
                 {
                     let function_span = *span;
-                    let function = Builtin::from_name(name).ok_or_else(|| {
-                        Diagnostic::new(
-                            DiagnosticKind::UnknownFunction,
-                            function_span,
-                            format!("unknown built-in function {name:?}"),
-                        )
-                    })?;
+                    let name = name.clone();
                     self.cursor += 1;
                     let opening = self.punctuation(TokenKind::LeftParen, "'('")?;
-                    let arguments =
-                        self.elements(nodes, depth, opening, TokenKind::RightParen, false)?;
+                    self.expression_depth(depth, opening)?;
+                    let mut arguments = Vec::new();
+                    while !self.at(&TokenKind::RightParen) {
+                        let label = if self
+                            .tokens
+                            .get(self.cursor + 1)
+                            .is_some_and(|t| t.kind == TokenKind::Colon)
+                        {
+                            let label = self.identifier()?;
+                            self.cursor += 1;
+                            Some(label)
+                        } else {
+                            None
+                        };
+                        let expression = self.logical_or(nodes, depth + 1)?;
+                        arguments.push(CallArgument { label, expression });
+                        if !self.at(&TokenKind::Comma) {
+                            break;
+                        }
+                        self.cursor += 1;
+                    }
                     let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
-                    return Ok(push(
-                        nodes,
+                    let kind = if let Some(function) = Builtin::from_name(&name)
+                        .filter(|_| arguments.iter().all(|a| a.label.is_none()))
+                    {
                         ExpressionKind::Call {
                             function,
+                            arguments: arguments.into_iter().map(|a| a.expression).collect(),
+                            function_span,
+                        }
+                    } else {
+                        ExpressionKind::UserCall {
+                            name,
                             arguments,
                             function_span,
-                        },
-                        Span::new(function_span.start, end),
-                    ));
+                        }
+                    };
+                    return Ok(push(nodes, kind, Span::new(function_span.start, end)));
                 }
                 let kind = match name.as_str() {
                     "true" => ExpressionKind::Boolean(true),

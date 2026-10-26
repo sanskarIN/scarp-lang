@@ -1,0 +1,3 @@
+// café 🌍
+funcra divide(n: integer) -> integer { return 10 / n; }
+print(divide(0));

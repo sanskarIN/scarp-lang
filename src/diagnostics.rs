@@ -104,6 +104,15 @@ pub enum DiagnosticKind {
     ArgumentCount,
     InvalidShift,
     BackendUnsupported,
+    FunctionDefinition,
+    InvalidReturn,
+    MissingReturn,
+    CallArguments,
+    ImpureFunction,
+    ContractViolation,
+    CallLimit,
+    FunctionUnsupported,
+    CaptureLimit,
 }
 
 impl DiagnosticKind {
@@ -136,6 +145,15 @@ impl DiagnosticKind {
             Self::ArgumentCount => "E0025",
             Self::InvalidShift => "E0026",
             Self::BackendUnsupported => "E0027",
+            Self::FunctionDefinition => "E0028",
+            Self::InvalidReturn => "E0029",
+            Self::MissingReturn => "E0030",
+            Self::CallArguments => "E0031",
+            Self::ImpureFunction => "E0032",
+            Self::ContractViolation => "E0033",
+            Self::CallLimit => "E0034",
+            Self::FunctionUnsupported => "E0035",
+            Self::CaptureLimit => "E0036",
         }
     }
 }

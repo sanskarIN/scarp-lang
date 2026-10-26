@@ -72,6 +72,38 @@ fn success(output: &Output) {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn native_function_rejection_does_not_create_or_replace_artifacts() {
+    let fixture = Fixture::new();
+    let source = fixture.source("funcra f() -> integer { return 4; } print(f());");
+    for emit in ["c", "exe", "obj"] {
+        let destination = fixture.0.join(format!("function-output.{emit}"));
+        let result = command()
+            .args(["compile", "--emit", emit])
+            .arg(&source)
+            .arg("-o")
+            .arg(&destination)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(String::from_utf8_lossy(&result.stderr).contains("E0035"));
+        assert!(!destination.exists());
+        fixture.clean_staging();
+    }
+    let destination = fixture.0.join("existing.c");
+    fs::write(&destination, b"preserve me").unwrap();
+    let result = command()
+        .args(["compile", "--emit", "c"])
+        .arg(&source)
+        .arg("-o")
+        .arg(&destination)
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert_eq!(fs::read(destination).unwrap(), b"preserve me");
+}
 fn build(cc: &OsString, source: &Path, destination: &Path, flags: &[&str]) -> Output {
     command()
         .arg("compile")

@@ -25,6 +25,16 @@ pub fn emit_c(source: &str) -> Result<String, Diagnostic> {
 }
 
 pub fn emit_program(program: &ResolvedProgram) -> Result<String, Diagnostic> {
+    if let Some(function) = program.functions().first() {
+        return Err(Diagnostic::new(
+            DiagnosticKind::FunctionUnsupported,
+            function.span,
+            "native function lowering is not supported yet",
+        )
+        .with_help(
+            "use exec for funcra programs; native compilation does not fall back to interpretation",
+        ));
+    }
     if program.binding_count() > 256 || program.statements.len() > 4096 {
         return Err(unsupported(Span::default()));
     }
@@ -34,6 +44,13 @@ pub fn emit_program(program: &ResolvedProgram) -> Result<String, Diagnostic> {
     for operation in &program.statements {
         let mut expressions = Vec::new();
         match &operation.kind {
+            ResolvedStatement::Return { .. } | ResolvedStatement::Call { .. } => {
+                return Err(Diagnostic::new(
+                    DiagnosticKind::FunctionUnsupported,
+                    operation.span,
+                    "native standalone call statements are not supported yet",
+                ));
+            }
             ResolvedStatement::Store { value, .. } | ResolvedStatement::Update { value, .. } => {
                 expressions.push(value);
             }
@@ -102,6 +119,9 @@ pub fn emit_program(program: &ResolvedProgram) -> Result<String, Diagnostic> {
         writeln!(out, "case {index}: {{").unwrap();
         step(&mut out, operation.span);
         match &operation.kind {
+            ResolvedStatement::Return { .. } | ResolvedStatement::Call { .. } => {
+                return Err(unsupported(operation.span));
+            }
             ResolvedStatement::Store { slot, .. } => {
                 writeln!(
                     out,
