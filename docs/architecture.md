@@ -14,10 +14,14 @@ lexer::lex -> Vec<Token>
 parser::parse -> Program
     |
     v
+resolver::resolve -> ResolvedProgram
+    |
+    v
 interpreter::execute -> supplied Write destination
 ```
 
-`compile` combines lexing and parsing. `evaluator::evaluate` performs checked
+`compile` combines lexing, parsing, and name resolution. `parse` exposes the
+unresolved syntax tree. `evaluator::evaluate` performs checked
 integer evaluation. `interpreter::execute` evaluates every print argument before
 writing any output. `run` combines compilation and execution.
 They do not read files or assume a global stdout destination. The language layer
@@ -30,6 +34,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `lexer` | Skip trivia, decode strings, retain original byte spans |
 | `parser` | Precedence parsing, literal validation, and nesting limits |
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
+| `resolver` | Declaration ordering, name diagnostics, immutable storage plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |

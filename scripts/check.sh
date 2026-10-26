@@ -24,3 +24,4 @@ cargo doc --locked --no-deps
 cargo run --locked -- run examples/hello.srp
 cargo run --locked -- tokens examples/hello.srp
 cargo run --locked -- run examples/arithmetic.srp
+cargo run --locked -- run examples/bindings.srp

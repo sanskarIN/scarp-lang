@@ -251,6 +251,26 @@ fn token_inspection_does_not_evaluate_or_range_check_integers() {
     assert!(tokens.contains("  /  "));
 }
 
+#[test]
+fn runs_bindings_and_reports_semantic_errors_on_stderr() {
+    let fixture = Fixture::new();
+    let valid = fixture.file("bindings.srp", "let value = 6 * 7; println(value);");
+    let output = command().arg("run").arg(valid).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(output.stdout, b"42\n");
+    for (source, code) in [
+        ("println(\"first\"); println(missing);", "E0010"),
+        ("let x = 1; let x = 2;", "E0011"),
+        ("let println = 1;", "E0012"),
+    ] {
+        let invalid = fixture.file("names.srp", source);
+        let output = command().arg("run").arg(invalid).output().unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+        assert!(stderr(&output).contains(code));
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn handles_non_unicode_native_paths_according_to_the_filesystem() {

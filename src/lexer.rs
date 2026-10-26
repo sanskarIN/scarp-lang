@@ -13,6 +13,7 @@ pub enum TokenKind {
     Minus,
     Star,
     Slash,
+    Equal,
     LeftParen,
     RightParen,
     Semicolon,
@@ -29,6 +30,7 @@ impl fmt::Display for TokenKind {
             Self::Minus => f.write_str("-"),
             Self::Star => f.write_str("*"),
             Self::Slash => f.write_str("/"),
+            Self::Equal => f.write_str("="),
             Self::LeftParen => f.write_str("("),
             Self::RightParen => f.write_str(")"),
             Self::Semicolon => f.write_str(";"),
@@ -82,6 +84,10 @@ impl Lexer<'_> {
                 continue;
             }
             let kind = match character {
+                '=' => {
+                    self.bump();
+                    TokenKind::Equal
+                }
                 '(' => {
                     self.bump();
                     TokenKind::LeftParen

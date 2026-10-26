@@ -1,6 +1,5 @@
 use scarp::{
     ast::{ExpressionKind, PrintArgument, Statement},
-    compile,
     diagnostics::{Diagnostic, DiagnosticKind},
     evaluator,
     lexer::{lex, TokenKind},
@@ -224,7 +223,7 @@ fn keeps_strings_and_arithmetic_comments_compatible() {
 #[test]
 fn expression_nodes_preserve_spans_and_postorder_invariants() {
     let source = "println(-(1 + 2) * 3);";
-    let program = compile(source).unwrap();
+    let program = scarp::parse(source).unwrap();
     let Statement::Println {
         argument: PrintArgument::Integer(expression),
         ..
@@ -236,17 +235,18 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
     let root = &expression.nodes()[expression.root()];
     assert_eq!(&source[root.span.start..root.span.end], "-(1 + 2) * 3");
     for (id, node) in expression.nodes().iter().enumerate() {
-        match node.kind {
+        match &node.kind {
             ExpressionKind::Integer(_) => {}
-            ExpressionKind::Negate { operand, .. } => assert!(operand < id),
-            ExpressionKind::Group { expression } => assert!(expression < id),
+            ExpressionKind::Name(_) => panic!("unexpected variable"),
+            ExpressionKind::Negate { operand, .. } => assert!(*operand < id),
+            ExpressionKind::Group { expression } => assert!(*expression < id),
             ExpressionKind::Binary {
                 left,
                 right,
                 operator_span,
                 ..
             } => {
-                assert!(left < id && right < id);
+                assert!(*left < id && *right < id);
                 assert_eq!(operator_span.end - operator_span.start, 1);
             }
         }

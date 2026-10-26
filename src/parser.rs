@@ -79,7 +79,12 @@ impl Parser<'_> {
                     } else {
                         if !matches!(
                             self.current().map(|token| &token.kind),
-                            Some(TokenKind::Integer(_) | TokenKind::Minus | TokenKind::LeftParen)
+                            Some(
+                                TokenKind::Integer(_)
+                                    | TokenKind::Identifier(_)
+                                    | TokenKind::Minus
+                                    | TokenKind::LeftParen
+                            )
                         ) {
                             return Err(self.expected("a string literal or integer expression"));
                         }
@@ -94,15 +99,37 @@ impl Parser<'_> {
                         span: Span::new(start, end),
                     });
                 }
+                TokenKind::Identifier(name) if name == "let" => {
+                    let start = token.span.start;
+                    self.cursor += 1;
+                    let (name, name_span) = match self.current() {
+                        Some(Token {
+                            kind: TokenKind::Identifier(name),
+                            span,
+                        }) => (name.clone(), *span),
+                        _ => return Err(self.expected("a binding name")),
+                    };
+                    self.cursor += 1;
+                    self.punctuation(TokenKind::Equal, "'='")?;
+                    let mut nodes = Vec::new();
+                    let root = self.sum(&mut nodes, 0)?;
+                    let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                    statements.push(Statement::Let {
+                        name,
+                        name_span,
+                        initializer: Expression { nodes, root },
+                        span: Span::new(start, end),
+                    });
+                }
                 TokenKind::Identifier(name) => {
                     return Err(Diagnostic::new(
                         DiagnosticKind::UnknownStatement,
                         token.span,
                         format!("unknown statement {name:?}"),
                     )
-                    .with_help("only println is supported as a statement name"));
+                    .with_help("start a statement with let or println"));
                 }
-                _ => return Err(self.expected("a println statement")),
+                _ => return Err(self.expected("a println statement or binding declaration")),
             }
         }
         Ok(Program { statements })
@@ -191,6 +218,15 @@ impl Parser<'_> {
     ) -> Result<usize, Diagnostic> {
         match self.current() {
             Some(Token {
+                kind: TokenKind::Identifier(name),
+                span,
+            }) => {
+                let kind = ExpressionKind::Name(name.clone());
+                let span = *span;
+                self.cursor += 1;
+                Ok(push(nodes, kind, span))
+            }
+            Some(Token {
                 kind: TokenKind::Integer(digits),
                 span,
             }) => {
@@ -228,7 +264,7 @@ impl Parser<'_> {
                     Span::new(start, end),
                 ))
             }
-            _ => Err(self.expected("an integer literal or '('")),
+            _ => Err(self.expected("an integer literal, variable name, or '('")),
         }
     }
 }

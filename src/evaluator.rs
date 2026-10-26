@@ -3,29 +3,56 @@
 use crate::{
     ast::{BinaryOperator, Expression, ExpressionKind},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
+    resolver::{self, ResolvedExpression},
 };
 
 /// Evaluate nodes in postorder. Expression construction is restricted to the
 /// parser, which guarantees that all referenced children precede their parent.
 pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
+    evaluate_with(expression, |_, name, span| {
+        Err(resolver::unknown_name(name, span))
+    })
+}
+
+pub(crate) fn evaluate_resolved(
+    expression: &ResolvedExpression,
+    environment: &[i64],
+) -> Result<i64, Diagnostic> {
+    evaluate_with(&expression.syntax, |node, name, span| {
+        expression
+            .slots
+            .get(node)
+            .copied()
+            .flatten()
+            .and_then(|slot| environment.get(slot))
+            .copied()
+            .ok_or_else(|| resolver::unknown_name(name, span))
+    })
+}
+
+fn evaluate_with(
+    expression: &Expression,
+    name_value: impl Fn(usize, &str, Span) -> Result<i64, Diagnostic>,
+) -> Result<i64, Diagnostic> {
     let mut values: Vec<i64> = Vec::with_capacity(expression.nodes().len());
-    for node in expression.nodes() {
-        let value = match node.kind {
-            ExpressionKind::Integer(value) => value,
-            ExpressionKind::Group { expression } => values[expression],
+    for (index, node) in expression.nodes().iter().enumerate() {
+        let value = match &node.kind {
+            ExpressionKind::Integer(value) => *value,
+            ExpressionKind::Name(name) => name_value(index, name, node.span)?,
+            ExpressionKind::Group { expression } => values[*expression],
             ExpressionKind::Negate {
                 operand,
                 operator_span,
-            } => values[operand]
+            } => values[*operand]
                 .checked_neg()
-                .ok_or_else(|| overflow(operator_span))?,
+                .ok_or_else(|| overflow(*operator_span))?,
             ExpressionKind::Binary {
                 left,
                 operator,
                 right,
                 operator_span,
             } => {
-                let (left, right) = (values[left], values[right]);
+                let (left, right) = (values[*left], values[*right]);
                 let result = match operator {
                     BinaryOperator::Add => left.checked_add(right),
                     BinaryOperator::Subtract => left.checked_sub(right),
@@ -34,7 +61,7 @@ pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
                         if right == 0 {
                             return Err(Diagnostic::new(
                                 DiagnosticKind::DivisionByZero,
-                                operator_span,
+                                *operator_span,
                                 "division by zero",
                             )
                             .with_help("the divisor must evaluate to a nonzero integer"));
@@ -42,7 +69,7 @@ pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
                         left.checked_div(right)
                     }
                 };
-                result.ok_or_else(|| overflow(operator_span))?
+                result.ok_or_else(|| overflow(*operator_span))?
             }
         };
         values.push(value);

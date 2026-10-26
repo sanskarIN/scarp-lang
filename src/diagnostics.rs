@@ -49,6 +49,9 @@ pub enum DiagnosticKind {
     ArithmeticOverflow,
     DivisionByZero,
     ExpressionNesting,
+    UnknownName,
+    DuplicateBinding,
+    ReservedName,
 }
 
 impl DiagnosticKind {
@@ -63,6 +66,9 @@ impl DiagnosticKind {
             Self::ArithmeticOverflow => "E0007",
             Self::DivisionByZero => "E0008",
             Self::ExpressionNesting => "E0009",
+            Self::UnknownName => "E0010",
+            Self::DuplicateBinding => "E0011",
+            Self::ReservedName => "E0012",
         }
     }
 }
@@ -73,6 +79,13 @@ pub struct Diagnostic {
     pub message: String,
     pub span: Span,
     pub help: Option<String>,
+    pub related: Vec<RelatedDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RelatedDiagnostic {
+    pub span: Span,
+    pub message: String,
 }
 
 impl Diagnostic {
@@ -82,6 +95,7 @@ impl Diagnostic {
             span,
             message: message.into(),
             help: None,
+            related: Vec::new(),
         }
     }
 
@@ -90,37 +104,56 @@ impl Diagnostic {
         self
     }
 
+    pub fn with_related(mut self, span: Span, message: impl Into<String>) -> Self {
+        self.related.push(RelatedDiagnostic {
+            span,
+            message: message.into(),
+        });
+        self
+    }
+
     /// Render the first affected source line with a caret and optional help.
     pub fn render(&self, filename: &str, source: &str) -> String {
-        let start = boundary(source, self.span.start);
-        let end = boundary(source, self.span.end).max(start);
-        let position = location(source, start);
-        let line_start = source[..start].rfind('\n').map_or(0, |index| index + 1);
-        let line_end = source[start..]
-            .find('\n')
-            .map_or(source.len(), |index| start + index);
-        let line = source[line_start..line_end].trim_end_matches('\r');
-        let visible_start = start.min(line_start + line.len());
-        let visible_end = end.min(line_start + line.len()).max(visible_start);
-        let indent = display_width(&source[line_start..visible_start]);
-        let width = display_width(&source[visible_start..visible_end]).max(1);
-        let gutter = position.line.to_string().len();
-        let mut rendered = format!(
-            "{self}\n --> {filename}:{}:{}\n{:gutter$} |\n{} | {}\n{:gutter$} | {}{}",
-            position.line,
-            position.column,
-            "",
-            position.line,
-            display_text(line),
-            "",
-            " ".repeat(indent),
-            "^".repeat(width),
-        );
+        let mut rendered = format!("{self}\n{}", excerpt(self.span, filename, source));
+        for related in &self.related {
+            rendered.push_str(&format!(
+                "\n = note: {}\n{}",
+                related.message,
+                excerpt(related.span, filename, source)
+            ));
+        }
         if let Some(help) = &self.help {
             rendered.push_str(&format!("\n = help: {help}"));
         }
         rendered
     }
+}
+
+fn excerpt(span: Span, filename: &str, source: &str) -> String {
+    let start = boundary(source, span.start);
+    let end = boundary(source, span.end).max(start);
+    let position = location(source, start);
+    let line_start = source[..start].rfind('\n').map_or(0, |index| index + 1);
+    let line_end = source[start..]
+        .find('\n')
+        .map_or(source.len(), |index| start + index);
+    let line = source[line_start..line_end].trim_end_matches('\r');
+    let visible_start = start.min(line_start + line.len());
+    let visible_end = end.min(line_start + line.len()).max(visible_start);
+    let indent = display_width(&source[line_start..visible_start]);
+    let width = display_width(&source[visible_start..visible_end]).max(1);
+    let gutter = position.line.to_string().len();
+    format!(
+        " --> {filename}:{}:{}\n{:gutter$} |\n{} | {}\n{:gutter$} | {}{}",
+        position.line,
+        position.column,
+        "",
+        position.line,
+        display_text(line),
+        "",
+        " ".repeat(indent),
+        "^".repeat(width),
+    )
 }
 
 fn display_text(text: &str) -> String {

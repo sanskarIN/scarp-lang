@@ -2,6 +2,9 @@
 
 **Build Beyond Boundaries.**
 
+This development branch adds variables for the planned v0.0.2 milestone. The
+latest published version is v0.0.1; its packages do not contain these additions.
+
 Scarp is an experimental programming language implemented in Rust. This repository
 contains the **v0.0.1 experimental prerelease**: a working lexer, parser,
 interpreter, and command-line interface. Syntax and library APIs may change.
@@ -62,6 +65,7 @@ the CLI does not reject other filename extensions.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
+- Immutable integer bindings with `let name = expression;` and resolved names.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -120,8 +124,9 @@ token listings go to standard output.
 ## Library
 
 The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
-`evaluator::evaluate`, `interpreter::execute`, and `run`. `compile` validates
-syntax; `evaluator::evaluate` checks arithmetic. `execute` and `run` validate all
+`evaluator::evaluate`, `interpreter::execute`, and `run`. `parse` exposes syntax;
+`compile` validates syntax and resolves names into an immutable `ResolvedProgram`.
+`evaluator::evaluate` checks standalone literal arithmetic. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
 
@@ -153,7 +158,7 @@ The complete check sequence, including rustdoc, is available as
 ## Prototype limits and planned roadmap
 
 This is a small tree-walking interpreter. It reads a complete file into memory
-and reports the first error. It has no variables, user-defined functions,
+and reports the first error. It has no user-defined functions,
 booleans, floating-point values, types, imports, loops, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
@@ -166,7 +171,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Variables and lexical scope.
+1. Mutable bindings, assignment, and lexical scope.
 2. User-defined functions.
 3. Type checking.
 4. A compiler backend.
@@ -175,8 +180,8 @@ Future work is **planned**, in this order:
 
 These capabilities are not implemented. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
-The best next small milestone is immutable integer bindings with name-resolution
-diagnostics, before introducing nested scope or user-defined functions.
+Immutable integer bindings are implemented on this branch. Read the
+[variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
 
 ## License
 
