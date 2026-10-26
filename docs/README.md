@@ -80,6 +80,8 @@ work from unmerged development changes.
 
 The [output design](proposals/0014-output-statements.md) specifies the implemented
 Phase A/B output operations and the separate, unimplemented interpolation phase.
+The [output validation report](output-validation.md) records exact commands,
+results, API compatibility, and integration gates.
 Existing single-argument `println` examples remain compatibility coverage.
 
 `scarp` code fences contain complete runnable programs for the stated version.
