@@ -7,10 +7,10 @@ use std::{
     ffi::{OsStr, OsString},
     fs,
     io::Write,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
-pub const HELP: &str = "Usage: scarp compile <file.srp> -o <output> [options]
+pub const HELP: &str = "Usage: scarp compile [file.srp] -o <output> [options]
 
 Compile the supported integer/boolean subset; never execute the result automatically.
   -o, --output <path>       Required fresh output path; parent must exist
@@ -23,10 +23,11 @@ Compile the supported integer/boolean subset; never execute the result automatic
   -h, --help              Show this help
 
 All paths may contain spaces. --emit c needs no C compiler.
+Without a file, compile the current project's scarp.toml entrypoint.
 ";
 
 struct Invocation {
-    source: PathBuf,
+    source: Option<PathBuf>,
     build: BuildOptions,
 }
 
@@ -71,7 +72,6 @@ fn parse(args: &[OsString]) -> Result<Invocation, &'static str> {
             index += 1;
         }
     }
-    let source = source.ok_or("expected a Scarp source path")?;
     let output = output.ok_or("compile requires -o <output>")?;
     let mode = match emit.as_deref().unwrap_or(OsStr::new("exe")).to_str() {
         Some("exe") => {
@@ -148,22 +148,24 @@ pub fn dispatch(args: &[OsString], output: &mut impl Write, errors: &mut impl Wr
             return 2;
         }
     };
-    let source = match fs::read_to_string(&invocation.source) {
+    let path = match crate::resolve_source(invocation.source.as_deref(), errors) {
+        Ok(path) => path,
+        Err(status) => return status,
+    };
+    let source = match fs::read_to_string(&path) {
         Ok(source) => source,
         Err(error) => {
             let _ = writeln!(
                 errors,
                 "error: could not read '{}': {error}",
-                invocation.source.display()
+                path.display()
             );
             return 1;
         }
     };
     match builder::build(&source, &invocation.build) {
         Ok(()) => 0,
-        Err(BuildError::Source(error)) => {
-            crate::report_diagnostic(&error, Path::new(&invocation.source), &source, errors)
-        }
+        Err(BuildError::Source(error)) => crate::report_diagnostic(&error, &path, &source, errors),
         Err(error) => {
             let _ = writeln!(errors, "error: {error}");
             1

@@ -20,6 +20,8 @@ pub mod lexer;
 pub mod limits;
 pub mod numeric;
 pub mod parser;
+pub mod project;
+mod project_manifest;
 pub mod resolver;
 pub mod value;
 

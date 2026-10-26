@@ -3,7 +3,7 @@ use std::{
     ffi::{OsStr, OsString},
     fs,
     io::{self, BufWriter, Write},
-    path::Path,
+    path::{Path, PathBuf},
     process::ExitCode,
 };
 
@@ -14,6 +14,7 @@ use scarp::{
 
 mod cli_help;
 mod compile_cli;
+mod project_cli;
 use cli_help::GENERAL as HELP;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -46,6 +47,11 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
     ) {
         return compile_cli::dispatch(&args[1..], output, errors);
     }
+    if let Some(command @ ("create" | "init" | "launch")) =
+        args.first().and_then(|value| value.to_str())
+    {
+        return project_cli::dispatch(command, &args[1..], output, errors);
+    }
     if let Some(command) = args.first() {
         if let Some(replacement) = command.to_str().and_then(cli_help::replacement) {
             let _ = writeln!(
@@ -75,29 +81,28 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             return 2;
         }
     };
-    let path = Path::new(filename);
-    let source = match fs::read_to_string(path) {
+    let path = match resolve_source(filename.map(Path::new), errors) {
+        Ok(path) => path,
+        Err(status) => return status,
+    };
+    if action == FileAction::Exec {
+        return execute_file(&path, limits, output, errors);
+    }
+    let source = match read_source(&path, errors) {
         Ok(source) => source,
-        Err(error) => {
-            let _ = writeln!(
-                errors,
-                "error: could not read '{}': {error}",
-                path.display()
-            );
-            return 1;
-        }
+        Err(status) => return status,
     };
     if action == FileAction::Verify {
         match scarp::compile(&source) {
             Ok(_) => 0,
-            Err(error) => report_diagnostic(&error, path, &source, errors),
+            Err(error) => report_diagnostic(&error, &path, &source, errors),
         }
     } else if action == FileAction::Ast {
         match scarp::parse(&source) {
             Ok(program) => write_output(writeln!(output, "{program:#?}"), errors),
-            Err(error) => report_diagnostic(&error, path, &source, errors),
+            Err(error) => report_diagnostic(&error, &path, &source, errors),
         }
-    } else if action == FileAction::Tokens {
+    } else {
         match lexer::lex(&source) {
             Ok(tokens) => {
                 let mut locations = LocationTracker::new(&source);
@@ -113,25 +118,72 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
                         end.column,
                         token.kind,
                         token.span.start,
-                        token.span.end,
+                        token.span.end
                     ) {
                         return write_output(Err(error), errors);
                     }
                 }
                 0
             }
-            Err(error) => report_diagnostic(&error, path, &source, errors),
-        }
-    } else {
-        match scarp::run_with_limits(&source, output, limits) {
-            Ok(()) => 0,
-            Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
-            Err(RunError::Output(error)) => write_output(Err(error), errors),
+            Err(error) => report_diagnostic(&error, &path, &source, errors),
         }
     }
 }
 
-fn invocation(args: &[OsString]) -> Result<(FileAction, &OsStr, ExecutionLimits), &'static str> {
+fn read_source(path: &Path, errors: &mut impl Write) -> Result<String, u8> {
+    match fs::read_to_string(path) {
+        Ok(source) => Ok(source),
+        Err(error) => {
+            let _ = writeln!(
+                errors,
+                "error: could not read '{}': {error}",
+                path.display()
+            );
+            return Err(1);
+        }
+    }
+}
+
+fn execute_file(
+    path: &Path,
+    limits: ExecutionLimits,
+    output: &mut impl Write,
+    errors: &mut impl Write,
+) -> u8 {
+    let source = match read_source(path, errors) {
+        Ok(source) => source,
+        Err(status) => return status,
+    };
+    match scarp::run_with_limits(&source, output, limits) {
+        Ok(()) => 0,
+        Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
+        Err(RunError::Output(error)) => write_output(Err(error), errors),
+    }
+}
+
+fn current_project(errors: &mut impl Write) -> Result<scarp::project::Project, u8> {
+    let directory = match env::current_dir() {
+        Ok(path) => path,
+        Err(error) => {
+            let _ = writeln!(errors, "error: could not read current directory: {error}");
+            return Err(1);
+        }
+    };
+    scarp::project::Project::load(&directory).map_err(|error| {
+        let _ = writeln!(errors, "error: {error}");
+        1
+    })
+}
+fn resolve_source(path: Option<&Path>, errors: &mut impl Write) -> Result<PathBuf, u8> {
+    match path {
+        Some(path) => Ok(path.to_owned()),
+        None => current_project(errors).map(|project| project.entry().to_owned()),
+    }
+}
+
+fn invocation(
+    args: &[OsString],
+) -> Result<(FileAction, Option<&OsStr>, ExecutionLimits), &'static str> {
     let (action, mut index) = match args.first().and_then(|value| value.to_str()) {
         Some("exec") => (FileAction::Exec, 1),
         Some("verify") => (FileAction::Verify, 1),
@@ -142,6 +194,26 @@ fn invocation(args: &[OsString]) -> Result<(FileAction, &OsStr, ExecutionLimits)
         },
         _ => return Err("expected a supported command and a source path"),
     };
+    let (next, separator, limits) = execution_options(args, index, action == FileAction::Exec)?;
+    index = next;
+    if index == args.len() && !separator && matches!(action, FileAction::Exec | FileAction::Verify)
+    {
+        return Ok((action, None, limits));
+    }
+    let filename = args
+        .get(index)
+        .ok_or("expected a command and a file path")?;
+    if index + 1 != args.len() || (!separator && filename.to_string_lossy().starts_with('-')) {
+        return Err("expected a command and a file path");
+    }
+    Ok((action, Some(filename.as_os_str()), limits))
+}
+
+fn execution_options(
+    args: &[OsString],
+    mut index: usize,
+    allowed: bool,
+) -> Result<(usize, bool, ExecutionLimits), &'static str> {
     let mut limits = ExecutionLimits::default();
     let mut seen_steps = false;
     let mut seen_prints = false;
@@ -157,8 +229,8 @@ fn invocation(args: &[OsString]) -> Result<(FileAction, &OsStr, ExecutionLimits)
         if !steps && !prints {
             break;
         }
-        if action != FileAction::Exec {
-            return Err("execution limits are available only for exec");
+        if !allowed {
+            return Err("execution limits are available only for exec and launch");
         }
         if (steps && seen_steps) || (prints && seen_prints) {
             return Err("execution limit options cannot be repeated");
@@ -182,13 +254,7 @@ fn invocation(args: &[OsString]) -> Result<(FileAction, &OsStr, ExecutionLimits)
         }
         index += 2;
     }
-    let filename = args
-        .get(index)
-        .ok_or("expected a command and a file path")?;
-    if index + 1 != args.len() || (!separator && filename.to_string_lossy().starts_with('-')) {
-        return Err("expected a command and a file path");
-    }
-    Ok((action, filename.as_os_str(), limits))
+    Ok((index, separator, limits))
 }
 
 fn report_diagnostic(error: &Diagnostic, path: &Path, source: &str, errors: &mut impl Write) -> u8 {

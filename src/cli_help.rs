@@ -4,9 +4,12 @@ pub const GENERAL: &str = "Scarp — Build Beyond Boundaries.
 
 Usage: scarp <command> [options]
 
-  exec <file.srp>           Execute Scarp source
-  compile <file.srp> -o <output>  Produce an executable, object, or C source file
-  verify <file.srp>         Check syntax, names, and types without execution
+  create <directory>       Create a new application project
+  init                     Initialize an application in the current directory
+  exec [file.srp]           Execute a file or current project's entrypoint
+  launch                   Execute the current project; no file argument
+  compile [file.srp] -o <output>  Produce an executable, object, or C source file
+  verify [file.srp]         Check syntax, names, and types without execution
   inspect tokens|ast <file.srp>  Inspect actual frontend representations
   guide [command]          Show contextual help
   version                  Show the package version
@@ -18,25 +21,27 @@ Examples:
   scarp compile examples/bit_fields.srp -o program
   scarp guide inspect ast
 
-Use -- before a filename beginning with a dash. Program arguments and projects
-are not supported. Use only the command names listed above.
+Use -- before a filename beginning with a dash. Project commands use the current
+directory's scarp.toml without ancestor searches. Program arguments are unsupported.
 ";
 
-const EXEC: &str = "Usage: scarp exec [options] [--] <file.srp>
+const EXEC: &str = "Usage: scarp exec [options] [[--] <file.srp>]
 
 Execute the selected source path after static checks and checked evaluation.
   --max-steps <count>   Logical work budget (default 1000000)
   --max-prints <count>  Selected print budget (default 100000)
 Options precede the filename; -- permits a filename beginning with a dash.
-Program arguments and project discovery are not supported.
+Without a file, use the current project's scarp.toml entrypoint; no ancestor search.
+Program arguments are not supported.
 For static verification without execution use scarp verify.
 ";
-const VERIFY: &str = "Usage: scarp verify [--] <file.srp>
+const VERIFY: &str = "Usage: scarp verify [[--] <file.srp>]
 
 Check lexical validity, syntax, names, mutability, and types without execution.
 No arithmetic or loops run; no artifacts are created. Success is silent.
 Runtime overflow, division by zero, and budgets are checked by exec.
-Strict/JSON modes and project discovery are not implemented.
+Without a file, use the current project's scarp.toml entrypoint; no ancestor search.
+Strict/JSON modes are not implemented.
 ";
 const TOKENS: &str = "Usage: scarp inspect tokens [--] <file.srp>
 
@@ -65,6 +70,9 @@ Print the package version. Verbose/component-version modes are not implemented.
 fn topic(command: &str, subcommand: Option<&str>) -> Option<&'static str> {
     match (command, subcommand) {
         ("exec", None) => Some(EXEC),
+        ("create", None) => Some(crate::project_cli::CREATE_HELP),
+        ("init", None) => Some(crate::project_cli::INIT_HELP),
+        ("launch", None) => Some(crate::project_cli::LAUNCH_HELP),
         ("compile", None) => Some(crate::compile_cli::HELP),
         ("verify", None) => Some(VERIFY),
         ("inspect", Some("tokens")) => Some(TOKENS),
@@ -122,6 +130,7 @@ pub fn replacement(command: &str) -> Option<&'static str> {
         "tokens" => Some("scarp inspect tokens"),
         "emit-c" => Some("scarp compile --emit c -o <output.c> <source.srp>"),
         "help" => Some("scarp guide"),
+        "new" => Some("scarp create"),
         _ => None,
     }
 }
@@ -133,7 +142,9 @@ pub fn suggestion(input: &str) -> Option<&'static str> {
     }
     let mut best = None;
     let mut distance = 3;
-    for candidate in ["exec", "compile", "verify", "inspect", "guide", "version"] {
+    for candidate in [
+        "create", "init", "exec", "launch", "compile", "verify", "inspect", "guide", "version",
+    ] {
         let mut previous: Vec<_> = (0..=input.len()).collect();
         for (row, a) in candidate.bytes().enumerate() {
             let mut current = vec![row + 1];
