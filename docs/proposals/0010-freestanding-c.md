@@ -5,7 +5,8 @@ bit-operation branch. Experimental, unreleased, and outside main.
 
 ## Supported computation unit
 
-`scarp emit-c file.srp` writes a complete C11 translation unit to stdout. It uses
+`scarp compile --emit c file.srp -o program.c` writes a complete C11 translation
+unit to a fresh file without invoking a C compiler. It uses
 the normal parser/resolver and never executes the source while emitting. Integers,
 booleans, declarations, assignment, scopes, conditions, loops, loop control, bit
 operations, and direct string-literal prints are supported. All branches must fit

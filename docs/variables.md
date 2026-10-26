@@ -135,15 +135,16 @@ containers. Future storage optimization must preserve these semantics.
 ## Validation command
 
 ```sh
-scarp check examples/scopes.srp
+scarp verify examples/scopes.srp
 ```
 
 The command is silent on success and produces diagnostics on stderr with exit
-code 1 on failure. Invalid CLI arguments use exit code 2. It checks both names
-and arithmetic, including unused initializers and assignments. It does not emit
+code 1 on failure. Invalid CLI arguments use exit code 2. It checks syntax, names,
+mutability, and types without evaluating arithmetic or loops. It does not emit
 program output or share variable state with later executions.
 
-Library callers can use `check(source)` or `interpreter::validate(&compiled)`.
+Library callers can still evaluate arithmetic silently using `check(source)` or
+`interpreter::validate(&compiled)`; these Rust APIs are not CLI command aliases.
 Pure parsing and name resolution remain available separately. Adding future
 I/O or other side-effecting language features will require an explicit policy
 for validation; the current language only changes local variables and prints.

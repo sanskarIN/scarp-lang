@@ -41,7 +41,8 @@ Compilation resolves names and checks primitive types in every operand,
 including skipped operands. `false and missing` is an unknown-name error;
 `true or 1` is a type error. In contrast, `false and 1 / 0 == 0` is valid and
 evaluates to false because the right-hand arithmetic is never executed.
-`check` follows exactly the same short-circuit rules as `run`.
+The Rust library's `check` and `run` APIs follow the same short-circuit rules.
+The CLI uses `exec` for execution; static `verify` evaluates no operands.
 
 ## Implementation and limits
 

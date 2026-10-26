@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.3 development
 
+- Canonical CLI names only: exec, compile, verify, inspect, guide, and version.
+  Retired aliases fail with migration guidance; C output uses compile --emit c.
+  Bare invocation now shows guidance successfully.
 - File execution aliases, static verification, contextual help, short version,
   read-only token/AST inspection, and an audited CLI capability inventory.
 - Native build/compile commands for hosted executables and freestanding objects,

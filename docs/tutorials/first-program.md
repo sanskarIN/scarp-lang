@@ -21,8 +21,8 @@ Build Beyond Boundaries.
 42
 ```
 
-From a checkout, run `cargo run -- run first.srp`. With an installed command, use
-`scarp run first.srp`. Each `println` adds one LF line break. Statements run in
+From a checkout, run `cargo run -- exec first.srp`. With an installed command, use
+`scarp exec first.srp`. Each `println` adds one LF line break. Statements run in
 source order, and every print statement needs a terminating semicolon.
 
 `//` starts a comment outside a string. Inside a string, it is ordinary text:
@@ -81,11 +81,11 @@ This makes it useful to fix the reported error and rerun the complete file.
 
 ## Inspect what the lexer sees
 
-`scarp tokens first.srp` prints identifiers, string or integer tokens,
+`scarp inspect tokens first.srp` prints identifiers, string or integer tokens,
 punctuation, source locations, and an EOF token. Comments and whitespace do not
 produce tokens. A token listing can succeed for an incomplete program because
 tokenization does not check statement grammar.
 
-On the development branch, `scarp check first.srp` additionally validates the
-whole program without printing its output. For the next step, read
+On the development branch, `scarp verify first.srp` additionally validates the
+whole program's syntax, names, and types without executing it. For the next step, read
 [variables and mutation](variables.md).

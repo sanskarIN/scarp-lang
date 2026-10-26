@@ -28,8 +28,9 @@ package metadata and has no v0.0.3 tag.
 | Block scopes and shadowing | No | Yes | Yes |
 | String variables and grouped string values | No | Yes | Yes |
 | Primitive type consistency checks | No variable types | Yes | Yes |
-| `run`, `tokens`, global help/version | Yes | Yes | Yes |
-| `check` and per-command help | No | Yes | Yes |
+| Legacy `run` and top-level `tokens` commands | Yes | Yes | Removed |
+| Legacy `check` command | No | Yes | Removed |
+| Help/version flags | Yes | Yes | Yes |
 | Boolean values, comparisons, short-circuit logic | No | Yes | Yes |
 | `if`/`elif`/`else` statements with scoped bodies | No | Yes | Yes |
 | While loops and deterministic execution budgets | No | No | Yes |
@@ -47,10 +48,16 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/cli-foundation`.
+The complete development stack is available on `scarp/canonical-cli`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
+
+The current CLI follows the canonical names in the supplied command proposal.
+`exec`, `compile`, `verify`, `inspect`, `guide`, and `version` are the supported
+groups. Optional command aliases are not adopted. Published v0.0.1/v0.0.2 notes
+retain their historical spellings; use the [CLI reference](reference/cli.md) for
+migration to this branch. Rust library APIs such as `run` and `check` are unchanged.
 
 The boolean extension adds `Boolean` variants, comparison operators, and logical
 syntax nodes to the public enums. Rust hosts using exhaustive matches must

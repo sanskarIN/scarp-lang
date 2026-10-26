@@ -39,12 +39,12 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/cli-foundation
+git switch scarp/canonical-cli
 cargo build --locked
-cargo run -- run examples/hello.srp
-cargo run -- run examples/arithmetic.srp
-cargo run -- tokens examples/hello.srp
-cargo run -- check examples/scopes.srp
+cargo run -- exec examples/hello.srp
+cargo run -- exec examples/arithmetic.srp
+cargo run -- inspect tokens examples/hello.srp
+cargo run -- verify examples/scopes.srp
 cargo run -- --help
 cargo run -- --version
 ```
@@ -57,11 +57,11 @@ To install the command from this checkout:
 
 ```sh
 cargo install --path . --locked
-scarp run examples/hello.srp
-scarp tokens examples/hello.srp
+scarp exec examples/hello.srp
+scarp inspect tokens examples/hello.srp
 ```
 
-Filenames with spaces should be quoted. Use `scarp run -- -example.srp` for a
+Filenames with spaces should be quoted. Use `scarp exec -- -example.srp` for a
 filename beginning with a dash. Source paths use the platform's native path
 encoding; source contents must be UTF-8. The `.srp` suffix is conventional, and
 the CLI does not reject other filename extensions.
@@ -80,9 +80,9 @@ the CLI does not reject other filename extensions.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
 - Escapes `\\` (backslash), `\"` (double quote), and `\n` (line break).
-- `exec`/`run`, static `verify`, evaluating `check`, and token/AST inspection.
-- Contextual `guide`/`help`, `version`, and compatible help/version flags.
-- Experimental `compile`/`build` for native artifacts and `emit-c` for C source.
+- `exec`, static `verify`, and read-only `inspect tokens` / `inspect ast`.
+- Contextual `guide`, `version`, and the documented help/version flags.
+- Experimental `compile --emit exe|obj|c` for real native artifacts or C source.
 - Syntax errors with a code, filename, line, column, source excerpt, and help.
 
 `println` appends a newline. Physical line breaks inside a string are rejected;
@@ -120,13 +120,12 @@ Conditional statements select the first true `if`/`elif` body, or the optional
 `else` body. Every condition and body undergoes static checks; arithmetic executes
 only on the selected path. Start with the [decisions tutorial](docs/tutorials/decisions.md).
 
-`check` validates syntax, names, mutability, scopes, primitive types, and arithmetic without writing
-program output. It returns zero and remains silent on success. In this pure
-value language it evaluates declarations and assignments in fresh local
-storage, so reachable unused arithmetic failures are still reported. `compile` alone does
-not evaluate arithmetic.
+`verify` validates syntax, names, mutability, scopes, and primitive types without
+execution or output. It returns zero and remains silent on success. Arithmetic,
+loops, and execution budgets are evaluated by `exec`; artifact compilation does
+not execute the source.
 
-`tokens` checks lexical validity without parsing or executing the file. It prints
+`inspect tokens` checks lexical validity without parsing or executing the file. It prints
 one token per line, including decoded string text, one-based line/column ranges,
 and half-open UTF-8 byte ranges. For the hello example, the first token is:
 
@@ -176,8 +175,8 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 cargo test --locked --release
 cargo build --locked
-cargo run --locked -- run examples/hello.srp
-cargo run --locked -- tokens examples/hello.srp
+cargo run --locked -- exec examples/hello.srp
+cargo run --locked -- inspect tokens examples/hello.srp
 ```
 
 Tests cover source spans, escapes, Unicode, missing punctuation, invalid files,
@@ -192,14 +191,15 @@ The complete check sequence, including rustdoc, is available as
 The [CLI inventory](docs/cli-status.md) records all 46 proposed command groups
 and what is actually implemented. `scarp guide compile` explains native builds;
 `scarp guide inspect ast` explains read-only syntax inspection. `verify` stops
-after static checks, while `check` evaluates selected arithmetic with budgets.
+after static checks. Only the specification's canonical command names are accepted;
+retired aliases return usage errors with migration guidance.
 
-`scarp build file.srp -o app` compiles a native executable for the supported
-integer/boolean subset; `scarp compile` is an alias. A Clang/GCC-style C compiler
-is required for these experimental commands. Object output supports low-level
+`scarp compile file.srp -o app` compiles a native executable for the supported
+integer/boolean subset. A Clang/GCC-style C compiler is required for executables
+and objects. Object output supports low-level
 embedding. See the [native build guide](docs/proposals/0011-native-build-cli.md).
 
-`scarp emit-c file.srp` emits an experimental freestanding C11 computation unit
+`scarp compile --emit c file.srp -o program.c` writes a freestanding C11 computation unit
 for the integer/boolean subset. A caller supplies fixed workspace and output.
 The [backend guide](docs/proposals/0010-freestanding-c.md) covers supported syntax,
 object builds, checks, and the systems features still needed for an operating system.

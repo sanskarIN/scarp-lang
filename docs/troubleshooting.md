@@ -46,7 +46,7 @@ Quote filenames with spaces, and pass one file rather than a directory.
 A file beginning with a dash needs a separator:
 
 ```sh
-cargo run -- run -- -hello.srp
+cargo run -- exec -- -hello.srp
 ```
 
 The first `--` belongs to Cargo; the second belongs to Scarp. Source files must
@@ -56,7 +56,8 @@ A single leading UTF-8 byte order mark is accepted.
 
 ## There is no program output
 
-`check` is intentionally silent on success. Use `run` to print values. Empty and
+`verify` is intentionally silent on success and does not execute arithmetic.
+Use `exec` to print values and check selected runtime behavior. Empty and
 comment-only files also succeed without output.
 
 Read stderr and the exit code before assuming a program ran. Any lexical,

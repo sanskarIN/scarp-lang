@@ -1,139 +1,125 @@
 # Command-line reference
 
-Use this page to select a command, interpret its streams and status, and pass
-paths reliably. Availability differs between the published release and the
-development stack; see [compatibility](../compatibility.md).
+The development CLI uses the specification's canonical names. The supported
+command groups are `exec`, `compile`, `verify`, `inspect`, `guide`, and `version`.
+Other proposed groups remain planned and are absent from production help.
+Main and the published v0.0.1/v0.0.2 releases retain their historical interfaces.
 
-## Commands and availability
+## Supported commands
 
-| Invocation | Purpose | v0.0.1 | v0.0.2 | Development |
-| --- | --- | --- | --- | --- |
-| `scarp run <path>` | Read, validate, and execute a source file | Yes | Yes | Yes |
-| `scarp exec <path>` | Exact alias for file execution with `run` | No | No | Yes |
-| `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes | Yes |
-| `scarp inspect tokens <path>` | Exact alias for the token listing | No | No | Yes |
-| `scarp inspect ast <path>` | Print actual parsed syntax without resolution/execution | No | No | Yes |
-| `scarp verify <path>` | Check syntax, names, mutability, and types statically | No | No | Yes |
-| `scarp check <path>` | Validate names, types, and selected arithmetic without printing | No | Yes | Yes |
-| `scarp emit-c <path>` | Emit supported source as a freestanding C11 unit | No | No | Yes |
-| `scarp compile <path> -o <output>` | Compile an executable or object with a C compiler | No | No | Yes |
-| `scarp build ...` | Exact alias for `compile` | No | No | Yes |
-| `scarp guide [command]` / `scarp help ...` | Show global or contextual help | No | No | Yes |
-| `scarp --help` or `scarp -h` | Show usage | Yes | Yes | Yes |
-| `scarp --version` or `scarp -V` | Print the package version | Yes | Yes | Yes |
-| `scarp version` | Exact short-version alias | No | No | Yes |
-| `scarp run --help` | Show usage before requiring a file | No | Yes | Yes |
+| Invocation | Behavior |
+| --- | --- |
+| `scarp exec <path>` | Execute the selected source path after static checks and checked evaluation |
+| `scarp compile <path> -o <output>` | Compile the supported subset into a native executable |
+| `scarp compile --emit obj <path> -o <output>` | Produce a freestanding object |
+| `scarp compile --emit c <path> -o <output.c>` | Write a freestanding C11 unit without a C compiler |
+| `scarp verify <path>` | Check syntax, names, mutability, and types without execution |
+| `scarp inspect tokens <path>` | Show lexer tokens, byte spans, and source locations |
+| `scarp inspect ast <path>` | Show actual parsed syntax without name resolution or execution |
+| `scarp guide [command]` | Show global or contextual guidance |
+| `scarp guide inspect ast` | Show nested inspection guidance |
+| `scarp version` | Show the package version |
 
-Development commands accept contextual `--help`/`-h`; nested inspection supports
-`scarp inspect ast --help` and `scarp guide inspect ast`. Only one source path is
-accepted. There is no stdin input mode,
-watch mode, or import path.
-The separate `emit-c` command generates source without running it or invoking a
-C compiler. It accepts one path and an optional filename separator, but no
-execution-limit flags. See [the backend guide](../proposals/0010-freestanding-c.md).
-`build` and `compile` have their own `--help`, compiler/output options, and
-executable runtime budgets. See [native builds](../proposals/0011-native-build-cli.md)
-for supported values, targets, exit codes, and output preservation.
+Bare `scarp`, `--help`, and `-h` show guidance and return 0. `--version` and `-V`
+print the same version as `version`. Every implemented group accepts contextual
+help; `scarp inspect ast --help` and `scarp guide inspect ast` agree.
+Help/version operations require no source file, C compiler, or network access.
 
-From a source checkout, place Cargo's separator before the Scarp arguments:
+From a checkout:
 
 ```sh
-cargo run -- run examples/hello.srp
-cargo run -- tokens examples/hello.srp
-cargo run -- check examples/scopes.srp
+cargo run -- exec examples/hello.srp
+cargo run -- verify examples/scopes.srp
+cargo run -- inspect tokens examples/arithmetic.srp
+cargo run -- guide compile
 ```
 
-`cargo build` builds the Rust interpreter. It does not compile a `.srp` file to a
-native executable.
+`cargo build` builds the Rust implementation. Scarp's own `compile` command
+produces `.srp` artifacts. It requires a fresh explicit output path and an existing
+parent directory. See [native compilation](../proposals/0011-native-build-cli.md)
+for compiler selection, supported kinds, targets, runtime budgets, and filesystem
+publication behavior. Executables/objects require a Clang/GCC-style compiler;
+`--emit c` does not. C output rejects explicit compiler, target, and runtime-budget
+options instead of silently ignoring them. Successful compilation is silent and
+never executes the artifact automatically.
 
-## What each file command validates
+## Execution, verification, and inspection
 
-`exec`/`run` validate the complete file before writing program output. Development
-validation includes names, scopes, mutability, and primitive types. Arithmetic
-is checked before any pending prints are written.
+`exec` checks the complete source before evaluation, then prepares selected
+prints before writing output. Runtime overflow, invalid shifts, zero divisors,
+shape/index failures, and exhausted budgets therefore leave stdout empty.
+It accepts `--max-steps <count>` and `--max-prints <count>` before the filename.
+Defaults are 1,000,000 steps and 100,000 selected prints. Each option can occur
+once; unsigned decimal zero is valid. Malformed options return usage status 2.
 
-`check` uses the same preparation pass as execution, discarding each print value
-immediately instead of retaining pending output. It evaluates declarations and assignments in fresh local storage, so
-reachable unused initializers can still fail. Unselected conditional bodies do
-not evaluate arithmetic, but they still undergo static checks. A successful check is silent. It does not
-format or write the program's print values.
+`verify` stops after lexing, parsing, and resolution/type checking. It evaluates
+no arithmetic, initializers, print arguments, loops, or branches and creates no
+artifacts. Well-typed division by zero or an infinite loop can pass `verify`
+and fail `exec`. Warnings, strict mode, JSON output, and project discovery remain
+unimplemented and their flags are rejected.
 
-`verify` stops after lexing, parsing, and resolution/type checking. It does not
-evaluate initializers, print arguments, loops, or branches, and creates no build
-artifacts. A well-typed division by zero or infinite loop can pass `verify` and
-fail `check`/`exec`. It is intentionally not an alias for the existing `check`.
-
-`tokens` only checks lexical validity. It can succeed when a file has missing
-punctuation, unknown variables, or arithmetic failures. It never executes the
-program. Use `verify` for static checks or `check` for selected runtime validation.
-`inspect ast` parses without resolving names or evaluating arithmetic. It emits
-the real syntax tree in readable Debug format, which is experimental and is not
-a stable JSON schema. Missing names can appear in a valid syntax dump.
-
-## Paths and encoding
-
-Development `exec`, `run`, and `check` accept `--max-steps <count>` and `--max-prints <count>`
-before the path. Defaults are 1,000,000 work steps and 100,000 selected prints.
-Each option can occur once; unsigned decimal zero is allowed. Budget failures use
-status 1 and leave output empty; malformed options use status 2. See
-[loops and budgets](../proposals/0006-bounded-loops.md) for exact accounting.
-
-Relative paths are resolved from the process working directory. Quote paths
-containing spaces:
-
-```sh
-scarp run "my examples/hello.srp"
-```
-
-Use an explicit separator for a filename beginning with a dash:
-
-```sh
-scarp run -- -hello.srp
-scarp tokens -- -hello.srp
-scarp check -- -hello.srp
-```
-
-The last command requires development Scarp. The separator belongs after the
-Scarp command; when using Cargo, that means `cargo run -- check -- -hello.srp`.
-
-Paths use the operating system's native encoding. Source contents must be UTF-8.
-A single leading UTF-8 byte order mark is accepted. LF and CRLF files work.
-Missing files, directories used as files, unreadable files, and invalid UTF-8
-contents produce read errors with a nonzero status. The `.srp` extension is a
-convention, not a file-extension check.
-
-## Standard streams and status
-
-| Result | stdout | stderr | Exit code |
-| --- | --- | --- | --- |
-| Successful run | Program output | Empty | `0` |
-| Successful check | Empty | Empty | `0` |
-| Successful token listing | Tokens | Empty | `0` |
-| Help or version | Requested information | Empty | `0` |
-| Source, file, or output error | No program output for source errors | Diagnostic | `1` |
-| Invalid command-line usage | Empty | Error and usage | `2` |
-
-Output I/O failures can occur after some bytes have been written. The CLI treats
-a broken output pipe as normal termination; library callers receive the output
-error. Source and semantic errors do not produce partial program output.
-
-In a POSIX shell, inspect the previous command's status with `echo $?`. In
-PowerShell, inspect `$LASTEXITCODE`. Read stderr as well as the status when
-diagnosing a failure.
-
-## Token format
-
-The hello example starts with this token:
+`inspect tokens` performs only lexing. Its output has one token per line with
+one-based line/column ranges, decoded/escaped token values, and half-open byte
+spans. The hello example begins with:
 
 ```text
 2:1..2:8  identifier(println)  [26..33]
 ```
 
-The first range is one-based line/column information. The bracketed range is a
-half-open UTF-8 byte span in the original source. String tokens show decoded
-values using escaped debugging text. EOF is an empty span after all source
-bytes, including trailing comments or whitespace.
+EOF is an empty span after all source bytes. Columns count Unicode scalar values,
+not terminal cells; see [diagnostics](diagnostics.md). A token listing may succeed
+for incomplete syntax. `inspect ast` parses without resolving names or evaluating
+arithmetic and prints the actual tree in readable Debug format. This format is
+experimental and is not a stable JSON schema.
 
-Columns count Unicode scalar values rather than bytes or terminal cells. See
-the [diagnostic reference](diagnostics.md) for caret interpretation and the
-[troubleshooting guide](../troubleshooting.md) for version/path problems.
+## Paths and separators
+
+Quote paths containing spaces or non-ASCII names. A standalone `--` introduces
+one filename beginning with a dash:
+
+```sh
+scarp exec -- -hello.srp
+scarp verify -- -hello.srp
+scarp inspect tokens -- -hello.srp
+scarp compile --emit c -o program.c -- -hello.srp
+```
+
+Source paths retain native operating-system encoding where the filesystem
+supports it. Source contents must be UTF-8; a leading UTF-8 BOM, LF, and CRLF work.
+Missing/unreadable files, directories passed as files, and invalid UTF-8 source
+produce status 1. The `.srp` suffix is a convention, not an extension check.
+There is no stdin source mode, program-argument API, implicit project entrypoint,
+watch mode, or import search path. Extra filenames and program arguments fail.
+
+## Migration and exit statuses
+
+Optional compatibility aliases are not enabled, following the maintainer's
+canonical-name requirement. Retired names return status 2 and migration guidance;
+they never dispatch to another operation or create artifacts.
+
+| Retired spelling | Current command |
+| --- | --- |
+| `scarp run` | `scarp exec` |
+| `scarp build` | `scarp compile` |
+| `scarp check` | `scarp verify` for static checks; `scarp exec` for execution |
+| `scarp tokens` | `scarp inspect tokens` |
+| `scarp emit-c` | `scarp compile --emit c -o <output.c>` |
+| `scarp help` | `scarp guide` |
+
+The old CLI `check` evaluated arithmetic; `verify` is static. Rust library APIs
+`run`, `check`, and `interpreter::validate` remain available with their established
+semantics. Historical release notes describe their own shipped command names.
+
+| Result | stdout | stderr | Exit |
+| --- | --- | --- | --- |
+| Successful execution | Program output | Empty | 0 |
+| Successful verification/compilation | Empty | Empty | 0 |
+| Guidance, version, or inspection | Requested report | Empty | 0 |
+| Source, file, compiler, or output failure | No program output on source failure | Diagnostic | 1 |
+| Invalid/unsupported command or option | Empty | Error and usage | 2 |
+
+Output failures can leave earlier bytes. A broken CLI output pipe is treated as
+normal termination; library callers receive the output error. Commands do not
+install packages, publish releases, or contact registries. The
+[46-group inventory](../cli-status.md) records the remaining compiler and project
+prerequisites.

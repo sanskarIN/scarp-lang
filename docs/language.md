@@ -213,22 +213,25 @@ errors, invalid UTF-8, and output errors are CLI errors without source spans.
 
 | Command | Behavior |
 | --- | --- |
-| `scarp run <path>` | Read, validate, and execute a file |
-| `scarp check <path>` | Validate syntax, names, and arithmetic without printing |
-| `scarp tokens <path>` | Lex a file and print tokens without parsing |
-| `scarp emit-c <path>` | Emit freestanding C for the supported integer/boolean subset |
-| `scarp compile <path> -o <output>` | Build an experimental native executable or freestanding object |
+| `scarp exec <path>` | Read, validate, and execute a file |
+| `scarp verify <path>` | Check syntax, names, mutability, and types without execution |
+| `scarp inspect tokens <path>` | Lex a file and print tokens without parsing |
+| `scarp inspect ast <path>` | Print parsed syntax without name resolution or execution |
+| `scarp compile <path> -o <output>` | Produce an executable, object, or freestanding C source |
+| `scarp guide [command]` | Show global or contextual guidance |
+| `scarp version` | Print the package version |
 | `scarp --help` or `scarp -h` | Show command usage |
 | `scarp --version` or `scarp -V` | Show the package development version |
 
-`build` aliases `compile`; see the [native build guide](proposals/0011-native-build-cli.md)
+Only canonical command names are accepted; see the [native build guide](proposals/0011-native-build-cli.md)
 for compiler selection and supported output kinds. The other file commands accept
 an optional `--` before the path. Exactly
 one path is required, and stdin is not a source input. The `.srp` extension is a
 convention rather than a filename check. Native non-Unicode paths are accepted
 where supported by the operating system; the file contents must remain UTF-8.
 
-Program output, help, versions, and token listings use stdout. Diagnostics use
+Bare `scarp` shows guidance and returns 0. Program output, guidance, versions,
+and inspection listings use stdout. Diagnostics use
 stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 `2` for invalid arguments. No commands install packages or publish releases.
 
