@@ -1,21 +1,18 @@
 # Changelog
 
-## Unreleased — v0.0.2 development
+## Unreleased — v0.0.3 development
 
-- Freestanding C11 emission for integer/boolean computation units, caller-owned
-  workspace/output adapters, and native/sanitized/cross-target verification.
+- Native build/compile commands for hosted executables and freestanding objects,
+  compiler selection, runtime budgets, and preserved output files.
+- Freestanding C11 emission with caller-owned workspace and output adapters.
+- Hex/binary literals, fixed-width bit operations, remainder, and checked shifts.
+- Immutable finite numeric vectors, indexing, reductions, and numerical kernels.
+- Finite binary64 decimals and scientific literals with checked results.
+- Scoped loops, break/continue, deterministic work/print budgets, and CLI limits.
 
-- Hexadecimal/binary integer literals, masks, explicit shifts, remainder, and
-  integer-only compound bit operations with checked counts.
+These features remain on development branches; main and v0.0.2 are unchanged.
 
-- Immutable finite numeric vectors, checked indexing, compensated reductions,
-  stable softmax, mean squared error, and budgeted native element operations.
-
-- Distinct finite binary64 values, scientific literals, same-kind numeric
-  operators, and checked nonfinite-result diagnostics.
-
-- Scoped while loops, nearest-loop break/continue, per-call work/print budgets,
-  and CLI/embedding controls with atomic budget diagnostics.
+## 0.0.2 — 2026-10-26 — prerelease
 
 - Execution-local expression work buffers, immediate disposal of validation print
   values, and reproducible stage benchmarks with verified workloads.
@@ -24,7 +21,7 @@
   static checking of all paths, and execution of the selected path only.
 
 - Boolean values, same-type equality, integer ordering, and short-circuit `and`,
-  `or`, and `not` expressions on a separate dependent feature branch.
+  `or`, and `not` expressions.
 
 - Immutable integer bindings and names in expressions.
 - Explicit mutable bindings, assignment, and checked `+=`, `-=`, `*=`, `/=`.
@@ -36,12 +33,13 @@
 - Silent `check` validation of syntax, names, mutability, scopes, and arithmetic.
 - Sequential token locations without repeated source-prefix scans.
 - Generated-program conformance cases and malformed source/token mutation corpora.
-- Development package version `0.0.2-dev`; no v0.0.2 tag or release.
-- A separate draft extension adds string variables, primitive type inference,
+- Package version `0.0.2`, native archives, and verified source/checksum records.
+- String variables, primitive type inference,
   same-type mutable assignment, and immutable string value snapshots.
 
-These changes are under development on feature branches and are not part of the
-published v0.0.1 release.
+The variable milestone is integrated into main. Loops, floating-point/vector
+arithmetic, bit operations, and freestanding C emission remain in separate PRs
+and are excluded from this prerelease.
 
 ## 0.0.1 — 2026-10-25 — prerelease
 
