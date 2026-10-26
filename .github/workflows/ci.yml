@@ -39,6 +39,8 @@ jobs:
       - name: Validate source and examples
         shell: bash
         run: sh scripts/check.sh --offline
+      - name: Smoke-test benchmark workloads
+        run: cargo bench --locked --offline --bench runtime -- --quick
       - name: Validate PowerShell check script
         if: runner.os == 'Windows'
         shell: pwsh
@@ -63,3 +65,5 @@ jobs:
         run: cargo build --locked --offline
       - name: Test release mode on minimum Rust
         run: cargo test --locked --offline --release
+      - name: Smoke-test benchmark on minimum Rust
+        run: cargo bench --locked --offline --bench runtime -- --quick

@@ -20,6 +20,8 @@ try {
     if ($Offline) { $env:CARGO_NET_OFFLINE = 'true' }
     $env:RUSTDOCFLAGS = (($previousRustdoc + ' -D warnings').Trim())
     Invoke-Cargo -CargoArguments @('fmt', '--all', '--', '--check')
+    & rustfmt --edition 2021 --check scripts/benchmarks/compare.rs
+    if ($LASTEXITCODE -ne 0) { throw 'Comparison harness formatting check failed' }
     Invoke-Cargo -CargoArguments @('clippy', '--locked', '--all-targets', '--', '-D', 'warnings')
     Invoke-Cargo -CargoArguments @('test', '--locked')
     Invoke-Cargo -CargoArguments @('test', '--locked', '--release')

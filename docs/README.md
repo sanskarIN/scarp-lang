@@ -21,6 +21,7 @@ they are not claims that a v0.0.2 release has been published.
 | [Testing changes](testing.md) | Choose relevant tests, add exact-output examples, and validate documentation |
 | [Troubleshooting](troubleshooting.md) | Separate installation, path, encoding, version, language, and package failures |
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
+| [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
 ## Reading paths
 

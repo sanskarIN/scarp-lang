@@ -16,6 +16,7 @@ export CARGO_INCREMENTAL=0
 export RUSTDOCFLAGS="${RUSTDOCFLAGS-} -D warnings"
 
 cargo fmt --all -- --check
+rustfmt --edition 2021 --check scripts/benchmarks/compare.rs
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 cargo test --locked --release
