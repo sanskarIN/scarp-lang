@@ -62,6 +62,8 @@ development declarations with `bind` and `var`; use the
 [versioned migration table](compatibility.md#declaration-syntax-migration) for
 published v0.0.2 programs. This branch also renames the Rust AST declaration
 variant; the embedding guide and compatibility guide describe that change.
+The [syntax audit](syntax-audit.md) records findings, validation commands,
+platform limits, and integration gates for this branch.
 The [boolean design](proposals/0004-boolean-expressions.md) records comparison,
 precedence, and short-circuit rules in the next dependent feature slice.
 The [conditional design](proposals/0005-conditional-statements.md) explains scoped
