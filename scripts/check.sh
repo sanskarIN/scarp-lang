@@ -27,3 +27,4 @@ cargo run --locked -- run examples/arithmetic.srp
 cargo run --locked -- run examples/bindings.srp
 cargo run --locked -- run examples/mutable.srp
 cargo run --locked -- run examples/scopes.srp
+cargo run --locked -- check examples/scopes.srp

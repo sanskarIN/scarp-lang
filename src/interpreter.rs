@@ -59,3 +59,9 @@ pub fn execute(program: &ResolvedProgram, output: &mut impl Write) -> Result<(),
     }
     Ok(())
 }
+
+/// Evaluate a resolved program without formatting or writing program output.
+/// All variables are local to this validation, just as in `execute`.
+pub fn validate(program: &ResolvedProgram) -> Result<(), Diagnostic> {
+    prepare(program).map(|_| ())
+}

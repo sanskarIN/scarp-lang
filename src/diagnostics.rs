@@ -38,6 +38,43 @@ pub fn location(source: &str, offset: usize) -> Location {
     Location { line, column }
 }
 
+/// Incremental locations for nondecreasing byte offsets, such as token spans.
+/// Backward requests reset the scan; all offsets use the same clamping and
+/// Unicode scalar column rules as `location`.
+pub struct LocationTracker<'a> {
+    source: &'a str,
+    offset: usize,
+    position: Location,
+}
+
+impl<'a> LocationTracker<'a> {
+    pub fn new(source: &'a str) -> Self {
+        Self {
+            source,
+            offset: 0,
+            position: Location { line: 1, column: 1 },
+        }
+    }
+
+    pub fn at(&mut self, offset: usize) -> Location {
+        let offset = boundary(self.source, offset);
+        if offset < self.offset {
+            self.offset = 0;
+            self.position = Location { line: 1, column: 1 };
+        }
+        for character in self.source[self.offset..offset].chars() {
+            if character == '\n' {
+                self.position.line += 1;
+                self.position.column = 1;
+            } else {
+                self.position.column += 1;
+            }
+        }
+        self.offset = offset;
+        self.position
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiagnosticKind {
     InvalidCharacter,

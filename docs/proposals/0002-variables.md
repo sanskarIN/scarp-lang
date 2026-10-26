@@ -4,6 +4,9 @@
 document.** Changes are developed in dependent feature PRs and remain outside
 `main` until the maintainer explicitly requests integration.
 
+All four slices below are implemented in the feature-branch stack. They remain
+subject to review and explicit authorization for integration and publication.
+
 ## Milestones
 
 1. Immutable integer bindings and a distinct name-resolution phase.

@@ -9,6 +9,10 @@
 - Name resolution before evaluation, with fresh storage for every execution.
 - Unknown, duplicate, and reserved-name diagnostics with related declarations.
 - A separate parsed-syntax API and immutable resolved-program API.
+- Silent `check` validation of syntax, names, mutability, scopes, and arithmetic.
+- Sequential token locations without repeated source-prefix scans.
+- Generated-program conformance cases and malformed source/token mutation corpora.
+- Development package version `0.0.2-dev`; no v0.0.2 tag or release.
 
 These changes are under development on feature branches and are not part of the
 published v0.0.1 release.
