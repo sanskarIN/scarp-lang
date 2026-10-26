@@ -7,7 +7,7 @@ maintainer action after the final source revision has passed validation.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. For the
-first prerelease, the version and tag are `0.0.1` and `v0.0.1`, and the GitHub
+variable milestone, the version and tag are `0.0.2` and `v0.0.2`, and the GitHub
 Release is marked as a prerelease. `v0.0.0.1` is not a three-part version.
 
 Run local checks, then package on a machine with the matching native Rust
@@ -41,8 +41,12 @@ are not promised to be byte-for-byte reproducible across hosts or build times.
    and package jobs all pass.
 3. Download the package artifacts from that exact workflow run with
    `gh run download`. Verify every archive's `.sha256` file and `BUILD-INFO.txt`,
-   then combine the archive checksums into `SHA256SUMS`.
-4. Create an annotated `v0.0.1` tag on the verified revision with the maintainer's
+   then combine the archive checksums into `SHA256SUMS`. Python 3.11 or later can
+   verify all three archives, required contents, executable permissions, clean
+   source records, and digests with the dependency-free helper:
+   `python scripts/verify-release.py dist/release-assets --version 0.0.2 --commit <full-sha> --write-manifest`.
+   Omit `--write-manifest` to recheck an existing manifest.
+4. Create an annotated `v0.0.2` tag on the verified revision with the maintainer's
    commit email and push only that tag. Do not move an existing published tag.
 5. Create a draft GitHub Release using the existing tag, the versioned release
    notes, the three archives, their checksum files, and `SHA256SUMS`.
