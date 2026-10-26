@@ -103,6 +103,10 @@ try {
     }
     $unit = & $executable emit-c (Join-Path $extractedPackage 'examples/bit_fields.srp')
     if ($LASTEXITCODE -ne 0 -or -not (($unit -join "`n") -match 'uint32_t scarp_run')) { throw 'Packaged C emission failed' }
+    foreach ($verb in @('build', 'compile')) {
+        $buildHelp = & $executable $verb --help
+        if ($LASTEXITCODE -ne 0 -or -not (($buildHelp -join "`n") -match '--emit exe\|obj')) { throw 'Packaged build help failed' }
+    }
     $tokens = & $executable tokens (Join-Path $extractedPackage 'examples/arithmetic.srp')
     if ($LASTEXITCODE -ne 0 -or -not ($tokens -match 'integer\(1\)')) {
         throw 'Packaged token inspection failed'
