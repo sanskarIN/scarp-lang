@@ -2,6 +2,9 @@
 
 **Status: implemented on main for the v0.0.2 variable milestone.** The maintainer
 authorized integration of the reviewed variable stack on 2026-10-26.
+Examples here use the newer development `bind`/`var` spelling; published v0.0.2
+uses `let`/`let mut`. The [syntax decision](0013-binding-syntax.md) supersedes
+the original declaration grammar without changing these binding semantics.
 
 This design describes the integer foundation. A separate
 [string-value extension](0003-string-bindings.md) generalizes initializers and
@@ -17,15 +20,15 @@ introduces primitive type checks without changing the scope and mutation rules.
 ## Binding rules
 
 ```scarp
-let width = 6;
-let area = width * 7;
+bind width = 6;
+bind area = width * 7;
 println(area);
 ```
 
 An initializer is required and must be an integer expression. Bindings use the
 existing ASCII identifier grammar, are case-sensitive, and are visible only
 after their declaration. Forward references and self-reference without an outer
-binding are errors. `let`, `mut`, and `println` are reserved names. `_` is an
+binding are errors. `bind`, `var`, legacy `let`/`mut`, and `println` are reserved names. `_` is an
 ordinary identifier, not a discard pattern.
 
 The compiler parses the entire file, resolves names in source order, and returns
@@ -35,7 +38,7 @@ syntax inspection and executable programs are separate APIs.
 
 ## Mutability and assignment
 
-The second slice introduces `let mut count = 1;`, `count = count + 1;`, and
+The second slice introduces `var count = 1;`, `count = count + 1;`, and
 `+=`, `-=`, `*=`, `/=`. Only explicitly mutable bindings can be assigned.
 Assignments are statements and do not produce expression values. Compound
 assignment reads the previous value and applies the same checked integer

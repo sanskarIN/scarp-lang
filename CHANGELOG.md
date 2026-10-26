@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.3 development
 
+- Breaking declaration syntax: immutable `bind` and mutable `var` replace
+  `let` and `let mut`, with migration diagnostics. The Rust AST variant is now
+  `Statement::Declaration`; scope, typing, and execution rules are unchanged.
 - Canonical CLI names only: exec, compile, verify, inspect, guide, and version.
   Retired aliases fail with migration guidance; C output uses compile --emit c.
   Bare invocation now shows guidance successfully.

@@ -57,6 +57,11 @@ Design records cover [integer expressions](proposals/0001-integer-expressions.md
 [variables](proposals/0002-variables.md), and
 [string values](proposals/0003-string-bindings.md). Read each record's status;
 a proposed capability is not implemented merely because it appears in a roadmap.
+The [binding syntax decision](proposals/0013-binding-syntax.md) replaces
+development declarations with `bind` and `var`; use the
+[versioned migration table](compatibility.md#declaration-syntax-migration) for
+published v0.0.2 programs. This branch also renames the Rust AST declaration
+variant; the embedding guide and compatibility guide describe that change.
 The [boolean design](proposals/0004-boolean-expressions.md) records comparison,
 precedence, and short-circuit rules in the next dependent feature slice.
 The [conditional design](proposals/0005-conditional-statements.md) explains scoped

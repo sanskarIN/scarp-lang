@@ -1,6 +1,7 @@
 # Scarp prototype language reference
 
-This reference describes the development language following v0.0.1. It is an
+This reference describes the unreleased v0.0.3-dev language on
+`scarp/bind-var-syntax`, following published v0.0.2. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
 
@@ -12,9 +13,14 @@ Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
 Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms use
-`let`, `println`, and `if`, with exactly that spelling and case. `elif` and `else`
+`bind`, `var`, `println`, `if`, and `while`, with exactly that spelling and case. `elif` and `else`
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
+`bind` and `var` are reserved binding names, as are legacy `let` and `mut`.
+Legacy declarations produce E0005 with migration help, while malformed
+`bind mut` / `var mut` declarations produce E0004. Names such as `binder` and
+`variable` remain valid; strings and comments are unaffected. See the
+[declaration migration table](compatibility.md#declaration-syntax-migration).
 
 Punctuation tokens are `(`, `)`, `[`, `]`, `,`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`,
@@ -60,7 +66,7 @@ loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
                   { "elif", expression, block }, [ "else", block ] ;
 block           = "{", { statement }, "}" ;
-declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
+declaration     = ("bind" | "var"), IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
                   | "<<=" | ">>=" | ">>>=" ;

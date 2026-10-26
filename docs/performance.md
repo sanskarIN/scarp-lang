@@ -116,3 +116,6 @@ single-host observation, with scheduling variation and no timing threshold.
 It is not a native-language comparison or evidence that all numerical programs
 have the same relative speed. The earlier paired snapshot measurements remain
 specific to their recorded commits and four original workloads.
+The paired harness probes each snapshot's declaration spelling and selects the
+equivalent fixed `var x = 0;` or `let mut x = 0;` workload prefix. This permits
+comparisons across the syntax change; it is not a source migration utility.

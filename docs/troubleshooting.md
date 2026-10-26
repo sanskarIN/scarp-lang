@@ -67,7 +67,7 @@ output, including prints before the failing statement. The
 
 ## A variable will not change, or changes the wrong value
 
-Assignment requires `let mut`. An inner declaration can hide an outer variable,
+Assignment requires `var`. An inner declaration can hide an outer variable,
 and the nearest declaration controls both type and mutability. Scope exit does
 not undo assignments to an outer binding. See the
 [scope tutorial](tutorials/scopes.md) for examples of these different cases.

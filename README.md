@@ -4,6 +4,9 @@
 
 This development branch adds native build commands and experimental features
 beyond the published v0.0.2 variable milestone. Main and v0.0.2 stay unchanged.
+This syntax branch uses `bind` for immutable bindings and `var` for mutable
+variables. Published v0.0.2 uses `let` / `let mut`; see the
+[declaration migration table](docs/compatibility.md#declaration-syntax-migration).
 
 Scarp is an experimental programming language implemented in Rust. This repository
 contains **v0.0.3-dev**: a working lexer, parser, name resolver, interpreter,
@@ -39,7 +42,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/canonical-cli
+git switch scarp/bind-var-syntax
 cargo build --locked
 cargo run -- exec examples/hello.srp
 cargo run -- exec examples/arithmetic.srp
@@ -72,8 +75,8 @@ the CLI does not reject other filename extensions.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
-- Immutable integer/float/string/boolean bindings with `let name = expression;` and resolved names.
-- Explicit `let mut` bindings, assignment, and checked compound assignment.
+- Immutable integer/float/string/boolean bindings with `bind name = expression;` and resolved names.
+- Explicit `var` bindings, assignment, and checked compound assignment.
 - Lexical block scopes, shadowing, and nearest-binding assignment.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
@@ -235,12 +238,12 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Functions and richer numerical data structures.
-2. User-defined functions.
-3. User-defined types and function type checking.
-4. A compiler backend.
-5. Developer tooling.
-6. Domain-specific libraries.
+1. Review syntax and the safe project-manifest model.
+2. User-defined functions with typed calls and return values.
+3. Modules, user-defined types, and richer numerical data structures.
+4. Extend the experimental native backend beyond its current subset.
+5. Formatter, editor tooling, and project test runner.
+6. Standard-library primitives and domain-specific libraries.
 
 These capabilities are not implemented. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).

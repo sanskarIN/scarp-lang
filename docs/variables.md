@@ -1,20 +1,24 @@
 # Variables in the development language
 
-This document describes implemented variable behavior on the v0.0.2 development
-branches. The published v0.0.1 interpreter does not support declarations.
+This document describes the unreleased v0.0.3-dev syntax on
+`scarp/bind-var-syntax`. Published v0.0.2 supports variables using `let` and
+`let mut`; v0.0.1 has no declarations. See the
+[migration table](compatibility.md#declaration-syntax-migration) before moving a
+program between these versions.
 
 ## Immutable bindings
 
 ```scarp
-let width = 6;
-let height = 7;
-let area = width * height;
+bind width = 6;
+bind height = 7;
+bind area = width * height;
 println(area); // 42
 ```
 
-Declarations require `let`, an ASCII identifier, `=`, a value expression, and
-`;`. Names are case-sensitive. `_` is an ordinary name. `let`, `mut`, `println`,
-`true`, `false`, `and`, `or`, `not`, `if`, `elif`, and `else` are reserved binding names. A binding
+Declarations require `bind`, an ASCII identifier, `=`, a value expression, and
+`;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, `let`,
+`mut`, `println`, `true`, `false`, `and`, `or`, `not`, `if`, `elif`, `else`,
+`while`, `break`, and `continue` are reserved binding names. A binding
 infers `integer`, `float`, `string`, `boolean`, or numerical `vector` from its initializer. Parenthesized
 values and names are value expressions; arithmetic requires same-kind numbers.
 
@@ -68,11 +72,11 @@ These are development API changes from v0.0.1. See
 
 ## Mutable bindings and assignment
 
-Bindings are immutable unless declared with `let mut`:
+`bind` declares an immutable binding; `var` declares a mutable variable:
 
 ```scarp
-let mut count = 2;
-let original = count;
+var count = 2;
+bind original = count;
 count += 5;
 println(count);    // 7
 println(original); // 2
@@ -100,9 +104,9 @@ operators, assignment expressions, string concatenation, or string mutation.
 ## Lexical scopes and shadowing
 
 ```scarp
-let mut total = 1;
+var total = 1;
 {
-    let total = total + 10;
+    bind total = total + 10;
     println(total); // 11
 }
 total += 2;
@@ -152,8 +156,8 @@ for validation; the current language only changes local variables and prints.
 ## String values and primitive type checks
 
 ```scarp
-let mut greeting = "Hello";
-let original = greeting;
+var greeting = "Hello";
+bind original = greeting;
 println(greeting);
 greeting = "नमस्ते 🌍";
 println(original); // Hello

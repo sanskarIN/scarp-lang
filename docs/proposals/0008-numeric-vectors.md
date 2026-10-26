@@ -18,7 +18,7 @@ index expressions compose: `softmax(values)[0]` is valid. Calls, vectors, indice
 and parentheses share the 64-level structured expression nesting limit. Flat
 lists, operator chains, and repeated postfix parsing remain iterative.
 
-Vector copies share contiguous immutable finite storage. `let mut values` allows
+Vector copies share contiguous immutable finite storage. `var values` allows
 replacement of the whole vector, including a different length, but not a change
 of inferred kind. Existing copies and captured prints retain their contents.
 There is no element assignment. Use native operations to produce a new vector.
@@ -41,7 +41,7 @@ vector arithmetic. Printing uses `[1.0, 2.0]` formatting.
 | `fill(count, value)` | vector | Integer count and float value |
 
 Call names are recognized in call position, independently of binding names.
-`let sum = sum(values);` is legal; a local binding does not replace the built-in
+`bind sum = sum(values);` is legal; a local binding does not replace the built-in
 call. This preserves existing identifiers. Built-ins are not first-class values,
 user-defined functions, callbacks, or an extensible package system. Unknown calls
 and wrong arity are static errors. Argument and result types are fixed.

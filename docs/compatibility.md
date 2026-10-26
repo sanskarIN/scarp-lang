@@ -24,6 +24,7 @@ package metadata and has no v0.0.3 tag.
 | String literal print statements | Yes | Yes | Yes |
 | Checked signed 64-bit arithmetic | Yes | Yes | Yes |
 | Integer declarations and variable references | No | Yes | Yes |
+| Declaration spelling | Absent | `let` / `let mut` | `bind` / `var` |
 | Explicit mutability and compound assignment | No | Yes | Yes |
 | Block scopes and shadowing | No | Yes | Yes |
 | String variables and grouped string values | No | Yes | Yes |
@@ -48,7 +49,7 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/canonical-cli`.
+The syntax update is on `scarp/bind-var-syntax`, based on `scarp/canonical-cli`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
@@ -68,7 +69,33 @@ The conditional extension adds `Statement::If` and `ConditionalBranch` to syntax
 `statement_count` includes branch guards, while omitting bookkeeping jumps and
 block containers. All branches contribute to binding metadata, even if unselected.
 
+## Declaration syntax migration
+
+| Published v0.0.2 | This development branch |
+| --- | --- |
+| `let answer = 42;` | `bind answer = 42;` |
+| `let mut count = 0;` | `var count = 0;` |
+| `count += 1;` | Unchanged |
+
+The new parser rejects `let` and `let mut` with E0005 and a specific replacement
+hint. It accepts no aliases. Initializers are still required, `bind` assignments
+still produce E0013, and mutable variables retain their inferred type. `bind`
+and `var` are now reserved names; rename variables previously using those names.
+Legacy `let` and `mut` remain reserved during migration. Strings and comments
+containing these words retain their text. Migrate declarations manually or with
+reviewed token-aware edits; global replacements can corrupt text or Rust code.
+
+v0.0.1 variable-free programs remain compatible. Historical v0.0.2 examples
+require the table's syntax changes; the new parser intentionally rejects their
+old declarations. Existing release notes and packages describe their original
+versions. See the [binding syntax decision](proposals/0013-binding-syntax.md).
+
 ## Library migration
+
+In this development update, `ast::Statement::Let` becomes
+`ast::Statement::Declaration`. All fields, including `mutable`, keep their
+meaning. Update Rust hosts that construct or pattern-match the old variant.
+This is a breaking embedding API change; Rust's native `let` syntax is unchanged.
 
 | API or type | v0.0.1 | Development |
 | --- | --- | --- |

@@ -11,8 +11,8 @@ the nearest enclosing loop; `continue;` rechecks its condition. These words are
 reserved binding names. There is no loop-else clause or implicit truthiness.
 
 ```scarp
-let mut index = 0;
-let mut total = 0;
+var index = 0;
+var total = 0;
 while index < 5 {
     index += 1;
     if index == 3 { continue; }
