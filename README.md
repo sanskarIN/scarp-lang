@@ -66,6 +66,7 @@ the CLI does not reject other filename extensions.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
 - Immutable integer bindings with `let name = expression;` and resolved names.
+- Explicit `let mut` bindings, assignment, and checked compound assignment.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -171,7 +172,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Mutable bindings, assignment, and lexical scope.
+1. Lexical scope and shadowing.
 2. User-defined functions.
 3. Type checking.
 4. A compiler backend.

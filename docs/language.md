@@ -15,7 +15,8 @@ Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement words ar
 `let` and `println`, with exactly that spelling and case. Variable names are
 resolved after parsing; unknown identifiers at statement starts are syntax errors.
 
-Punctuation tokens are `(`, `)`, `;`, and `=`. Arithmetic operator tokens are `+`, `-`,
+Punctuation tokens are `(`, `)`, `;`, and `=`. Compound assignment tokens use
+longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Integers contain one or more ASCII decimal digits; leading zeros
 are accepted as decimal. A minus sign is a separate token. Other characters
 outside strings, comments, identifiers, and whitespace are lexical errors.
@@ -48,8 +49,10 @@ Trivia means whitespace and line comments. Trivia can appear between tokens.
 The following grammar applies after trivia has been removed:
 
 ```ebnf
-program         = { print_statement | declaration }, EOF ;
-declaration     = "let", IDENTIFIER, "=", expression, ";" ;
+program         = { print_statement | declaration | assignment }, EOF ;
+declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
+assignment      = IDENTIFIER, assign_operator, expression, ";" ;
+assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
 print_statement = "println", "(", argument, ")", ";" ;
 argument        = STRING | expression ;
 expression      = sum ;
@@ -167,7 +170,7 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 
 ## Scope
 
-Immutable integer bindings are implemented on development branches and described
+Integer bindings, explicit mutability, and assignment are implemented on development branches and described
 in [the variable reference](variables.md). Functions, types, modules, loops, a
 compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).

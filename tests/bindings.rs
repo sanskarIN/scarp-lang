@@ -95,7 +95,12 @@ fn duplicate_declarations_include_the_original_location() {
 #[test]
 fn reserved_names_are_rejected_as_declarations_and_references() {
     for name in ["let", "mut", "println"] {
-        for source in [format!("let {name} = 1;"), format!("println({name});")] {
+        let declaration = if name == "mut" {
+            "let mut mut = 1;".to_string()
+        } else {
+            format!("let {name} = 1;")
+        };
+        for source in [declaration, format!("println({name});")] {
             assert_eq!(
                 error(&source).kind,
                 DiagnosticKind::ReservedName,

@@ -52,6 +52,7 @@ pub enum DiagnosticKind {
     UnknownName,
     DuplicateBinding,
     ReservedName,
+    ImmutableAssignment,
 }
 
 impl DiagnosticKind {
@@ -69,6 +70,7 @@ impl DiagnosticKind {
             Self::UnknownName => "E0010",
             Self::DuplicateBinding => "E0011",
             Self::ReservedName => "E0012",
+            Self::ImmutableAssignment => "E0013",
         }
     }
 }

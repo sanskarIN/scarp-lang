@@ -56,5 +56,37 @@ program; `run` still accepts source and an explicit writer. `binding_count` and
 a program's binding context, a name reference returns `E0010`. Use `compile` and
 `execute` for expressions that depend on declarations.
 
-These are development API changes from v0.0.1. Mutability, assignment, and blocks
-are separate dependent milestones in [the variable design](proposals/0002-variables.md).
+These are development API changes from v0.0.1. See
+[the variable design](proposals/0002-variables.md) for the staged scope.
+
+## Mutable bindings and assignment
+
+Bindings are immutable unless declared with `let mut`:
+
+```scarp
+let mut count = 2;
+let original = count;
+count += 5;
+println(count);    // 7
+println(original); // 2
+```
+
+Simple assignment uses `name = expression;`. Compound assignment supports `+=`,
+`-=`, `*=`, and `/=`. The right-hand expression is evaluated against the previous
+environment, and its result is combined with the target's previous value using
+the same checked arithmetic as ordinary operators. Assignments require a
+previous declaration and are statements, not expressions.
+
+Initializers copy integer values; bindings do not alias one another. Print
+values are captured when their statement is evaluated, so a later assignment
+does not change an earlier pending print. Repeated and concurrent executions of
+one resolved program still use separate storage.
+
+Writing an immutable binding produces `E0013` and points to its declaration.
+Compound overflow and division errors highlight the entire compound operator.
+An arithmetic failure in the right-hand expression highlights that expression's
+operator instead. Any such failure prevents all program output.
+
+There are no implicit declarations, uninitialized bindings, increment/decrement
+operators, assignment expressions, or string-valued variables. Block scopes are
+the next dependent milestone.

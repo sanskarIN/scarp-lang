@@ -3,7 +3,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::{Expression, ExpressionKind, PrintArgument, Program, Statement},
+    ast::{
+        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, PrintArgument, Program,
+        Statement,
+    },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
 };
 
@@ -29,6 +32,12 @@ impl ResolvedProgram {
 
 #[derive(Debug, Clone)]
 pub(crate) enum ResolvedStatement {
+    Update {
+        slot: usize,
+        operator: BinaryOperator,
+        value: ResolvedExpression,
+        operator_span: Span,
+    },
     Store {
         slot: usize,
         value: ResolvedExpression,
@@ -51,6 +60,7 @@ pub(crate) struct ResolvedExpression {
 struct Binding {
     slot: usize,
     declaration: Span,
+    mutable: bool,
 }
 
 /// Consume a syntax tree and reject unknown, duplicate, or reserved names.
@@ -63,6 +73,7 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
                 name,
                 name_span,
                 initializer,
+                mutable,
                 ..
             } => {
                 check_name(&name, name_span)?;
@@ -84,6 +95,7 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
                     Binding {
                         slot,
                         declaration: name_span,
+                        mutable,
                     },
                 );
                 statements.push(ResolvedStatement::Store { slot, value });
@@ -96,6 +108,42 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
                     }
                 };
                 statements.push(ResolvedStatement::Println(argument));
+            }
+            Statement::Assign {
+                name,
+                name_span,
+                operator,
+                operator_span,
+                value,
+                ..
+            } => {
+                check_name(&name, name_span)?;
+                let binding = bindings
+                    .get(&name)
+                    .ok_or_else(|| unknown_name(&name, name_span))?;
+                if !binding.mutable {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::ImmutableAssignment,
+                        name_span,
+                        format!("cannot assign to immutable binding {name:?}"),
+                    )
+                    .with_related(
+                        binding.declaration,
+                        "the immutable binding is declared here",
+                    )
+                    .with_help("declare this binding with let mut to allow assignment"));
+                }
+                let slot = binding.slot;
+                let value = resolve_expression(value, &bindings)?;
+                statements.push(match operator {
+                    AssignmentOperator::Set => ResolvedStatement::Store { slot, value },
+                    AssignmentOperator::Compound(operator) => ResolvedStatement::Update {
+                        slot,
+                        operator,
+                        value,
+                        operator_span,
+                    },
+                });
             }
         }
     }

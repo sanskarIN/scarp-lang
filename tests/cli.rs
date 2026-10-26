@@ -271,6 +271,24 @@ fn runs_bindings_and_reports_semantic_errors_on_stderr() {
     }
 }
 
+#[test]
+fn runs_mutable_bindings_and_diagnoses_immutable_writes() {
+    let fixture = Fixture::new();
+    let path = fixture.file(
+        "mutable.srp",
+        "let mut value = 1; value += 41; println(value);",
+    );
+    let output = command().arg("run").arg(path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(output.stdout, b"42\n");
+    let path = fixture.file("immutable.srp", "let value = 1; println(value); value = 2;");
+    let output = command().arg("run").arg(path).output().unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(stderr(&output).contains("E0013"));
+    assert!(stderr(&output).contains("declared here"));
+}
+
 #[cfg(unix)]
 #[test]
 fn handles_non_unicode_native_paths_according_to_the_filesystem() {

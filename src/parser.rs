@@ -2,8 +2,8 @@
 
 use crate::{
     ast::{
-        BinaryOperator, Expression, ExpressionKind, ExpressionNode, PrintArgument, Program,
-        Statement,
+        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, ExpressionNode,
+        PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
@@ -102,6 +102,10 @@ impl Parser<'_> {
                 TokenKind::Identifier(name) if name == "let" => {
                     let start = token.span.start;
                     self.cursor += 1;
+                    let mutable = matches!(self.current().map(|token| &token.kind), Some(TokenKind::Identifier(name)) if name == "mut");
+                    if mutable {
+                        self.cursor += 1;
+                    }
                     let (name, name_span) = match self.current() {
                         Some(Token {
                             kind: TokenKind::Identifier(name),
@@ -117,17 +121,42 @@ impl Parser<'_> {
                     statements.push(Statement::Let {
                         name,
                         name_span,
+                        mutable,
                         initializer: Expression { nodes, root },
                         span: Span::new(start, end),
                     });
                 }
                 TokenKind::Identifier(name) => {
+                    if let Some(operator) = self
+                        .tokens
+                        .get(self.cursor + 1)
+                        .and_then(|token| assignment_operator(&token.kind))
+                    {
+                        let name = name.clone();
+                        let name_span = token.span;
+                        let operator_span = self.tokens[self.cursor + 1].span;
+                        self.cursor += 2;
+                        let mut nodes = Vec::new();
+                        let root = self.sum(&mut nodes, 0)?;
+                        let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                        statements.push(Statement::Assign {
+                            name,
+                            name_span,
+                            operator,
+                            operator_span,
+                            value: Expression { nodes, root },
+                            span: Span::new(name_span.start, end),
+                        });
+                        continue;
+                    }
                     return Err(Diagnostic::new(
                         DiagnosticKind::UnknownStatement,
                         token.span,
                         format!("unknown statement {name:?}"),
                     )
-                    .with_help("start a statement with let or println"));
+                    .with_help(
+                        "use let, println, or an assignment to a declared mutable variable",
+                    ));
                 }
                 _ => return Err(self.expected("a println statement or binding declaration")),
             }
@@ -267,6 +296,17 @@ impl Parser<'_> {
             _ => Err(self.expected("an integer literal, variable name, or '('")),
         }
     }
+}
+
+fn assignment_operator(kind: &TokenKind) -> Option<AssignmentOperator> {
+    Some(match kind {
+        TokenKind::Equal => AssignmentOperator::Set,
+        TokenKind::PlusEqual => AssignmentOperator::Compound(BinaryOperator::Add),
+        TokenKind::MinusEqual => AssignmentOperator::Compound(BinaryOperator::Subtract),
+        TokenKind::StarEqual => AssignmentOperator::Compound(BinaryOperator::Multiply),
+        TokenKind::SlashEqual => AssignmentOperator::Compound(BinaryOperator::Divide),
+        _ => return None,
+    })
 }
 
 fn push(nodes: &mut Vec<ExpressionNode>, kind: ExpressionKind, span: Span) -> usize {
