@@ -1,9 +1,9 @@
 # Scarp documentation
 
 Choose a guide by the task you want to complete. These pages document the
-published v0.0.1 snapshot and the complete `0.0.2-dev` feature stack, including
-the optional string-binding extension. Development examples are labeled;
-they are not claims that a v0.0.2 release has been published.
+published snapshots and the complete `0.0.3-dev` feature stack. The v0.0.2
+variable milestone is on main. Numerical, low-level, and native-build examples
+require this development branch and are not included in the published release.
 
 ## Guides and what each adds
 
@@ -19,6 +19,7 @@ they are not claims that a v0.0.2 release has been published.
 | [Numerical vectors](proposals/0008-numeric-vectors.md) | Use native reductions, softmax, squared error, and immutable vector updates |
 | [Integer bit operations](proposals/0009-integer-bit-operations.md) | Pack flags and inspect fixed-width integer patterns |
 | [Freestanding C](proposals/0010-freestanding-c.md) | Emit checked computation units for caller-owned low-level hosts |
+| [Native build commands](proposals/0011-native-build-cli.md) | Compile hosted executables or freestanding objects with the Scarp CLI |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |
@@ -61,7 +62,7 @@ The [conditional design](proposals/0005-conditional-statements.md) explains scop
 bodies, flat branch execution, and checks in unselected paths.
 
 Published behavior is recorded in the [v0.0.1 notes](releases/v0.0.1.md).
-The [v0.0.2 notes](releases/v0.0.2.md) are a development draft.
+The [v0.0.2 notes](releases/v0.0.2.md) describe the published variable milestone.
 [Release preparation](releasing.md) describes the separate packaging and
 publication process. The root [changelog](../CHANGELOG.md) distinguishes released
 work from unmerged development changes.

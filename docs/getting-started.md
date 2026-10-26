@@ -8,11 +8,11 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Try a published interpreter | The v0.0.1 release | Printing and checked integer expressions |
-| Try the current development language | `scarp/freestanding-c-backend` | Variables, numerical kernels, bit operations, and experimental C emission |
+| Try a published interpreter | The v0.0.2 release | Variables, mutation, scopes, strings, booleans, and decisions |
+| Try the current development language | `scarp/native-build-cli` | Interpreter features, C emission, and native build commands |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-The development package version is `0.0.2-dev`. It is not a published v0.0.2
+The development package version is `0.0.3-dev`. It is not a published v0.0.3
 release. The feature and documentation PRs remain subject to review.
 
 ## Build the development checkout
@@ -25,7 +25,7 @@ Rust dependencies.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/freestanding-c-backend
+git switch scarp/native-build-cli
 cargo build --locked --offline
 cargo run -- --version
 ```
@@ -33,7 +33,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.2-dev
+scarp 0.0.3-dev
 ```
 
 Run commands from the repository root so relative example paths resolve:

@@ -12,6 +12,8 @@ use scarp::{
     lexer, ExecutionLimits, RunError,
 };
 
+mod build_cli;
+
 const HELP: &str = "Scarp — Build Beyond Boundaries.
 
 Usage:
@@ -19,6 +21,8 @@ Usage:
   scarp check <file.srp>     Validate syntax, names, and arithmetic without printing
   scarp tokens <file.srp>    Inspect lexer tokens and source locations
   scarp emit-c <file.srp>    Emit a freestanding C11 unit for the supported subset
+  scarp build <file.srp> -o <output>  Build a native executable or object
+  scarp compile ...         Alias for build; use build --help for options
   scarp --help               Show this help
   scarp --version            Show the prototype version
 
@@ -40,6 +44,12 @@ fn main() -> ExitCode {
 }
 
 fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Write) -> u8 {
+    if matches!(
+        args.first().and_then(|value| value.to_str()),
+        Some("build" | "compile")
+    ) {
+        return build_cli::dispatch(&args[1..], output, errors);
+    }
     match args.as_slice() {
         [flag] if flag == "--help" || flag == "-h" => {
             return write_output(output.write_all(HELP.as_bytes()), errors);

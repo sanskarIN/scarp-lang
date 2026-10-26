@@ -1,8 +1,8 @@
 # Version and API compatibility
 
 Use this guide before copying an example into a different Scarp executable or
-updating a Rust embedding host. It compares the published v0.0.1 snapshot with
-the complete `0.0.2-dev` feature stack documented here.
+updating a Rust embedding host. It compares the published v0.0.1 and v0.0.2
+snapshots with the `0.0.3-dev` feature stack documented here.
 
 ## Identify the code you are running
 
@@ -13,38 +13,40 @@ be different commands with different behavior.
 For a source snapshot, `git status --short`, `git branch --show-current`, and
 `git rev-parse HEAD` identify local changes, the branch, and the commit. A branch
 name alone is not an immutable version. The published release is associated with
-the `v0.0.1` tag; development uses `0.0.2-dev` package metadata and has no v0.0.2 tag.
+the `v0.0.1` and `v0.0.2` tags. This development branch uses `0.0.3-dev`
+package metadata and has no v0.0.3 tag.
 
 ## Language and command matrix
 
-| Capability | v0.0.1 | Complete development stack |
-| --- | --- | --- |
-| UTF-8 source, comments, three string escapes | Yes | Yes |
-| String literal print statements | Yes | Yes |
-| Checked signed 64-bit arithmetic | Yes | Yes |
-| Integer declarations and variable references | No | Yes |
-| Explicit mutability and compound assignment | No | Yes |
-| Block scopes and shadowing | No | Yes |
-| String variables and grouped string values | No | Yes, in the string extension |
-| Primitive type consistency checks | No variable types | Yes |
-| `run`, `tokens`, global help/version | Yes | Yes |
-| `check` and per-command help | No | Yes |
-| Boolean values, comparisons, short-circuit logic | No | Yes |
-| `if`/`elif`/`else` statements with scoped bodies | No | Yes |
-| While loops and deterministic execution budgets | No | Yes |
-| Finite binary64 decimals and scientific literals | No | Yes |
-| Immutable float vectors and native numerical kernels | No | Yes |
-| Hex/binary literals, remainder, integer bit operations | No | Yes |
-| Freestanding C emission for the integer/boolean subset | No | Experimental |
-| User functions, imports | No | No |
-| Whole-language native compilation and kernel boot | No | No |
+| Capability | v0.0.1 | v0.0.2 | Development |
+| --- | --- | --- | --- |
+| UTF-8 source, comments, three string escapes | Yes | Yes | Yes |
+| String literal print statements | Yes | Yes | Yes |
+| Checked signed 64-bit arithmetic | Yes | Yes | Yes |
+| Integer declarations and variable references | No | Yes | Yes |
+| Explicit mutability and compound assignment | No | Yes | Yes |
+| Block scopes and shadowing | No | Yes | Yes |
+| String variables and grouped string values | No | Yes | Yes |
+| Primitive type consistency checks | No variable types | Yes | Yes |
+| `run`, `tokens`, global help/version | Yes | Yes | Yes |
+| `check` and per-command help | No | Yes | Yes |
+| Boolean values, comparisons, short-circuit logic | No | Yes | Yes |
+| `if`/`elif`/`else` statements with scoped bodies | No | Yes | Yes |
+| While loops and deterministic execution budgets | No | No | Yes |
+| Finite binary64 decimals and scientific literals | No | No | Yes |
+| Immutable float vectors and native numerical kernels | No | No | Yes |
+| Hex/binary literals, remainder, integer bit operations | No | No | Yes |
+| Freestanding C emission for the integer/boolean subset | No | No | Experimental |
+| Native executable/object build commands for that subset | No | No | Experimental |
+| User functions, imports | No | No | No |
+| Whole-language native compilation and kernel boot | No | No | No |
 
 Integer range, precedence, division truncation, mandatory semicolons, and
 no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/freestanding-c-backend`.
+The complete development stack is available on `scarp/native-build-cli`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
@@ -97,7 +99,7 @@ Use the matching archive or build with a compatible local Rust toolchain. The
 ## Integration and future changes
 
 Syntax and public Rust APIs remain experimental. Review the
-[draft v0.0.2 notes](releases/v0.0.2.md) when updating a host application. Planned
+[v0.0.2 notes](releases/v0.0.2.md) when updating a host application. Planned
 features in a roadmap or proposal are not available merely because they are named.
 
 The feature stack and this documentation are reviewed through separate PRs.
