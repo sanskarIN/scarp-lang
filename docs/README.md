@@ -21,6 +21,7 @@ require this development branch and are not included in the published release.
 | [Freestanding C](proposals/0010-freestanding-c.md) | Emit checked computation units for caller-owned low-level hosts |
 | [Native build commands](proposals/0011-native-build-cli.md) | Compile hosted executables or freestanding objects with the Scarp CLI |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
+| [CLI implementation inventory](cli-status.md) | Compare proposed commands with implemented subsets and remaining prerequisites |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |
 | [Rust embedding](embedding.md) | Select a library stage, capture output, reuse compiled programs, and render errors |
@@ -43,8 +44,8 @@ For a Rust host, begin with compatibility and embedding. Parsing, compilation,
 validation, and execution intentionally have different results and effects.
 
 For a contribution, read testing and the root
-[contribution guide](../CONTRIBUTING.md). The current variable work remains a
-feature-branch stack, with integration and release decisions left to the maintainer.
+[contribution guide](../CONTRIBUTING.md). The variable milestone is on main;
+later language and CLI work remains a branch stack awaiting integration decisions.
 
 ## Exact rules and project records
 

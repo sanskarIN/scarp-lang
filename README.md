@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/native-build-cli
+git switch scarp/cli-foundation
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -80,7 +80,9 @@ the CLI does not reject other filename extensions.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
 - Escapes `\\` (backslash), `\"` (double quote), and `\n` (line break).
-- `run`, `check`, `tokens`, `--help`/`-h`, and `--version`/`-V` commands.
+- `exec`/`run`, static `verify`, evaluating `check`, and token/AST inspection.
+- Contextual `guide`/`help`, `version`, and compatible help/version flags.
+- Experimental `compile`/`build` for native artifacts and `emit-c` for C source.
 - Syntax errors with a code, filename, line, column, source excerpt, and help.
 
 `println` appends a newline. Physical line breaks inside a string are rejected;
@@ -186,6 +188,11 @@ The complete check sequence, including rustdoc, is available as
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development and PR workflow.
 
 ## Prototype limits and planned roadmap
+
+The [CLI inventory](docs/cli-status.md) records all 46 proposed command groups
+and what is actually implemented. `scarp guide compile` explains native builds;
+`scarp guide inspect ast` explains read-only syntax inspection. `verify` stops
+after static checks, while `check` evaluates selected arithmetic with budgets.
 
 `scarp build file.srp -o app` compiles a native executable for the supported
 integer/boolean subset; `scarp compile` is an alias. A Clang/GCC-style C compiler

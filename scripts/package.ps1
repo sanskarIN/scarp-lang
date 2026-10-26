@@ -111,6 +111,16 @@ try {
     if ($LASTEXITCODE -ne 0 -or -not ($tokens -match 'integer\(1\)')) {
         throw 'Packaged token inspection failed'
     }
+    $aliasVersion = & $executable version
+    if ($LASTEXITCODE -ne 0 -or $aliasVersion -ne "scarp $version") { throw 'Packaged version alias failed' }
+    $guide = & $executable guide compile
+    if ($LASTEXITCODE -ne 0 -or -not (($guide -join "`n") -match 'Usage: scarp compile')) { throw 'Packaged contextual help failed' }
+    $staticOutput = & $executable verify $invalidSource
+    if ($LASTEXITCODE -ne 0 -or $staticOutput) { throw 'Packaged static verification evaluated arithmetic' }
+    $aliasOutput = & $executable exec (Join-Path $extractedPackage 'examples/hello.srp')
+    if ($LASTEXITCODE -ne 0 -or $aliasOutput -cne 'Hello from Scarp!') { throw 'Packaged execution alias failed' }
+    $tree = & $executable inspect ast (Join-Path $extractedPackage 'examples/hello.srp')
+    if ($LASTEXITCODE -ne 0 -or -not (($tree -join "`n") -match 'Println')) { throw 'Packaged AST inspection failed' }
 
     $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     $checksum = "$hash  $([System.IO.Path]::GetFileName($archive))`n"
