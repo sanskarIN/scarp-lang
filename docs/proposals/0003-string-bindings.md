@@ -2,14 +2,16 @@
 
 **Status: implemented on main for v0.0.2.** This extension builds on the
 integer-variable rules and is included in the variable prerelease.
+Examples use development `bind`/`var`; published v0.0.2 uses `let`/`let mut`.
+See the [syntax migration decision](0013-binding-syntax.md).
 
 Bindings infer either `integer` or `string` from their initializer. Mutable
 assignment must preserve that type. Inner scopes may shadow a binding with a
 different type because each declaration has a distinct slot.
 
 ```scarp
-let mut greeting = "Hello";
-let original = greeting;
+var greeting = "Hello";
+bind original = greeting;
 println(greeting);
 greeting = "Hello from Scarp!";
 println(original); // Hello

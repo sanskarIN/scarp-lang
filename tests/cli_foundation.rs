@@ -119,7 +119,7 @@ fn contextual_help_matches_each_command_and_nested_topic() {
 fn exec_executes_source_and_preserves_runtime_diagnostics() {
     let fixture = Fixture::new();
     for (source, expected, code) in [
-        ("let mut n=3; n+=2; println(n);", b"5\n".as_slice(), None),
+        ("var n=3; n+=2; println(n);", b"5\n".as_slice(), None),
         ("println(1); println(1/0);", b"".as_slice(), Some("E0008")),
         ("println(missing);", b"".as_slice(), Some("E0010")),
     ] {
@@ -177,7 +177,7 @@ fn verify_reports_actual_static_errors_and_unicode_crlf_locations() {
         ("println(missing);", "E0010"),
         ("println(1+true);", "E0015"),
         ("println(1)", "E0004"),
-        ("// π\r\nlet x=true;\r\nx=false;", "E0013"),
+        ("// π\r\nbind x=true;\r\nx=false;", "E0013"),
     ] {
         let path = fixture.source(source);
         let output = command().arg("verify").arg(&path).output().unwrap();
@@ -220,7 +220,7 @@ fn inspect_tokens_shows_lexer_spans_without_requiring_valid_syntax() {
 #[test]
 fn ast_inspection_parses_real_syntax_without_resolution_or_execution() {
     let fixture = Fixture::new();
-    let source = "let count=missing; println(1/0);";
+    let source = "bind count=missing; println(1/0);";
     let path = fixture.source(source);
     let before = fixture.entries();
     let output = command()
@@ -233,7 +233,7 @@ fn ast_inspection_parses_real_syntax_without_resolution_or_execution() {
     let tree = String::from_utf8(output.stdout).unwrap();
     for fragment in [
         "Program",
-        "Let",
+        "Declaration",
         "name: \"count\"",
         "missing",
         "Println",

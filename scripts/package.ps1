@@ -120,8 +120,21 @@ try {
     if ($LASTEXITCODE -ne 0 -or $staticOutput) { throw 'Packaged static verification evaluated arithmetic' }
     $aliasOutput = & $executable exec (Join-Path $extractedPackage 'examples/hello.srp')
     if ($LASTEXITCODE -ne 0 -or $aliasOutput -cne 'Hello from Scarp!') { throw 'Packaged execution failed' }
-    $tree = & $executable inspect ast (Join-Path $extractedPackage 'examples/hello.srp')
-    if ($LASTEXITCODE -ne 0 -or -not (($tree -join "`n") -match 'Println')) { throw 'Packaged AST inspection failed' }
+    $tree = & $executable inspect ast (Join-Path $extractedPackage 'examples/mutable.srp')
+    if ($LASTEXITCODE -ne 0 -or -not (($tree -join "`n") -match 'Declaration')) { throw 'Packaged declaration AST inspection failed' }
+    foreach ($legacy in @(
+        @{ Source = 'let answer = 42;'; Replacement = 'bind' },
+        @{ Source = 'let mut count = 0;'; Replacement = 'var' }
+    )) {
+        [System.IO.File]::WriteAllText($invalidSource, $legacy.Source)
+        foreach ($verb in @('exec', 'verify')) {
+            $legacyOutput = & $executable $verb $invalidSource 2> $errorLog
+            $diagnostic = [System.IO.File]::ReadAllText($errorLog)
+            if ($LASTEXITCODE -ne 1 -or $legacyOutput -or $diagnostic -notmatch 'E0005' -or $diagnostic -notmatch $legacy.Replacement) {
+                throw 'Packaged legacy declaration migration check failed'
+            }
+        }
+    }
     foreach ($retired in @('run', 'build', 'check', 'tokens', 'emit-c', 'help')) {
         $rejectedOutput = & $executable $retired --help 2> $errorLog
         if ($LASTEXITCODE -ne 2 -or $rejectedOutput) { throw 'Packaged retired command was accepted' }

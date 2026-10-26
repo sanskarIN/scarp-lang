@@ -40,6 +40,7 @@ cargo doc --locked --no-deps
 | --- | --- |
 | Token spelling, escapes, or byte spans | `tests/front_end.rs`, `tests/expressions.rs` |
 | Declaration ordering and name resolution | `tests/bindings.rs` |
+| `bind`/`var`, legacy migration errors, and keyword byte spans | `tests/binding_syntax.rs` |
 | Assignment and state isolation | `tests/mutability.rs` |
 | Shadowing, scope exit, and nesting | `tests/scopes.rs` |
 | String snapshots and inferred types | `tests/string_bindings.rs` |

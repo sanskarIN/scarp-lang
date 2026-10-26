@@ -7,8 +7,8 @@ The published v0.0.1 interpreter does not support this syntax.
 ## Select the first matching case
 
 ```scarp
-let score = 73;
-let mut grade = "pending";
+bind score = 73;
+var grade = "pending";
 if score >= 90 {
     grade = "A";
 } elif score >= 60 {
@@ -38,9 +38,9 @@ simply continues after all false conditions. There is no semicolon after `}`.
 ## Keep local names local
 
 ```scarp
-let label = "outer";
+bind label = "outer";
 if true {
-    let label = "selected";
+    bind label = "selected";
     println(label);
 }
 println(label);

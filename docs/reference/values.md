@@ -102,7 +102,7 @@ conversion between booleans and integers. Compilation checks all operands even
 when arithmetic in a right-hand operand will be skipped during execution.
 
 Development assignments are statements, not expression values. The target must
-already exist and be declared with `let mut`.
+already exist and be declared with `var`.
 
 | Operator | Effect |
 | --- | --- |
@@ -113,7 +113,7 @@ already exist and be declared with `let mut`.
 | `/=` | Divide the previous integer value by an integer expression |
 
 The right-hand expression sees the previous environment. For example,
-`let mut x = 2; x += x + 1;` leaves `x` equal to `5`.
+`var x = 2; x += x + 1;` leaves `x` equal to `5`.
 
 Compound arithmetic failures identify the complete compound operator. Failures
 inside the right-hand expression identify that expression's operator instead.
@@ -128,7 +128,7 @@ concatenation, indexing, interpolation, or automatic formatting of placeholders.
 Print labels and values with separate statements:
 
 ```scarp
-let count = 3;
+bind count = 3;
 println("count:");
 println(count);
 ```

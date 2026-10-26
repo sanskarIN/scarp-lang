@@ -34,6 +34,7 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'exec', 'examples/mutable.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'exec', 'examples/scopes.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'verify', 'examples/scopes.srp')
+    Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'inspect', 'ast', 'examples/scopes.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'exec', 'examples/string_bindings.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'verify', 'examples/string_bindings.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'exec', 'examples/booleans.srp')

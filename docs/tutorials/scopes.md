@@ -7,9 +7,9 @@ statements between `{` and `}` and does not need a trailing semicolon.
 ## Introduce a local name
 
 ```scarp
-let value = 2;
+bind value = 2;
 {
-    let value = value + 3;
+    bind value = value + 3;
     println(value);
 }
 println(value);
@@ -32,10 +32,10 @@ an explicit nested-scope choice rather than silent replacement of a declaration.
 ## Assign to an outer mutable binding
 
 ```scarp
-let mut count = 1;
+var count = 1;
 {
     count += 2;
-    let local = count * 10;
+    bind local = count * 10;
     println(local);
 }
 println(count);
@@ -56,7 +56,7 @@ restores name visibility; it does not undo writes to an outer variable.
 
 ```scarp-invalid
 {
-    let local = 30;
+    bind local = 30;
 }
 println(local);
 ```
@@ -69,9 +69,9 @@ An immutable inner declaration hides a mutable outer one. This fails with
 `E0013`, and the related location identifies the inner declaration:
 
 ```scarp-invalid
-let mut count = 1;
+var count = 1;
 {
-    let count = 2;
+    bind count = 2;
     count += 1;
 }
 ```
@@ -85,9 +85,9 @@ shadowing declaration, according to the behavior you intend.
 In the string extension, separate declarations can have different types:
 
 ```scarp
-let label = "outside";
+bind label = "outside";
 {
-    let label = 7;
+    bind label = 7;
     println(label);
 }
 println(label);

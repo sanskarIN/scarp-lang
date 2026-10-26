@@ -37,17 +37,19 @@ fn paired(
 }
 
 fn main() {
+    let before_uses_var = scarp_before::compile("var x = 0;").is_ok();
+    let after_uses_var = scarp_after::compile("var x = 0;").is_ok();
     println!("workload,stage,before_us,after_us,paired_speedup,p05_speedup,p95_speedup");
     for (name, source, expected) in [
         (
             "assignments",
-            format!("let mut x = 0;{}println(x);", "x += 1;".repeat(4096)),
+            format!("var x = 0;{}println(x);", "x += 1;".repeat(4096)),
             "4096\n".to_string(),
         ),
         (
             "branches",
             format!(
-                "let mut x = 0;{}println(x);",
+                "var x = 0;{}println(x);",
                 "if x < 20000 and not false { x += 2; } else { x += 1; }".repeat(1024)
             ),
             "2048\n".to_string(),
@@ -63,8 +65,21 @@ fn main() {
             "4096\n".to_string(),
         ),
     ] {
-        let old = scarp_before::compile(&source).unwrap();
-        let new = scarp_after::compile(&source).unwrap();
+        // Only these controlled workloads have this exact declaration prefix.
+        // Select equivalent source for snapshots on either side of the syntax change.
+        let legacy_source = source.replacen("var x = 0;", "let mut x = 0;", 1);
+        let before_source = if before_uses_var {
+            &source
+        } else {
+            &legacy_source
+        };
+        let after_source = if after_uses_var {
+            &source
+        } else {
+            &legacy_source
+        };
+        let old = scarp_before::compile(before_source).unwrap();
+        let new = scarp_after::compile(after_source).unwrap();
         let mut before_output = Vec::new();
         let mut after_output = Vec::new();
         scarp_before::interpreter::execute(&old, &mut before_output).unwrap();
@@ -73,10 +88,10 @@ fn main() {
         assert_eq!(after_output, expected.as_bytes());
         let compile = paired(
             || {
-                black_box(scarp_before::compile(black_box(&source)).unwrap());
+                black_box(scarp_before::compile(black_box(before_source)).unwrap());
             },
             || {
-                black_box(scarp_after::compile(black_box(&source)).unwrap());
+                black_box(scarp_after::compile(black_box(after_source)).unwrap());
             },
             10,
         );

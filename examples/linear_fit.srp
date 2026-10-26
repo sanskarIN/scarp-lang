@@ -1,12 +1,12 @@
 // Fit y = weight * x using an explicit squared-error gradient.
-let inputs = [1.0, 2.0, 3.0];
-let targets = [2.0, 4.0, 6.0];
-let mut weight = 0.0;
-let mut iteration = 0;
+bind inputs = [1.0, 2.0, 3.0];
+bind targets = [2.0, 4.0, 6.0];
+var weight = 0.0;
+var iteration = 0;
 while iteration < 40 {
-    let predictions = scale(inputs, weight);
-    let residuals = add(predictions, scale(targets, -1.0));
-    let gradient = (2.0 * dot(inputs, residuals)) / 3.0;
+    bind predictions = scale(inputs, weight);
+    bind residuals = add(predictions, scale(targets, -1.0));
+    bind gradient = (2.0 * dot(inputs, residuals)) / 3.0;
     weight -= 0.05 * gradient;
     iteration += 1;
 }

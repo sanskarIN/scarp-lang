@@ -1,7 +1,7 @@
 # CLI implementation inventory
 
 This inventory compares the supplied command proposal with the repository and
-the `scarp/canonical-cli` branch. It records capabilities rather than treating
+the `scarp/bind-var-syntax` branch. It records capabilities rather than treating
 the proposal as implemented. Main contains the v0.0.2 variable milestone; native
 compilation depends on unmerged PRs #20 and #22. Nothing here merges or publishes.
 

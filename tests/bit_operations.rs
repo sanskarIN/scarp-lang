@@ -34,7 +34,7 @@ fn shifts_preserve_defined_sixty_four_bit_patterns() {
 }
 #[test]
 fn compound_bit_operations_and_remainder_keep_snapshots() {
-    assert_eq!(output("let mut flags = 0xff; let copy = flags; flags &= 0xf0; flags ^= 0x30; flags |= 0x0f; flags <<= 1; flags >>= 1; flags >>>= 1; flags %= 97; println(copy); println(flags);"),"255\n6\n");
+    assert_eq!(output("var flags = 0xff; bind copy = flags; flags &= 0xf0; flags ^= 0x30; flags |= 0x0f; flags <<= 1; flags >>= 1; flags >>>= 1; flags %= 97; println(copy); println(flags);"),"255\n6\n");
     assert_eq!(output("println(-7 % 3); println(7 % -3);"), "-1\n1\n");
     assert_eq!(
         error("println(1 % 0);").kind,
@@ -61,11 +61,11 @@ fn integer_only_operations_reject_other_kinds_before_execution() {
         );
     }
     assert_eq!(
-        error("let mut x = 1.0; x <<= 1;").kind,
+        error("var x = 1.0; x <<= 1;").kind,
         DiagnosticKind::TypeMismatch
     );
     assert_eq!(
-        error("let x = 1; x |= 2;").kind,
+        error("bind x = 1; x |= 2;").kind,
         DiagnosticKind::ImmutableAssignment
     );
 }
@@ -92,7 +92,7 @@ fn radix_literals_keep_signed_range_and_direct_minimum_rules() {
 #[test]
 fn selected_shift_errors_preserve_atomic_output_and_source_spans() {
     assert_eq!(output("println(false and 1 << 64 == 0);"), "false\n");
-    let source = "println(1); let mut x = 1; x >>>= 64;";
+    let source = "println(1); var x = 1; x >>>= 64;";
     let diagnostic = error(source);
     assert_eq!(diagnostic.kind, DiagnosticKind::InvalidShift);
     assert_eq!(&source[diagnostic.span.start..diagnostic.span.end], ">>>=");
@@ -130,7 +130,7 @@ fn nibble_packing_and_unpacking_agree_with_arithmetic_values() {
     for value in 0..256 {
         let high = value / 16;
         let low = value % 16;
-        source.push_str(&format!("{{ let packed = ({high} << 4) | {low}; println(packed); println(packed >>> 4 == {high}); }}"));
+        source.push_str(&format!("{{ bind packed = ({high} << 4) | {low}; println(packed); println(packed >>> 4 == {high}); }}"));
         expected.push_str(&format!("{value}\ntrue\n"));
     }
     assert_eq!(output(&source), expected);
@@ -141,5 +141,5 @@ fn long_bit_chains_and_gcd_loops_remain_iterative() {
         output(&format!("println(0{});", " | 1".repeat(20000))),
         "1\n"
     );
-    assert_eq!(output("let mut a = 84; let mut b = 30; while b != 0 { let remainder = a % b; a = b; b = remainder; } println(a);"),"6\n");
+    assert_eq!(output("var a = 84; var b = 30; while b != 0 { bind remainder = a % b; a = b; b = remainder; } println(a);"),"6\n");
 }

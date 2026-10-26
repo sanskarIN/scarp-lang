@@ -199,7 +199,7 @@ fn c_source_output_is_exclusive_and_rejects_options_that_would_be_ignored() {
 fn native_compile_preserves_exact_output() {
     let Some(cc) = compiler() else { return };
     let fixture = Fixture::new();
-    let source = fixture.source("println(\"compiled 🌍\0\"); let mut x=3; while x>0 { println(x); x-=1; } println(false and 1/0==0); println(-1 >>> 1);");
+    let source = fixture.source("println(\"compiled 🌍\0\"); var x=3; while x>0 { println(x); x-=1; } println(false and 1/0==0); println(-1 >>> 1);");
     let mut expected = Vec::new();
     scarp::run(&fs::read_to_string(&source).unwrap(), &mut expected).unwrap();
     {
@@ -309,7 +309,13 @@ fn executable_budgets_and_full_width_limit_constants_work() {
 #[test]
 fn invalid_source_wins_before_tool_invocation_and_leaves_no_artifact() {
     let fixture = Fixture::new();
-    for (source, code) in [("println(missing);", "E0010"), ("println(1.0);", "E0027")] {
+    for (source, code) in [
+        ("println(missing);", "E0010"),
+        ("println(1.0);", "E0027"),
+        ("let x = 1;", "E0005"),
+        ("let mut x = 1;", "E0005"),
+        ("bind mut x = 1;", "E0004"),
+    ] {
         let destination = fixture.output("invalid");
         let output = build(
             &"missing-compiler-that-must-not-run".into(),

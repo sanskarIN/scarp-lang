@@ -6,24 +6,24 @@ use scarp::{
 
 #[test]
 fn check_validates_names_mutation_and_arithmetic_without_an_output_sink() {
-    scarp::check("let mut x = 1; { let x = x + 1; println(x); } x += 3; println(x);").unwrap();
+    scarp::check("var x = 1; { bind x = x + 1; println(x); } x += 3; println(x);").unwrap();
     assert_eq!(
-        scarp::check("let x = missing;").unwrap_err().kind,
+        scarp::check("bind x = missing;").unwrap_err().kind,
         DiagnosticKind::UnknownName
     );
     assert_eq!(
-        scarp::check("let x = 1; x = 2;").unwrap_err().kind,
+        scarp::check("bind x = 1; x = 2;").unwrap_err().kind,
         DiagnosticKind::ImmutableAssignment
     );
     assert_eq!(
-        scarp::check("let mut x = 1; x /= 0;").unwrap_err().kind,
+        scarp::check("var x = 1; x /= 0;").unwrap_err().kind,
         DiagnosticKind::DivisionByZero
     );
 }
 
 #[test]
 fn syntax_compilation_and_validation_are_separate_phases() {
-    let source = "let value = 1 / 0;";
+    let source = "bind value = 1 / 0;";
     assert!(scarp::parse(source).is_ok());
     assert!(compile(source).is_ok());
     assert_eq!(
@@ -36,7 +36,7 @@ fn syntax_compilation_and_validation_are_separate_phases() {
 
 #[test]
 fn validation_does_not_change_a_compiled_programs_state() {
-    let program = compile("let mut x = 1; x += 1; println(x);").unwrap();
+    let program = compile("var x = 1; x += 1; println(x);").unwrap();
     for _ in 0..20 {
         interpreter::validate(&program).unwrap();
         let mut output = Vec::new();
@@ -76,9 +76,9 @@ fn sequential_locations_handle_large_single_line_inputs() {
 #[test]
 fn check_and_run_report_the_same_first_diagnostic() {
     for source in [
-        "let x = 1; let x = 2;",
-        "{ let x = 1; } println(x);",
-        "let mut x = 1; x /= 0;",
+        "bind x = 1; bind x = 2;",
+        "{ bind x = 1; } println(x);",
+        "var x = 1; x /= 0;",
     ] {
         let expected = scarp::check(source).unwrap_err();
         let mut output = Vec::new();
@@ -93,7 +93,7 @@ fn check_and_run_report_the_same_first_diagnostic() {
 
 #[test]
 fn alternating_expression_shapes_preserve_state_and_captured_values() {
-    let mut source = "let mut total = 0; let mut label = \"before\";".to_string();
+    let mut source = "var total = 0; var label = \"before\";".to_string();
     let mut expected = String::new();
     for index in 1..=512 {
         source.push_str("total += (1 + 2) * (3 + 4); println(total); println(total > 0 and not false); println(label); label = \"after\";");
