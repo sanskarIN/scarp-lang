@@ -14,7 +14,7 @@ println(area); // 42
 
 Declarations require `let`, an ASCII identifier, `=`, a value expression, and
 `;`. Names are case-sensitive. `_` is an ordinary name. `let`, `mut`, `println`,
-`true`, `false`, `and`, `or`, and `not` are reserved binding names. A binding
+`true`, `false`, `and`, `or`, `not`, `if`, `elif`, and `else` are reserved binding names. A binding
 infers `integer`, `string`, or `boolean` from its initializer. Parenthesized values and names are value
 expressions; arithmetic remains integer-only.
 
@@ -31,7 +31,8 @@ compiled program. Variables do not persist between files or library calls.
 The whole file is resolved before arithmetic evaluation. A later unknown name
 can therefore be reported before an earlier arithmetic error. Declarations and
 print arguments are evaluated in source order before any output is written.
-Unused initializers are still evaluated and can fail. Existing checked integer
+Reachable unused initializers are still evaluated and can fail. Unselected
+conditional bodies are statically checked but do not evaluate arithmetic. Existing checked integer
 arithmetic and expression nesting rules are unchanged.
 
 ## Diagnostics

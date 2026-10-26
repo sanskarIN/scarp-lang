@@ -2,6 +2,9 @@
 
 ## Unreleased — v0.0.2 development
 
+- Conditional `if`/`elif`/`else` statements with boolean guards, scoped bodies,
+  static checking of all paths, and execution of the selected path only.
+
 - Boolean values, same-type equality, integer ordering, and short-circuit `and`,
   `or`, and `not` expressions on a separate dependent feature branch.
 

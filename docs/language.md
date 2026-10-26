@@ -11,10 +11,10 @@ three source bytes. A mark elsewhere is an invalid character. The lexer skips
 Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
-Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement words are
-`let` and `println`, with exactly that spelling and case. Variable names are
-resolved after parsing. An identifier at a statement start must introduce `let`,
-`println`, or an assignment; assignment targets are checked during resolution.
+Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms use
+`let`, `println`, and `if`, with exactly that spelling and case. `elif` and `else`
+extend a preceding conditional. Variable names and assignment targets are
+resolved after parsing. Braces can also begin a standalone block.
 
 Punctuation tokens are `(`, `)`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
@@ -52,7 +52,9 @@ The following grammar applies after trivia has been removed:
 
 ```ebnf
 program         = { statement }, EOF ;
-statement       = print_statement | declaration | assignment | block ;
+statement       = print_statement | declaration | assignment | block | conditional ;
+conditional     = "if", expression, block,
+                  { "elif", expression, block }, [ "else", block ] ;
 block           = "{", { statement }, "}" ;
 declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
@@ -125,10 +127,17 @@ type consistency in that order. Name resolution and primitive inference share
 one traversal. The first
 error in a phase prevents later phases. A later lexical error can therefore be
 reported before an earlier syntax error; a later unknown name can be reported
-before an earlier arithmetic failure. Declarations, assignments, and print
-arguments are then evaluated in source order before any output is written.
+before an earlier arithmetic failure. Reachable declarations, assignments, and
+print arguments are then evaluated in source order before any output is written.
 All lexical, syntax, name, mutability, type, and arithmetic errors produce no program
 output.
+
+Conditional conditions require booleans. Every body is statically checked, but
+only the first selected body evaluates arithmetic and captures prints. Each body
+has a separate lexical scope. `elif` conditions stop after the first match.
+Braces are mandatory and use the existing block-depth limit. See the
+[conditional design](proposals/0005-conditional-statements.md) and
+[decisions tutorial](tutorials/decisions.md).
 
 Each print statement writes its decoded string or decimal integer followed by one LF
 to the supplied output stream. Strings containing `\n` can therefore write several lines.

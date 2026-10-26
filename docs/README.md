@@ -13,6 +13,7 @@ they are not claims that a v0.0.2 release has been published.
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
+| [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |
@@ -50,6 +51,8 @@ Design records cover [integer expressions](proposals/0001-integer-expressions.md
 a proposed capability is not implemented merely because it appears in a roadmap.
 The [boolean design](proposals/0004-boolean-expressions.md) records comparison,
 precedence, and short-circuit rules in the next dependent feature slice.
+The [conditional design](proposals/0005-conditional-statements.md) explains scoped
+bodies, flat branch execution, and checks in unselected paths.
 
 Published behavior is recorded in the [v0.0.1 notes](releases/v0.0.1.md).
 The [v0.0.2 notes](releases/v0.0.2.md) are a development draft.

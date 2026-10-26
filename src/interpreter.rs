@@ -18,8 +18,21 @@ enum PrintValue<'a> {
 fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic> {
     let mut environment = vec![Value::Integer(0); program.binding_count()];
     let mut output = Vec::new();
-    for statement in &program.statements {
+    let mut pc = 0;
+    while let Some(statement) = program.statements.get(pc) {
         match statement {
+            ResolvedStatement::JumpIfFalse { condition, target } => {
+                let value = evaluator::evaluate_resolved(condition, &environment)?;
+                let span = condition.syntax.nodes()[condition.syntax.root()].span;
+                if !value.require_boolean(span)? {
+                    pc = *target;
+                    continue;
+                }
+            }
+            ResolvedStatement::Jump { target } => {
+                pc = *target;
+                continue;
+            }
             ResolvedStatement::Update {
                 slot,
                 operator,
@@ -43,6 +56,7 @@ fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic>
                 });
             }
         }
+        pc += 1;
     }
     Ok(output)
 }

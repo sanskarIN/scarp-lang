@@ -30,6 +30,7 @@ the `v0.0.1` tag; development uses `0.0.2-dev` package metadata and has no v0.0.
 | `run`, `tokens`, global help/version | Yes | Yes |
 | `check` and per-command help | No | Yes |
 | Boolean values, comparisons, short-circuit logic | No | Yes |
+| `if`/`elif`/`else` statements with scoped bodies | No | Yes |
 | User functions, imports, loops | No | No |
 | Native compilation of Scarp programs | No | No |
 
@@ -38,7 +39,7 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/boolean-expressions`.
+The complete development stack is available on `scarp/conditional-statements`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
@@ -48,6 +49,9 @@ syntax nodes to the public enums. Rust hosts using exhaustive matches must
 handle these additions. `Value::as_boolean` inspects boolean values. See
 [the boolean design](proposals/0004-boolean-expressions.md) for precedence and
 short-circuit behavior.
+The conditional extension adds `Statement::If` and `ConditionalBranch` to syntax.
+`statement_count` includes branch guards, while omitting bookkeeping jumps and
+block containers. All branches contribute to binding metadata, even if unselected.
 
 ## Library migration
 

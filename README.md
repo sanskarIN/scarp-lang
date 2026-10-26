@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/boolean-expressions
+git switch scarp/conditional-statements
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -86,11 +86,11 @@ the CLI does not reject other filename extensions.
 `println` appends a newline. Physical line breaks inside a string are rejected;
 use `\n` instead. Identifiers use ASCII letters, digits, and underscores, cannot
 start with a digit, and are case-sensitive. Statements include declarations,
-assignments, blocks, and `println` calls. Escapes other than the three listed
+assignments, blocks, `if`/`elif`/`else` decisions, and `println` calls. Escapes other than the three listed
 above are rejected.
 
 The entire file is lexed, parsed, resolved, checked for primitive type consistency,
-and evaluated before any program output is written. Source and semantic errors
+and its selected execution path is evaluated before any program output is written. Source and semantic errors
 therefore produce no program output.
 Output stream failures propagate as errors; an output
 failure can occur after earlier statements have been written. A closed output
@@ -114,11 +114,14 @@ and integer `<`, `<=`, `>`, `>=`. Readable `not`, `and`, and `or` operators requ
 booleans; `and` and `or` short-circuit at runtime while all operands are checked
 for names and types during compilation. See the
 [boolean design](docs/proposals/0004-boolean-expressions.md).
+Conditional statements select the first true `if`/`elif` body, or the optional
+`else` body. Every condition and body undergoes static checks; arithmetic executes
+only on the selected path. Start with the [decisions tutorial](docs/tutorials/decisions.md).
 
 `check` validates syntax, names, mutability, scopes, primitive types, and arithmetic without writing
 program output. It returns zero and remains silent on success. In this pure
 value language it evaluates declarations and assignments in fresh local
-storage, so unused arithmetic failures are still reported. `compile` alone does
+storage, so reachable unused arithmetic failures are still reported. `compile` alone does
 not evaluate arithmetic.
 
 `tokens` checks lexical validity without parsing or executing the file. It prints
@@ -198,7 +201,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Conditional statements and loops.
+1. Loops and bounded execution controls.
 2. User-defined functions.
 3. User-defined types and function type checking.
 4. A compiler backend.

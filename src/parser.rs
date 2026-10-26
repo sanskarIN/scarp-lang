@@ -2,8 +2,8 @@
 
 use crate::{
     ast::{
-        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, ExpressionNode,
-        LogicalOperator, PrintArgument, Program, Statement,
+        AssignmentOperator, BinaryOperator, ConditionalBranch, Expression, ExpressionKind,
+        ExpressionNode, LogicalOperator, PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
@@ -84,22 +84,14 @@ impl Parser<'_> {
                 }
                 TokenKind::RightBrace if in_block => break,
                 TokenKind::LeftBrace => {
-                    let opening = token.span;
-                    if depth >= MAX_BLOCK_DEPTH {
-                        return Err(Diagnostic::new(
-                            DiagnosticKind::BlockNesting,
-                            opening,
-                            format!("block nesting exceeds {MAX_BLOCK_DEPTH} levels"),
-                        )
-                        .with_help("reduce the number of nested statement blocks"));
-                    }
-                    self.cursor += 1;
-                    let inner = self.statement_list(depth + 1, true)?;
-                    let end = self.punctuation(TokenKind::RightBrace, "'}'")?.end;
+                    let (inner, span) = self.block(depth)?;
                     statements.push(Statement::Block {
                         statements: inner,
-                        span: Span::new(opening.start, end),
+                        span,
                     });
+                }
+                TokenKind::Identifier(name) if name == "if" => {
+                    statements.push(self.conditional(depth)?);
                 }
                 TokenKind::Identifier(name) if name == "println" => {
                     let start = token.span.start;
@@ -213,6 +205,55 @@ impl Parser<'_> {
 
     fn keyword(&self, expected: &str) -> bool {
         matches!(self.current().map(|token| &token.kind), Some(TokenKind::Identifier(name)) if name == expected)
+    }
+
+    fn block(&mut self, depth: usize) -> Result<(Vec<Statement>, Span), Diagnostic> {
+        let opening = self.punctuation(TokenKind::LeftBrace, "'{'")?;
+        if depth >= MAX_BLOCK_DEPTH {
+            return Err(Diagnostic::new(
+                DiagnosticKind::BlockNesting,
+                opening,
+                format!("block nesting exceeds {MAX_BLOCK_DEPTH} levels"),
+            )
+            .with_help("reduce the number of nested statement blocks"));
+        }
+        let inner = self.statement_list(depth + 1, true)?;
+        let end = self.punctuation(TokenKind::RightBrace, "'}'")?.end;
+        Ok((inner, Span::new(opening.start, end)))
+    }
+
+    fn conditional(&mut self, depth: usize) -> Result<Statement, Diagnostic> {
+        let start = self.current().unwrap().span.start;
+        let mut branches = Vec::new();
+        let mut end;
+        loop {
+            self.cursor += 1; // if or elif
+            let mut nodes = Vec::new();
+            let root = self.logical_or(&mut nodes, 0)?;
+            let (statements, span) = self.block(depth)?;
+            end = span.end;
+            branches.push(ConditionalBranch {
+                condition: Expression { nodes, root },
+                statements,
+                span,
+            });
+            if !self.keyword("elif") {
+                break;
+            }
+        }
+        let otherwise = if self.keyword("else") {
+            self.cursor += 1;
+            let (statements, span) = self.block(depth)?;
+            end = span.end;
+            statements
+        } else {
+            Vec::new()
+        };
+        Ok(Statement::If {
+            branches,
+            otherwise,
+            span: Span::new(start, end),
+        })
     }
 
     fn logical_or(
