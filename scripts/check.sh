@@ -29,6 +29,7 @@ cargo run --locked -- exec examples/bindings.srp
 cargo run --locked -- exec examples/mutable.srp
 cargo run --locked -- exec examples/scopes.srp
 cargo run --locked -- verify examples/scopes.srp
+cargo run --locked -- inspect ast examples/scopes.srp
 cargo run --locked -- exec examples/string_bindings.srp
 cargo run --locked -- verify examples/string_bindings.srp
 cargo run --locked -- exec examples/booleans.srp
