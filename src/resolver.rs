@@ -222,7 +222,7 @@ impl Resolver {
                 Statement::Block { statements, span } => {
                     self.scoped_statements(statements, span)?;
                 }
-                Statement::Let {
+                Statement::Declaration {
                     name,
                     name_span,
                     initializer,
@@ -298,7 +298,7 @@ impl Resolver {
                             binding.declaration,
                             "the immutable binding is declared here",
                         )
-                        .with_help("declare this binding with let mut to allow assignment"));
+                        .with_help("declare this binding with var to allow assignment"));
                     }
                     let slot = binding.slot;
                     let expected_type = binding.kind;
@@ -546,7 +546,9 @@ pub(crate) fn require_type(
 fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
     if matches!(
         name,
-        "let"
+        "bind"
+            | "var"
+            | "let"
             | "mut"
             | "println"
             | "true"
@@ -580,7 +582,7 @@ pub(crate) fn unknown_name(name: &str, span: Span) -> Diagnostic {
         span,
         format!("unknown variable {name:?}"),
     )
-    .with_help("declare the variable with let before using it in this scope")
+    .with_help("declare the name with bind or var before using it in this scope")
 }
 
 fn loop_control(span: Span) -> Diagnostic {

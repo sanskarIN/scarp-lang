@@ -1,9 +1,9 @@
-let mut total = 1;
+var total = 1;
 {
-    let total = total + 10;
+    bind total = total + 10;
     println(total);
     {
-        let mut total = total * 2;
+        var total = total * 2;
         total += 1;
         println(total);
     }

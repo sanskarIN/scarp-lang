@@ -25,7 +25,7 @@ fn error(source: &str) -> Diagnostic {
 fn decimal_and_exponent_literals_keep_a_distinct_numeric_type() {
     assert_eq!(output("println(1.25); println(1e2); println(2.5E-1); println(0001.5); println(-0.0); println(1 / 2); println(1.0 / 2.0);"),"1.25\n100.0\n0.25\n1.5\n-0.0\n0\n0.5\n");
     assert_eq!(
-        scarp::compile("let x = 1.0;").unwrap().binding_types(),
+        scarp::compile("bind x = 1.0;").unwrap().binding_types(),
         &[ValueType::Float]
     );
 }
@@ -41,7 +41,7 @@ fn float_arithmetic_precedence_and_all_comparisons_work() {
 
 #[test]
 fn mutable_float_assignments_preserve_snapshots_and_use_all_operators() {
-    assert_eq!(output("let mut x = 1.5; let copy = x; println(x); x += 0.5; x *= 3.0; x -= 1.0; x /= 2.0; println(copy); println(x);"),"1.5\n1.5\n2.5\n");
+    assert_eq!(output("var x = 1.5; bind copy = x; println(x); x += 0.5; x *= 3.0; x -= 1.0; x /= 2.0; println(copy); println(x);"),"1.5\n1.5\n2.5\n");
 }
 
 #[test]
@@ -53,9 +53,9 @@ fn integer_float_and_boolean_coercions_are_rejected_statically() {
         );
     }
     for source in [
-        "let mut x = 1.0; x = 1;",
-        "let mut x = 1; x = 1.0;",
-        "let mut x = 1.0; x += 1;",
+        "var x = 1.0; x = 1;",
+        "var x = 1; x = 1.0;",
+        "var x = 1.0; x += 1;",
     ] {
         let diagnostic = error(source);
         assert_eq!(diagnostic.kind, DiagnosticKind::TypeMismatch);
@@ -159,7 +159,7 @@ fn finite_host_values_and_standalone_results_keep_invariants() {
 
 #[test]
 fn decimal_iterations_can_refine_a_numerical_estimate() {
-    let source="let mut estimate = 1.0; let mut iteration = 0; while iteration < 5 { estimate = (estimate + 2.0 / estimate) / 2.0; iteration += 1; } println(estimate > 1.414 and estimate < 1.415);";
+    let source="var estimate = 1.0; var iteration = 0; while iteration < 5 { estimate = (estimate + 2.0 / estimate) / 2.0; iteration += 1; } println(estimate > 1.414 and estimate < 1.415);";
     assert_eq!(output(source), "true\n");
     let program = scarp::compile(source).unwrap();
     for _ in 0..3 {
@@ -174,7 +174,7 @@ fn float_error_spans_identify_the_responsible_operator() {
     let source = "println(1e308 * 2.0);";
     let diagnostic = error(source);
     assert_eq!(&source[diagnostic.span.start..diagnostic.span.end], "*");
-    let source = "let mut x = 1e308; x *= 2.0;";
+    let source = "var x = 1e308; x *= 2.0;";
     let diagnostic = error(source);
     assert_eq!(&source[diagnostic.span.start..diagnostic.span.end], "*=");
 }

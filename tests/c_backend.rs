@@ -198,8 +198,8 @@ fn native_batch(
 #[test]
 fn unsupported_values_and_backend_resource_caps_are_diagnosed() {
     for source in [
-        "let x = 1.0;",
-        "let x = \"text\";",
+        "bind x = 1.0;",
+        "bind x = \"text\";",
         "println((\"text\"));",
         "println(1.0 == 1.0);",
         "if false { println(1.0); }",
@@ -215,7 +215,7 @@ fn unsupported_values_and_backend_resource_caps_are_diagnosed() {
         format!("println(0{});", "+1".repeat(1024)),
         "println(1);".repeat(4097),
         (0..257)
-            .map(|index| format!("let x{index}=1;"))
+            .map(|index| format!("bind x{index}=1;"))
             .collect::<String>(),
         format!("println(\"{}\");", "x".repeat(65537)),
         format!("println(0{});", "+1".repeat(500)).repeat(17),
@@ -242,8 +242,8 @@ fn emitted_c_matches_interpreter_output_errors_spans_and_budgets() {
         ("println(\"Hello 🌍\\nA\0B\"); println(true); println(false);",defaults),
         ("println(-9223372036854775808); println(9223372036854775807); println(-9223372036854775808 * 1); println(-9223372036854775808 * 0);",defaults),
         ("println(-7 / 2); println(-7 % 2); println(-1 >>> 1); println(-8 >> 1); println(1 << 63); println(~0); println(3 | 8 ^ 7 & 1);",defaults),
-        ("let mut x = 3; { let x = x + 1; println(x); } x *= 7; x -= 2; x /= 3; x %= 5; x |= 8; x &= 15; x ^= 3; x <<= 2; x >>= 1; x >>>= 1; println(x);",defaults),
-        ("let mut x = 0; while x < 4 { x += 1; if x == 2 { continue; } elif x == 4 { break; } else { println(x); } }",defaults),
+        ("var x = 3; { bind x = x + 1; println(x); } x *= 7; x -= 2; x /= 3; x %= 5; x |= 8; x &= 15; x ^= 3; x <<= 2; x >>= 1; x >>>= 1; println(x);",defaults),
+        ("var x = 0; while x < 4 { x += 1; if x == 2 { continue; } elif x == 4 { break; } else { println(x); } }",defaults),
         ("println(false and 1 / 0 == 0); println(true or 1 << 64 == 0); println(not 1 < 2); println(not not true);",defaults),
         ("println(1); println(9223372036854775807 + 1);",defaults),
         ("println(-9223372036854775808 - 1);",defaults),
@@ -251,7 +251,7 @@ fn emitted_c_matches_interpreter_output_errors_spans_and_budgets() {
         ("println(-(-9223372036854775808));",defaults),
         ("println(1); println(2 / 0);",defaults),
         ("println(-9223372036854775808 % -1);",defaults),
-        ("let mut x = 1; x >>>= 64;",defaults),
+        ("var x = 1; x >>>= 64;",defaults),
         ("println(1 << -1);",defaults),
         ("println(1); while true { continue; }",ExecutionLimits{max_steps:40,max_prints:10}),
         ("println(\"first\"); println(2);",ExecutionLimits{max_steps:100,max_prints:1}),
@@ -276,7 +276,7 @@ fn emitted_c_matches_interpreter_output_errors_spans_and_budgets() {
 fn compiled_programs_reset_workspace_and_validate_before_output() {
     let Some(cc) = compiler() else { return };
     let limits = ExecutionLimits::default();
-    let source = "let mut x = 0; while x < 3 { x += 1; } println(x);";
+    let source = "var x = 0; while x < 3 { x += 1; } println(x);";
     assert_eq!(
         native(&cc, source, limits, "-O2", false, 2),
         reference(source, limits, 2)

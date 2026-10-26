@@ -1,6 +1,6 @@
 // Iteration with nearest-loop control and checked accumulator arithmetic.
-let mut index = 0;
-let mut total = 0;
+var index = 0;
+var total = 0;
 while index < 10 {
     index += 1;
     if index == 3 { continue; }

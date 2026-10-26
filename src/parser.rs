@@ -164,11 +164,40 @@ impl Parser<'_> {
                     });
                 }
                 TokenKind::Identifier(name) if name == "let" => {
+                    let modifier = self.tokens.get(self.cursor + 1).filter(
+                        |next| matches!(&next.kind, TokenKind::Identifier(name) if name == "mut"),
+                    );
+                    let (span, old, replacement) = if let Some(modifier) = modifier {
+                        (
+                            Span::new(token.span.start, modifier.span.end),
+                            "let mut",
+                            "var",
+                        )
+                    } else {
+                        (token.span, "let", "bind")
+                    };
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::UnknownStatement,
+                        span,
+                        format!("legacy declaration {old:?} is not supported"),
+                    )
+                    .with_help(format!(
+                        "replace {old:?} with {replacement:?}: {replacement} name = expression;"
+                    )));
+                }
+                TokenKind::Identifier(name) if name == "bind" || name == "var" => {
                     let start = token.span.start;
+                    let mutable = name == "var";
                     self.cursor += 1;
-                    let mutable = matches!(self.current().map(|token| &token.kind), Some(TokenKind::Identifier(name)) if name == "mut");
-                    if mutable {
-                        self.cursor += 1;
+                    if self.keyword("mut")
+                        && matches!(
+                            self.tokens.get(self.cursor + 1).map(|token| &token.kind),
+                            Some(TokenKind::Identifier(_))
+                        )
+                    {
+                        return Err(self.expected("a binding name followed by '='").with_help(
+                            "use var name = expression; for a mutable variable; remove mut",
+                        ));
                     }
                     let (name, name_span) = match self.current() {
                         Some(Token {
@@ -178,11 +207,13 @@ impl Parser<'_> {
                         _ => return Err(self.expected("a binding name")),
                     };
                     self.cursor += 1;
-                    self.punctuation(TokenKind::Equal, "'='")?;
+                    self.punctuation(TokenKind::Equal, "'='").map_err(|error| {
+                        error.with_help("declarations require an initializer: bind name = expression; or var name = expression;")
+                    })?;
                     let mut nodes = Vec::new();
                     let root = self.logical_or(&mut nodes, 0)?;
                     let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
-                    statements.push(Statement::Let {
+                    statements.push(Statement::Declaration {
                         name,
                         name_span,
                         mutable,
@@ -219,7 +250,7 @@ impl Parser<'_> {
                         format!("unknown statement {name:?}"),
                     )
                     .with_help(
-                        "use let, println, or an assignment to a declared mutable variable",
+                        "use bind, var, println, or an assignment to a declared mutable variable",
                     ));
                 }
                 _ => return Err(self.expected("a println statement or binding declaration")),

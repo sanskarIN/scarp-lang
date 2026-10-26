@@ -20,7 +20,7 @@ impl Generator {
         let delta = self.next();
         let mut value = outer + delta;
         self.source.push_str(&format!(
-            "{{ let mut value = value + ({delta}); println(value);\n"
+            "{{ var value = value + ({delta}); println(value);\n"
         ));
         self.expected.push_str(&format!("{value}\n"));
         let change = self.next();
@@ -43,7 +43,7 @@ fn generated_scoped_programs_match_an_independent_value_model() {
         let initial = (seed % 17) as i64;
         let mut generator = Generator {
             state: seed,
-            source: format!("let value = {initial}; let mut total = 0;\n"),
+            source: format!("bind value = {initial}; var total = 0;\n"),
             expected: String::new(),
             total: 0,
         };
@@ -92,19 +92,19 @@ fn observe(source: &str) {
 #[test]
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
-        "let value = 7; println(value);",
-        "let mut flags = 0xA0; flags |= 0b11; println(flags >>> 4); println(~flags);",
-        "let v = [1.0, 2.0]; println(sum(v)); println(softmax(v)[0] < 1.0);",
-        "let mut estimate = 1.25; estimate *= 2.0; println(estimate >= 2.5 and 1e-3 < 1.0);",
-        "let mut x = 0; while x < 3 { x += 1; if x == 2 { continue; } } println(x);",
-        "let mut x = 1; if x < 2 { x += 3; } elif false {} else { x = 9; } println(x);",
-        "let ready = true; println(not ready or 1 < 2 and false);",
+        "bind value = 7; println(value);",
+        "var flags = 0xA0; flags |= 0b11; println(flags >>> 4); println(~flags);",
+        "bind v = [1.0, 2.0]; println(sum(v)); println(softmax(v)[0] < 1.0);",
+        "var estimate = 1.25; estimate *= 2.0; println(estimate >= 2.5 and 1e-3 < 1.0);",
+        "var x = 0; while x < 3 { x += 1; if x == 2 { continue; } } println(x);",
+        "var x = 1; if x < 2 { x += 3; } elif false {} else { x = 9; } println(x);",
+        "bind ready = true; println(not ready or 1 < 2 and false);",
         "println(false and 1 / 0 == 0); println(\"a\" != \"b\");",
-        "// नमस्ते 🌍\r\nlet mut x = 2; x += x * 3; println(x);",
-        "let mut total = 1; { let total = total + 1; println(total); } total /= -2;",
-        "let x = 1; { let x = x + 1; let x = 2; }",
-        "let mut text = \"नमस्ते 🌍\"; let copy = text; text = \"done\"; println(copy);",
-        "let mut text = \"hello\"; { let text = 1; println(text); } text = 2;",
+        "// नमस्ते 🌍\r\nvar x = 2; x += x * 3; println(x);",
+        "var total = 1; { bind total = total + 1; println(total); } total /= -2;",
+        "bind x = 1; { bind x = x + 1; bind x = 2; }",
+        "var text = \"नमस्ते 🌍\"; bind copy = text; text = \"done\"; println(copy);",
+        "var text = \"hello\"; { bind text = 1; println(text); } text = 2;",
     ] {
         let offsets: Vec<_> = source
             .char_indices()
@@ -136,7 +136,7 @@ fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
 #[test]
 fn altered_public_token_streams_and_spans_do_not_panic() {
     use scarp::lexer::{lex, TokenKind};
-    let source = "let mut x = 1; { x += 2; println(x); }";
+    let source = "var x = 1; { x += 2; println(x); }";
     let original = lex(source).unwrap();
     for index in 0..original.len() {
         for kind in [
@@ -151,7 +151,7 @@ fn altered_public_token_streams_and_spans_do_not_panic() {
             TokenKind::EqualEqual,
             TokenKind::LessEqual,
             TokenKind::Identifier("not".into()),
-            TokenKind::Identifier("let".into()),
+            TokenKind::Identifier("bind".into()),
             TokenKind::Identifier("mut".into()),
             TokenKind::Identifier("missing".into()),
             TokenKind::Integer("99999999999999999999".into()),

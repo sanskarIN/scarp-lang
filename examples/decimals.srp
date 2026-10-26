@@ -1,6 +1,6 @@
 // Refine a finite decimal estimate with a bounded loop.
-let mut estimate = 1.0;
-let mut iteration = 0;
+var estimate = 1.0;
+var iteration = 0;
 while iteration < 5 {
     estimate = (estimate + 2.0 / estimate) / 2.0;
     iteration += 1;

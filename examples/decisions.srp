@@ -1,6 +1,6 @@
 // Conditions are booleans; each body introduces a lexical scope.
-let score = 73;
-let mut grade = "pending";
+bind score = 73;
+var grade = "pending";
 if score >= 90 {
     grade = "A";
 } elif score >= 60 and score < 90 {
@@ -10,6 +10,6 @@ if score >= 90 {
 }
 println(grade);
 if true or 1 / 0 == 0 {
-    let message = "Selected safely.";
+    bind message = "Selected safely.";
     println(message);
 }

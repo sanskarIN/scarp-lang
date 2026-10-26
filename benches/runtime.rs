@@ -36,9 +36,9 @@ fn main() {
     println!(
         "workload,compile_us,validate_us,execute_us,source_bytes,operations,bindings,output_bytes"
     );
-    let assignments = format!("let mut x = 0;{}println(x);", "x += 1;".repeat(4096));
+    let assignments = format!("var x = 0;{}println(x);", "x += 1;".repeat(4096));
     let branches = format!(
-        "let mut x = 0;{}println(x);",
+        "var x = 0;{}println(x);",
         "if x < 20000 and not false { x += 2; } else { x += 1; }".repeat(1024)
     );
     let prints = "println(1 + 2 * 3);".repeat(4096);
@@ -48,8 +48,8 @@ fn main() {
         ("branches", branches, "2048\n".to_string()),
         ("prints", prints, "7\n".repeat(4096)),
         ("long_expression", chain, "4096\n".to_string()),
-        ("native_dot", "let a = fill(4096, 1.0); let b = fill(4096, 2.0); println(dot(a, b));".to_string(), "8192.0\n".to_string()),
-        ("indexed_dot", "let a = fill(4096, 1.0); let b = fill(4096, 2.0); let mut index = 0; let mut total = 0.0; while index < len(a) { total += a[index] * b[index]; index += 1; } println(total);".to_string(), "8192.0\n".to_string()),
+        ("native_dot", "bind a = fill(4096, 1.0); bind b = fill(4096, 2.0); println(dot(a, b));".to_string(), "8192.0\n".to_string()),
+        ("indexed_dot", "bind a = fill(4096, 1.0); bind b = fill(4096, 2.0); var index = 0; var total = 0.0; while index < len(a) { total += a[index] * b[index]; index += 1; } println(total);".to_string(), "8192.0\n".to_string()),
     ] {
         let program = scarp::compile(&source).unwrap();
         let mut actual = Vec::new();

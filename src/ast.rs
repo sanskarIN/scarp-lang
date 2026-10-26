@@ -35,7 +35,8 @@ pub enum Statement {
         argument: PrintArgument,
         span: Span,
     },
-    Let {
+    /// An immutable `bind` or mutable `var` declaration.
+    Declaration {
         name: String,
         name_span: Span,
         mutable: bool,
@@ -61,7 +62,7 @@ impl Statement {
             | Self::If { span, .. }
             | Self::Block { span, .. }
             | Self::Println { span, .. }
-            | Self::Let { span, .. }
+            | Self::Declaration { span, .. }
             | Self::Assign { span, .. } => *span,
         }
     }
