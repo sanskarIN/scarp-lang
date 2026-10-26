@@ -30,3 +30,5 @@ cargo run --locked -- run examples/scopes.srp
 cargo run --locked -- check examples/scopes.srp
 cargo run --locked -- run examples/string_bindings.srp
 cargo run --locked -- check examples/string_bindings.srp
+cargo run --locked -- run examples/booleans.srp
+cargo run --locked -- check examples/booleans.srp

@@ -7,6 +7,7 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueType {
     Integer,
+    Boolean,
     String,
 }
 
@@ -14,6 +15,7 @@ impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Integer => "integer",
+            Self::Boolean => "boolean",
             Self::String => "string",
         })
     }
@@ -24,6 +26,7 @@ impl fmt::Display for ValueType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Integer(i64),
+    Boolean(bool),
     String(Arc<str>),
 }
 
@@ -31,6 +34,7 @@ impl Value {
     pub fn kind(&self) -> ValueType {
         match self {
             Self::Integer(_) => ValueType::Integer,
+            Self::Boolean(_) => ValueType::Boolean,
             Self::String(_) => ValueType::String,
         }
     }
@@ -38,15 +42,27 @@ impl Value {
     pub fn as_integer(&self) -> Option<i64> {
         match self {
             Self::Integer(value) => Some(*value),
-            Self::String(_) => None,
+            _ => None,
         }
     }
 
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Self::String(value) => Some(value),
-            Self::Integer(_) => None,
+            _ => None,
         }
+    }
+
+    pub fn as_boolean(&self) -> Option<bool> {
+        match self {
+            Self::Boolean(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn require_boolean(&self, span: Span) -> Result<bool, Diagnostic> {
+        self.as_boolean()
+            .ok_or_else(|| type_mismatch(span, ValueType::Boolean, self.kind()))
     }
 
     pub(crate) fn require_integer(&self, span: Span) -> Result<i64, Diagnostic> {
@@ -71,6 +87,7 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Integer(value) => value.fmt(f),
+            Self::Boolean(value) => value.fmt(f),
             Self::String(value) => f.write_str(value),
         }
     }
@@ -82,5 +99,5 @@ pub(crate) fn type_mismatch(span: Span, expected: ValueType, found: ValueType) -
         span,
         format!("expected {expected}, found {found}"),
     )
-    .with_help("use values of the same inferred type; arithmetic requires integers")
+    .with_help("keep primitive types consistent; arithmetic and ordering require integers, logic requires booleans")
 }

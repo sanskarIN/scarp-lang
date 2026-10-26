@@ -1,10 +1,10 @@
 //! Primitive value evaluation with checked integer-only arithmetic.
 
 use crate::{
-    ast::{BinaryOperator, Expression, ExpressionKind},
+    ast::{BinaryOperator, Expression, ExpressionKind, LogicalOperator},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     resolver::{self, ResolvedExpression},
-    value::Value,
+    value::{type_mismatch, Value},
 };
 
 /// Evaluate a standalone integer expression, preserving the v0.0.1 return type.
@@ -15,59 +15,110 @@ pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
 
 /// Evaluate a standalone primitive expression without a variable environment.
 pub fn evaluate_value(expression: &Expression) -> Result<Value, Diagnostic> {
-    evaluate_with(expression, |_, name, span| {
-        Err(resolver::unknown_name(name, span))
-    })
+    evaluate_resolved(&resolver::resolve_standalone(expression)?, &[])
+}
+
+enum Task {
+    Visit(usize),
+    Negate(Span),
+    Not(Span),
+    Boolean(Span),
+    Binary(BinaryOperator, Span),
+    Logical(LogicalOperator, usize, Span),
 }
 
 pub(crate) fn evaluate_resolved(
     expression: &ResolvedExpression,
     environment: &[Value],
 ) -> Result<Value, Diagnostic> {
-    evaluate_with(&expression.syntax, |node, name, span| {
-        expression
-            .slots
-            .get(node)
-            .copied()
-            .flatten()
-            .and_then(|slot| environment.get(slot))
-            .cloned()
-            .ok_or_else(|| resolver::unknown_name(name, span))
-    })
-}
-
-fn evaluate_with(
-    expression: &Expression,
-    name_value: impl Fn(usize, &str, Span) -> Result<Value, Diagnostic>,
-) -> Result<Value, Diagnostic> {
-    let mut values: Vec<Value> = Vec::with_capacity(expression.nodes().len());
-    for (index, node) in expression.nodes().iter().enumerate() {
-        let value = match &node.kind {
-            ExpressionKind::Integer(value) => Value::Integer(*value),
-            ExpressionKind::String(value) => Value::from(value.as_str()),
-            ExpressionKind::Name(name) => name_value(index, name, node.span)?,
-            ExpressionKind::Group { expression } => values[*expression].clone(),
-            ExpressionKind::Negate {
-                operand,
-                operator_span,
-            } => {
-                let integer = values[*operand].require_integer(*operator_span)?;
-                Value::Integer(
-                    integer
-                        .checked_neg()
-                        .ok_or_else(|| overflow(*operator_span))?,
-                )
+    let mut values = Vec::new();
+    let mut tasks = vec![Task::Visit(expression.syntax.root())];
+    while let Some(task) = tasks.pop() {
+        match task {
+            Task::Visit(index) => {
+                let node = &expression.syntax.nodes()[index];
+                match &node.kind {
+                    ExpressionKind::Integer(value) => values.push(Value::Integer(*value)),
+                    ExpressionKind::Boolean(value) => values.push(Value::Boolean(*value)),
+                    ExpressionKind::String(value) => values.push(Value::from(value.as_str())),
+                    ExpressionKind::Name(name) => {
+                        let value = expression.slots[index]
+                            .and_then(|slot| environment.get(slot))
+                            .cloned()
+                            .ok_or_else(|| resolver::unknown_name(name, node.span))?;
+                        values.push(value);
+                    }
+                    ExpressionKind::Group { expression } => tasks.push(Task::Visit(*expression)),
+                    ExpressionKind::Negate {
+                        operand,
+                        operator_span,
+                    } => {
+                        tasks.push(Task::Negate(*operator_span));
+                        tasks.push(Task::Visit(*operand));
+                    }
+                    ExpressionKind::Not {
+                        operand,
+                        operator_span,
+                    } => {
+                        tasks.push(Task::Not(*operator_span));
+                        tasks.push(Task::Visit(*operand));
+                    }
+                    ExpressionKind::Binary {
+                        left,
+                        operator,
+                        right,
+                        operator_span,
+                    } => {
+                        tasks.push(Task::Binary(*operator, *operator_span));
+                        tasks.push(Task::Visit(*right));
+                        tasks.push(Task::Visit(*left));
+                    }
+                    ExpressionKind::Logical {
+                        left,
+                        operator,
+                        right,
+                        operator_span,
+                    } => {
+                        tasks.push(Task::Logical(*operator, *right, *operator_span));
+                        tasks.push(Task::Visit(*left));
+                    }
+                }
             }
-            ExpressionKind::Binary {
-                left,
-                operator,
-                right,
-                operator_span,
-            } => apply_binary(*operator, &values[*left], &values[*right], *operator_span)?,
-        };
-        values.push(value);
+            Task::Negate(span) => {
+                let integer = values.pop().unwrap().require_integer(span)?;
+                values.push(Value::Integer(
+                    integer.checked_neg().ok_or_else(|| overflow(span))?,
+                ));
+            }
+            Task::Not(span) => {
+                let value = values.pop().unwrap().require_boolean(span)?;
+                values.push(Value::Boolean(!value));
+            }
+            Task::Boolean(span) => {
+                let value = values.pop().unwrap().require_boolean(span)?;
+                values.push(Value::Boolean(value));
+            }
+            Task::Binary(operator, span) => {
+                let right = values.pop().unwrap();
+                let left = values.pop().unwrap();
+                values.push(apply_binary(operator, &left, &right, span)?);
+            }
+            Task::Logical(operator, right, span) => {
+                let left = values.pop().unwrap().require_boolean(span)?;
+                if (operator == LogicalOperator::And && !left)
+                    || (operator == LogicalOperator::Or && left)
+                {
+                    values.push(Value::Boolean(left));
+                } else {
+                    tasks.push(Task::Boolean(span));
+                    tasks.push(Task::Visit(right));
+                }
+            }
+        }
     }
-    Ok(values[expression.root()].clone())
+    Ok(values
+        .pop()
+        .expect("a resolved expression produces one value"))
 }
 
 pub(crate) fn apply_binary(
@@ -76,6 +127,16 @@ pub(crate) fn apply_binary(
     right: &Value,
     span: Span,
 ) -> Result<Value, Diagnostic> {
+    if matches!(operator, BinaryOperator::Equal | BinaryOperator::NotEqual) {
+        if left.kind() != right.kind() {
+            return Err(type_mismatch(span, left.kind(), right.kind()));
+        }
+        return Ok(Value::Boolean(if operator == BinaryOperator::Equal {
+            left == right
+        } else {
+            left != right
+        }));
+    }
     let left = left.require_integer(span)?;
     let right = right.require_integer(span)?;
     let result = match operator {
@@ -93,6 +154,11 @@ pub(crate) fn apply_binary(
             }
             left.checked_div(right)
         }
+        BinaryOperator::Less => return Ok(Value::Boolean(left < right)),
+        BinaryOperator::LessEqual => return Ok(Value::Boolean(left <= right)),
+        BinaryOperator::Greater => return Ok(Value::Boolean(left > right)),
+        BinaryOperator::GreaterEqual => return Ok(Value::Boolean(left >= right)),
+        BinaryOperator::Equal | BinaryOperator::NotEqual => unreachable!("equality handled above"),
     };
     result.map(Value::Integer).ok_or_else(|| overflow(span))
 }

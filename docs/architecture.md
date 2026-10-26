@@ -36,7 +36,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
 | `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
-| `value` | Integer/string values, immutable string storage, primitive type names |
+| `value` | Integer/string/boolean values, immutable string storage, primitive type names |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
@@ -51,7 +51,7 @@ the source and token vector to be dropped after successful compilation.
 Each integer argument owns a vector of expression nodes and a root index. Nodes
 refer only to earlier children. Parser construction is private to the crate,
 while callers can inspect immutable node slices. Binary chains are parsed with
-loops and evaluated in vector order; dropping the vector has no recursive tree
+loops and evaluated with an explicit task stack; dropping the vector has no recursive tree
 walk. Grouping uses bounded recursion, with a maximum of 64 nested groups.
 Unary minus is represented explicitly except for the minimum integer literal,
 whose positive magnitude cannot be represented as an `i64`.
@@ -93,9 +93,12 @@ order, avoiding repeated prefix scans on large single-line files.
 
 Prototype APIs and error wording may change. Keep new semantics in the library
 and new process behavior in the CLI. Direct string literal prints retain a fast
-path. General expressions infer an integer or string type; arithmetic and
+path. General expressions infer an integer, string, or boolean type; arithmetic and
 compound assignment stay integer-only. The resolver fixes each slot's type,
 and strings share immutable storage so snapshots survive later reassignment.
+Boolean logic traverses only the required operands at runtime. Both operands
+still participate in static name and type checks. No runtime traversal recurses
+with flat logical-chain length.
 
 ## Validation
 

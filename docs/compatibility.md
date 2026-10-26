@@ -29,7 +29,8 @@ the `v0.0.1` tag; development uses `0.0.2-dev` package metadata and has no v0.0.
 | Primitive type consistency checks | No variable types | Yes |
 | `run`, `tokens`, global help/version | Yes | Yes |
 | `check` and per-command help | No | Yes |
-| User functions, booleans, imports, loops | No | No |
+| Boolean values, comparisons, short-circuit logic | No | Yes |
+| User functions, imports, loops | No | No |
 | Native compilation of Scarp programs | No | No |
 
 Integer range, precedence, division truncation, mandatory semicolons, and
@@ -37,10 +38,16 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/documentation-guides`.
+The complete development stack is available on `scarp/boolean-expressions`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
+
+The boolean extension adds `Boolean` variants, comparison operators, and logical
+syntax nodes to the public enums. Rust hosts using exhaustive matches must
+handle these additions. `Value::as_boolean` inspects boolean values. See
+[the boolean design](proposals/0004-boolean-expressions.md) for precedence and
+short-circuit behavior.
 
 ## Library migration
 

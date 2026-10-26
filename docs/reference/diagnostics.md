@@ -19,10 +19,10 @@ codes belong to the development variable stack.
 | `E0009` | Expression nesting exceeds 64 groups | Remove unnecessary nested parentheses |
 | `E0010` | Unknown variable | Declare it before use in a visible scope |
 | `E0011` | Duplicate declaration in one scope | Rename it, or use a deliberate nested scope |
-| `E0012` | Reserved variable name | Choose a name other than `let`, `mut`, or `println` |
+| `E0012` | Reserved variable name | Avoid statement words, boolean literals, and logical operator words |
 | `E0013` | Assignment to an immutable binding | Declare the intended target with `let mut` |
 | `E0014` | Block nesting exceeds 64 levels | Flatten unnecessary statement blocks |
-| `E0015` | Primitive type mismatch | Keep assignment types fixed and arithmetic integer-only |
+| `E0015` | Primitive type mismatch | Keep assignment types fixed; arithmetic/order use integers and logic uses booleans |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

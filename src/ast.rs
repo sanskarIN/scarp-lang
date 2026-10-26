@@ -74,10 +74,21 @@ pub struct ExpressionNode {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionKind {
     Integer(i64),
+    Boolean(bool),
     String(String),
     Name(String),
     Negate {
         operand: usize,
+        operator_span: Span,
+    },
+    Not {
+        operand: usize,
+        operator_span: Span,
+    },
+    Logical {
+        left: usize,
+        operator: LogicalOperator,
+        right: usize,
         operator_span: Span,
     },
     Binary {
@@ -97,4 +108,16 @@ pub enum BinaryOperator {
     Subtract,
     Multiply,
     Divide,
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogicalOperator {
+    And,
+    Or,
 }

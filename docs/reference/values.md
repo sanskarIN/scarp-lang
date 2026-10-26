@@ -9,13 +9,14 @@ bindings and string-valued expressions require the development stack.
 | Kind | Examples | Rules |
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
+| Boolean | `true`, `false` | Development only; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text with three supported escapes |
 
 Development bindings infer their kind from the initializer. Mutable assignment
 must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
-There are no floating-point, boolean, collection, or user-defined values yet.
+There are no floating-point, collection, or user-defined values yet.
 Type annotations and explicit conversion functions are also not implemented.
 
 ## Precedence and associativity
@@ -26,6 +27,10 @@ Type annotations and explicit conversion functions are also not implemented.
 | Unary minus | `-primary` | Checked integer negation |
 | Multiplication/division | `*`, `/` | Left-associative checked integer arithmetic |
 | Addition/subtraction | `+`, `-` | Left-associative checked integer arithmetic |
+| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` | One comparison; ordering is integer-only |
+| Boolean negation | `not` | Negate a boolean, including a complete comparison |
+| Boolean conjunction | `and` | Skip the right boolean if the left is false |
+| Boolean disjunction | `or` | Skip the right boolean if the left is true |
 
 ```scarp
 println(1 + 2 * 3);
@@ -81,6 +86,12 @@ Division by zero produces `E0008`. These rules are the same in debug and release
 builds. Negating the minimum integer or dividing it by `-1` overflows.
 
 ## Assignment operators
+
+The comparison and logical operators require the development boolean extension.
+Equality requires matching primitive types; strings compare decoded contents.
+Chained comparisons are rejected: write `low < x and x < high`. There is no
+conversion between booleans and integers. Compilation checks all operands even
+when arithmetic in a right-hand operand will be skipped during execution.
 
 Development assignments are statements, not expression values. The target must
 already exist and be declared with `let mut`.
