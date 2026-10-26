@@ -2,6 +2,8 @@
 
 ## Unreleased — v0.0.3 development
 
+- File execution aliases, static verification, contextual help, short version,
+  read-only token/AST inspection, and an audited CLI capability inventory.
 - Native build/compile commands for hosted executables and freestanding objects,
   compiler selection, runtime budgets, and preserved output files.
 - Freestanding C11 emission with caller-owned workspace and output adapters.

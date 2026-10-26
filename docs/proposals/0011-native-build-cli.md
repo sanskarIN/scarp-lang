@@ -47,7 +47,8 @@ Windows output and diagnostics use binary stream mode for consistent LF bytes.
 list of flags. Otherwise `SCARP_CC` wins, followed by `clang` on Windows or for
 explicit cross targets, and `cc` for native Unix builds. Paths with spaces and
 native paths are supported, including non-Unicode bytes on Linux filesystems
-that permit them. macOS filesystem names must be valid Unicode. There is no shell interpolation and
+that permit them. The checked macOS filesystem rejects non-Unicode names.
+There is no shell interpolation and
 `CFLAGS` is not consumed. MSVC's `cl.exe` driver syntax is not supported.
 
 The default `--emit exe` uses C11, `-O2`, `-Wall`, `-Wextra`, and `-Werror`.

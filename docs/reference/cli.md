@@ -6,20 +6,27 @@ development stack; see [compatibility](../compatibility.md).
 
 ## Commands and availability
 
-| Invocation | Purpose | v0.0.1 | Development |
-| --- | --- | --- | --- |
-| `scarp run <path>` | Read, validate, and execute a source file | Yes | Yes |
-| `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes |
-| `scarp check <path>` | Validate names, types, and arithmetic without printing | No | Yes |
-| `scarp emit-c <path>` | Emit supported source as a freestanding C11 unit | No | Yes |
-| `scarp build <path> -o <output>` | Compile an executable or object with a C compiler | No | Yes |
-| `scarp compile ...` | Alias for `build` | No | Yes |
-| `scarp --help` or `scarp -h` | Show usage | Yes | Yes |
-| `scarp --version` or `scarp -V` | Print the package version | Yes | Yes |
-| `scarp run --help` | Show usage before requiring a file | No | Yes |
+| Invocation | Purpose | v0.0.1 | v0.0.2 | Development |
+| --- | --- | --- | --- | --- |
+| `scarp run <path>` | Read, validate, and execute a source file | Yes | Yes | Yes |
+| `scarp exec <path>` | Exact alias for file execution with `run` | No | No | Yes |
+| `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes | Yes |
+| `scarp inspect tokens <path>` | Exact alias for the token listing | No | No | Yes |
+| `scarp inspect ast <path>` | Print actual parsed syntax without resolution/execution | No | No | Yes |
+| `scarp verify <path>` | Check syntax, names, mutability, and types statically | No | No | Yes |
+| `scarp check <path>` | Validate names, types, and selected arithmetic without printing | No | Yes | Yes |
+| `scarp emit-c <path>` | Emit supported source as a freestanding C11 unit | No | No | Yes |
+| `scarp compile <path> -o <output>` | Compile an executable or object with a C compiler | No | No | Yes |
+| `scarp build ...` | Exact alias for `compile` | No | No | Yes |
+| `scarp guide [command]` / `scarp help ...` | Show global or contextual help | No | No | Yes |
+| `scarp --help` or `scarp -h` | Show usage | Yes | Yes | Yes |
+| `scarp --version` or `scarp -V` | Print the package version | Yes | Yes | Yes |
+| `scarp version` | Exact short-version alias | No | No | Yes |
+| `scarp run --help` | Show usage before requiring a file | No | Yes | Yes |
 
-Development `tokens` and `check` commands also accept `--help` and `-h` after the
-command name. Only one source path is accepted. There is no stdin input mode,
+Development commands accept contextual `--help`/`-h`; nested inspection supports
+`scarp inspect ast --help` and `scarp guide inspect ast`. Only one source path is
+accepted. There is no stdin input mode,
 watch mode, or import path.
 The separate `emit-c` command generates source without running it or invoking a
 C compiler. It accepts one path and an optional filename separator, but no
@@ -41,7 +48,7 @@ native executable.
 
 ## What each file command validates
 
-`run` validates the complete file before writing program output. Development
+`exec`/`run` validate the complete file before writing program output. Development
 validation includes names, scopes, mutability, and primitive types. Arithmetic
 is checked before any pending prints are written.
 
@@ -51,13 +58,21 @@ reachable unused initializers can still fail. Unselected conditional bodies do
 not evaluate arithmetic, but they still undergo static checks. A successful check is silent. It does not
 format or write the program's print values.
 
+`verify` stops after lexing, parsing, and resolution/type checking. It does not
+evaluate initializers, print arguments, loops, or branches, and creates no build
+artifacts. A well-typed division by zero or infinite loop can pass `verify` and
+fail `check`/`exec`. It is intentionally not an alias for the existing `check`.
+
 `tokens` only checks lexical validity. It can succeed when a file has missing
 punctuation, unknown variables, or arithmetic failures. It never executes the
-program. Use `check` rather than a token listing to validate development source.
+program. Use `verify` for static checks or `check` for selected runtime validation.
+`inspect ast` parses without resolving names or evaluating arithmetic. It emits
+the real syntax tree in readable Debug format, which is experimental and is not
+a stable JSON schema. Missing names can appear in a valid syntax dump.
 
 ## Paths and encoding
 
-Development `run` and `check` accept `--max-steps <count>` and `--max-prints <count>`
+Development `exec`, `run`, and `check` accept `--max-steps <count>` and `--max-prints <count>`
 before the path. Defaults are 1,000,000 work steps and 100,000 selected prints.
 Each option can occur once; unsigned decimal zero is allowed. Budget failures use
 status 1 and leave output empty; malformed options use status 2. See

@@ -13,23 +13,8 @@ use scarp::{
 };
 
 mod build_cli;
-
-const HELP: &str = "Scarp — Build Beyond Boundaries.
-
-Usage:
-  scarp run <file.srp>       Execute a Scarp program
-  scarp check <file.srp>     Validate syntax, names, and arithmetic without printing
-  scarp tokens <file.srp>    Inspect lexer tokens and source locations
-  scarp emit-c <file.srp>    Emit a freestanding C11 unit for the supported subset
-  scarp build <file.srp> -o <output>  Build a native executable or object
-  scarp compile ...         Alias for build; use build --help for options
-  scarp --help               Show this help
-  scarp --version            Show the prototype version
-
-Use -- before a filename that begins with a dash.
-run/check options before the path: --max-steps <count>, --max-prints <count>.
-Defaults: 1000000 execution steps, 100000 selected prints.
-";
+mod cli_help;
+use cli_help::GENERAL as HELP;
 
 fn main() -> ExitCode {
     let stdout = io::stdout();
@@ -43,27 +28,43 @@ fn main() -> ExitCode {
     ExitCode::from(status)
 }
 
-fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Write) -> u8 {
+fn dispatch(mut args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Write) -> u8 {
+    if let Some(status) = cli_help::dispatch(&args, output, errors) {
+        return status;
+    }
     if matches!(
         args.first().and_then(|value| value.to_str()),
         Some("build" | "compile")
     ) {
         return build_cli::dispatch(&args[1..], output, errors);
     }
-    match args.as_slice() {
-        [flag] if flag == "--help" || flag == "-h" => {
-            return write_output(output.write_all(HELP.as_bytes()), errors);
-        }
-        [command, flag] if file_command(command) && (flag == "--help" || flag == "-h") => {
-            return write_output(output.write_all(HELP.as_bytes()), errors);
-        }
-        [flag] if flag == "--version" || flag == "-V" => {
-            return write_output(
-                writeln!(output, "scarp {}", env!("CARGO_PKG_VERSION")),
+    if let Some(command) = args.first() {
+        if command == "inspect" {
+            if !matches!(
+                args.get(1).and_then(|value| value.to_str()),
+                Some("tokens" | "ast")
+            ) {
+                let _ = writeln!(
+                    errors,
+                    "error: inspect supports tokens or ast followed by one source path\n\n{HELP}"
+                );
+                return 2;
+            }
+            args.remove(0);
+        } else if !file_command(command) {
+            let _ = writeln!(
                 errors,
+                "error: unknown command {:?}",
+                command.to_string_lossy()
             );
+            if let Some(suggestion) = command.to_str().and_then(cli_help::suggestion) {
+                let _ = writeln!(errors, "help: did you mean '{suggestion}'?");
+            }
+            let _ = writeln!(errors, "\n{HELP}");
+            return 2;
+        } else if command == "exec" {
+            args[0] = "run".into();
         }
-        _ => {}
     }
     let (command, filename, limits) = match invocation(&args) {
         Ok(invocation) => invocation,
@@ -72,14 +73,6 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             return 2;
         }
     };
-    if !file_command(command) {
-        let _ = writeln!(
-            errors,
-            "error: unknown command {:?}\n\n{HELP}",
-            command.to_string_lossy()
-        );
-        return 2;
-    }
     let path = Path::new(filename);
     let source = match fs::read_to_string(path) {
         Ok(source) => source,
@@ -92,7 +85,17 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             return 1;
         }
     };
-    if command == "emit-c" {
+    if command == "verify" {
+        match scarp::compile(&source) {
+            Ok(_) => 0,
+            Err(error) => report_diagnostic(&error, path, &source, errors),
+        }
+    } else if command == "ast" {
+        match scarp::parse(&source) {
+            Ok(program) => write_output(writeln!(output, "{program:#?}"), errors),
+            Err(error) => report_diagnostic(&error, path, &source, errors),
+        }
+    } else if command == "emit-c" {
         match scarp::c_backend::emit_c(&source) {
             Ok(unit) => write_output(output.write_all(unit.as_bytes()), errors),
             Err(error) => report_diagnostic(&error, path, &source, errors),
@@ -139,7 +142,7 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
 fn file_command(command: &OsStr) -> bool {
     matches!(
         command.to_str(),
-        Some("run" | "tokens" | "check" | "emit-c")
+        Some("run" | "exec" | "tokens" | "check" | "verify" | "emit-c")
     )
 }
 

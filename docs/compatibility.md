@@ -38,6 +38,7 @@ package metadata and has no v0.0.3 tag.
 | Hex/binary literals, remainder, integer bit operations | No | No | Yes |
 | Freestanding C emission for the integer/boolean subset | No | No | Experimental |
 | Native executable/object build commands for that subset | No | No | Experimental |
+| `exec`, static `verify`, contextual `guide`, and token/AST inspection | No | No | Yes |
 | User functions, imports | No | No | No |
 | Whole-language native compilation and kernel boot | No | No | No |
 
@@ -46,7 +47,7 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The complete development stack is available on `scarp/native-build-cli`.
+The complete development stack is available on `scarp/cli-foundation`.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
@@ -87,14 +88,14 @@ programs establish their bindings through source declarations.
 
 ## Platform and toolchain scope
 
-Both documented snapshots declare Rust 1.74 as the minimum for source builds.
-Published v0.0.1 archives cover Windows x64 MSVC, Linux x64 GNU, and Apple Silicon
-macOS. Native development-package checks cover those targets too; they do not
-constitute a published v0.0.2 release.
+The documented snapshots declare Rust 1.74 as the minimum for source builds.
+Published v0.0.1 and v0.0.2 archives cover Windows x64 MSVC, Linux x64 GNU, and
+Apple Silicon macOS. Development-package checks cover those same native targets;
+0.0.3-dev remains unpublished.
 
 A successful source test on one host is not evidence of a universal binary.
 Use the matching archive or build with a compatible local Rust toolchain. The
-[release notes](releases/v0.0.1.md) describe the published archive scope.
+[release notes](releases/v0.0.2.md) describe the current published archive scope.
 
 ## Integration and future changes
 

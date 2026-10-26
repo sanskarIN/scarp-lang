@@ -528,7 +528,7 @@ fn each_file_command_exposes_help_before_requiring_a_path() {
             assert!(output.stderr.is_empty());
             assert!(String::from_utf8(output.stdout)
                 .unwrap()
-                .contains("scarp check"));
+                .contains(&format!("scarp {subcommand}")));
         }
     }
 }
