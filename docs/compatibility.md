@@ -22,6 +22,9 @@ package metadata and has no v0.0.3 tag.
 | --- | --- | --- | --- |
 | UTF-8 source, comments, three string escapes | Yes | Yes | Yes |
 | String literal print statements | Yes | Yes | Yes |
+| Single-argument `println` byte compatibility | Yes | Yes | Yes |
+| `print` / `println` zero or multiple arguments, trailing comma | No | No | Yes |
+| Raw `write` and explicit `eprint` / `ewrite` | No | No | Yes |
 | Checked signed 64-bit arithmetic | Yes | Yes | Yes |
 | Integer declarations and variable references | No | Yes | Yes |
 | Declaration spelling | Absent | `let` / `let mut` | `bind` / `var` |
@@ -49,7 +52,8 @@ no-output-on-invalid-source behavior remain consistent. Development adds
 semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
-The syntax update is on `scarp/bind-var-syntax`, based on `scarp/canonical-cli`.
+The output update is on `scarp/output-statements`, based on `scarp/bind-var-syntax`
+and its `scarp/canonical-cli` prerequisites.
 Its implementation prerequisites are split into PRs for immutable bindings,
 mutability, lexical scopes, validation tooling, and an optional string extension.
 Earlier feature branches intentionally contain smaller subsets.
@@ -71,6 +75,11 @@ block containers. All branches contribute to binding metadata, even if unselecte
 
 ## Declaration syntax migration
 
+The new output words `print`, `write`, `eprint`, and `ewrite` are reserved
+variable names, alongside the existing `println`. Rename older variables using
+those names when upgrading. Existing single-argument `println` output bytes are
+unchanged for programs whose names remain valid.
+
 | Published v0.0.2 | This development branch |
 | --- | --- |
 | `let answer = 42;` | `bind answer = 42;` |
@@ -91,6 +100,15 @@ old declarations. Existing release notes and packages describe their original
 versions. See the [binding syntax decision](proposals/0013-binding-syntax.md).
 
 ## Library migration
+
+Output adds `Statement::Output` and `OutputTarget`; exhaustive AST matches need
+a new arm. Existing single-argument `Statement::Println` retains its meaning,
+including canonical `print` with one argument. Both spellings lower to the same
+operation. Existing `run` / `execute` signatures remain; use `run_with_io` /
+`execute_with_io` for explicit stderr. One-writer calls reject required stderr
+with `RunError::Output(Unsupported)` before stdout. The `*_with_io_and_limits`
+variants preserve budgets. Generated C adds `scarp_io` / `scarp_run_io` while
+retaining the original host API. See [output](output.md) for details.
 
 In this development update, `ast::Statement::Let` becomes
 `ast::Statement::Declaration`. All fields, including `mutable`, keep their

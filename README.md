@@ -15,16 +15,19 @@ version has no v0.0.3 tag or published prerelease.
 
 ```scarp
 // My first Scarp program
-println("Hello from Scarp!");
+print("Hello, Scarp!");
 ```
 
 ```text
-Hello from Scarp!
+Hello, Scarp!
 ```
 
 The [documentation hub](docs/README.md) provides setup, tutorials, command and
 diagnostic references, Rust embedding, testing, troubleshooting, and compatibility
 guides. Start there for a reading path matched to your task.
+Use `print` for line output; `println` is a permanent equivalent spelling.
+`write("Loading"); print("... done");` inserts no separator between statements.
+The [output guide](docs/output.md) covers arguments, bytes, and explicit stderr.
 
 ## Build and run
 
@@ -42,7 +45,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/bind-var-syntax
+git switch scarp/output-statements
 cargo build --locked
 cargo run -- exec examples/hello.srp
 cargo run -- exec examples/arithmetic.srp
@@ -71,7 +74,8 @@ the CLI does not reject other filename extensions.
 
 ## What works now
 
-- `println("text");` statements, executed in source order.
+- `print`, permanent `println`, and raw `write`, with zero/multiple arguments and trailing commas.
+- Explicit `eprint` / `ewrite` stderr and dual-writer embedding APIs.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
@@ -88,10 +92,11 @@ the CLI does not reject other filename extensions.
 - Experimental `compile --emit exe|obj|c` for real native artifacts or C source.
 - Syntax errors with a code, filename, line, column, source excerpt, and help.
 
-`println` appends a newline. Physical line breaks inside a string are rejected;
+`print` and `println` append one LF; `write` appends none. Arguments use one
+ASCII space between values. Physical line breaks inside a string are rejected;
 use `\n` instead. Identifiers use ASCII letters, digits, and underscores, cannot
 start with a digit, and are case-sensitive. Statements include declarations,
-assignments, blocks, `if`/`elif`/`else` decisions, and `println` calls. Escapes other than the three listed
+assignments, blocks, `if`/`elif`/`else` decisions, and output statements. Escapes other than the three listed
 above are rejected.
 
 The entire file is lexed, parsed, resolved, checked for primitive type consistency,

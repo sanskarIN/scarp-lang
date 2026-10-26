@@ -60,7 +60,9 @@ A single leading UTF-8 byte order mark is accepted.
 Use `exec` to print values and check selected runtime behavior. Empty and
 comment-only files also succeed without output.
 
-Read stderr and the exit code before assuming a program ran. Any lexical,
+Read the exit code and diagnostic prefix before assuming a program failed:
+`eprint` / `ewrite` can legitimately produce program stderr with exit status 0.
+Any lexical,
 syntax, resolution, mutability, type, or arithmetic error prevents all program
 output, including prints before the failing statement. The
 [diagnostic reference](reference/diagnostics.md) explains the codes and phase order.
@@ -78,8 +80,9 @@ changing value or a nested block for a deliberately separate local.
 ## Strings do not format or combine as expected
 
 Placeholders inside a string are literal text. There is no interpolation,
-concatenation, `print` function, or multiple-argument `println`. Print labels and
-values with separate statements. `+=` is integer arithmetic, not string append.
+concatenation, or expression-level `print` function. Output statements accept
+multiple values: use `print("count:", count);` to join a label and value with a
+space. `+=` is numeric arithmetic, not string append. See [output](output.md).
 
 Use only `\\`, `\"`, and `\n` escapes. To represent a line break inside a string,
 write `\n` rather than placing a physical newline between its quotes.

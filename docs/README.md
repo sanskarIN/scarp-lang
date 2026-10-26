@@ -11,6 +11,7 @@ require this development branch and are not included in the published release.
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
+| [Output and explicit streams](output.md) | Use print/println/write, argument spacing, stderr, budgets, and embedding writers |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
 | [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |
@@ -76,6 +77,10 @@ publication process. The root [changelog](../CHANGELOG.md) distinguishes release
 work from unmerged development changes.
 
 ## Example conventions
+
+The [output design](proposals/0014-output-statements.md) specifies the implemented
+Phase A/B output operations and the separate, unimplemented interpolation phase.
+Existing single-argument `println` examples remain compatibility coverage.
 
 `scarp` code fences contain complete runnable programs for the stated version.
 An accompanying output block shows exact text, with a final line break after
