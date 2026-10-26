@@ -11,11 +11,10 @@ use std::{
 };
 
 pub const HELP: &str = "Usage: scarp compile <file.srp> -o <output> [options]
-       scarp build <file.srp> -o <output> [options]
 
-Build the supported integer/boolean subset; never run the result automatically.
+Compile the supported integer/boolean subset; never execute the result automatically.
   -o, --output <path>       Required fresh output path; parent must exist
-  --emit exe|obj           Native hosted executable (default) or freestanding object
+  --emit exe|obj|c         Native executable (default), freestanding object, or C source
   --cc <executable>        Clang/GCC-style compiler (SCARP_CC, then platform default)
   --target <triple>        Objects only: x86_64-unknown-none-elf or aarch64-unknown-none-elf
   --max-steps <count>      Executable runtime budget (default 1000000)
@@ -23,7 +22,7 @@ Build the supported integer/boolean subset; never run the result automatically.
   --                      Treat the remaining single argument as the source path
   -h, --help              Show this help
 
-All paths may contain spaces. Use emit-c for C source without a C compiler.
+All paths may contain spaces. --emit c needs no C compiler.
 ";
 
 struct Invocation {
@@ -52,16 +51,16 @@ fn parse(args: &[OsString]) -> Result<Invocation, &'static str> {
                 Some("--target") => &mut target,
                 Some("--max-steps") => &mut steps,
                 Some("--max-prints") => &mut prints,
-                _ => return Err("unknown build option; use scarp build --help"),
+                _ => return Err("unknown compile option; use scarp compile --help"),
             };
             if slot.is_some() {
-                return Err("build options cannot be repeated");
+                return Err("compile options cannot be repeated");
             }
             let value = args
                 .get(index + 1)
-                .ok_or("expected a value after the build option")?;
+                .ok_or("expected a value after the compile option")?;
             if value.is_empty() {
-                return Err("build option values cannot be empty");
+                return Err("compile option values cannot be empty");
             }
             *slot = Some(value.clone());
             index += 2;
@@ -73,7 +72,7 @@ fn parse(args: &[OsString]) -> Result<Invocation, &'static str> {
         }
     }
     let source = source.ok_or("expected a Scarp source path")?;
-    let output = output.ok_or("build requires -o <output>")?;
+    let output = output.ok_or("compile requires -o <output>")?;
     let mode = match emit.as_deref().unwrap_or(OsStr::new("exe")).to_str() {
         Some("exe") => {
             if target.is_some() {
@@ -101,7 +100,13 @@ fn parse(args: &[OsString]) -> Result<Invocation, &'static str> {
             };
             BuildMode::Object { target }
         }
-        _ => return Err("--emit must be exe or obj"),
+        Some("c") => {
+            if compiler.is_some() || target.is_some() || steps.is_some() || prints.is_some() {
+                return Err("--emit c does not accept compiler, target, or runtime-budget options");
+            }
+            BuildMode::CSource
+        }
+        _ => return Err("--emit must be exe, obj, or c"),
     };
     let compiler = compiler
         .or_else(|| env::var_os("SCARP_CC"))

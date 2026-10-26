@@ -33,12 +33,14 @@ impl ObjectTarget {
 pub enum BuildMode {
     Executable { limits: ExecutionLimits },
     Object { target: Option<ObjectTarget> },
+    CSource,
 }
 
 #[derive(Clone, Debug)]
 pub struct BuildOptions {
     pub output: PathBuf,
     /// A single executable path/name, without shell syntax or embedded flags.
+    /// Unused for CSource, which does not invoke a compiler.
     pub compiler: OsString,
     pub mode: BuildMode,
 }
@@ -150,6 +152,12 @@ pub fn build(source: &str, options: &BuildOptions) -> Result<(), BuildError> {
         "artifact"
     });
     fs::write(&input, unit).map_err(|e| file_error("write generated C", e))?;
+    if matches!(options.mode, BuildMode::CSource) {
+        let permissions = fs::metadata(&input)
+            .map_err(|e| file_error("inspect generated C", e))?
+            .permissions();
+        return publish(&input, &output, permissions);
+    }
     let mut command = Command::new(&options.compiler);
     command.args(["-std=c11", "-O2", "-Wall", "-Wextra", "-Werror"]);
     if let BuildMode::Object { target } = options.mode {
@@ -182,12 +190,16 @@ pub fn build(source: &str, options: &BuildOptions) -> Result<(), BuildError> {
     }
     // Same-filesystem staging preserves executable permissions. hard_link fails
     // atomically if another invocation creates the destination before this one.
-    match fs::hard_link(&artifact, &output) {
+    publish(&artifact, &output, metadata.permissions())
+}
+
+fn publish(artifact: &Path, output: &Path, permissions: fs::Permissions) -> Result<(), BuildError> {
+    match fs::hard_link(artifact, output) {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
-            Err(BuildError::OutputExists(output))
+            Err(BuildError::OutputExists(output.to_owned()))
         }
-        Err(_) => copy_new(&artifact, &output, metadata.permissions()),
+        Err(_) => copy_new(artifact, output, permissions),
     }
 }
 
