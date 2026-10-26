@@ -392,17 +392,10 @@ fn compiler_failure_missing_artifact_and_racing_output_are_handled() {
 
 #[cfg(unix)]
 #[test]
-fn non_unicode_paths_work_and_non_unicode_modes_are_rejected() {
+fn non_unicode_modes_and_existing_symlinks_are_rejected() {
     use std::os::unix::{ffi::OsStringExt, fs::symlink};
-    let Some(cc) = compiler() else { return };
     let fixture = Fixture::new();
-    let source = fixture
-        .0
-        .join(OsString::from_vec(b"source-\xff.srp".to_vec()));
-    let destination = fixture.0.join(OsString::from_vec(b"program-\xfe".to_vec()));
-    fs::write(&source, "println(9);").unwrap();
-    success(&build(&cc, &source, &destination, &[]));
-    assert_eq!(Command::new(&destination).output().unwrap().stdout, b"9\n");
+    let source = fixture.source("println(9);");
     let output = command()
         .arg("build")
         .arg(&source)
@@ -415,7 +408,23 @@ fn non_unicode_paths_work_and_non_unicode_modes_are_rejected() {
     assert_eq!(output.status.code(), Some(2));
     let link = fixture.output("dangling");
     symlink(fixture.0.join("not-created"), &link).unwrap();
-    let output = build(&cc, &source, &link, &[]);
+    let output = build(&"compiler-must-not-run".into(), &source, &link, &[]);
     assert!(String::from_utf8_lossy(&output.stderr).contains("already exists"));
+    fixture.clean_staging();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn linux_native_paths_can_contain_non_unicode_bytes() {
+    use std::os::unix::ffi::OsStringExt;
+    let Some(cc) = compiler() else { return };
+    let fixture = Fixture::new();
+    let source = fixture
+        .0
+        .join(OsString::from_vec(b"source-\xff.srp".to_vec()));
+    let destination = fixture.0.join(OsString::from_vec(b"program-\xfe".to_vec()));
+    fs::write(&source, "println(9);").unwrap();
+    success(&build(&cc, &source, &destination, &[]));
+    assert_eq!(Command::new(destination).output().unwrap().stdout, b"9\n");
     fixture.clean_staging();
 }

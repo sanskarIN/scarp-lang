@@ -46,7 +46,8 @@ Windows output and diagnostics use binary stream mode for consistent LF bytes.
 `--cc <executable>` selects one compiler executable, not a shell command or a
 list of flags. Otherwise `SCARP_CC` wins, followed by `clang` on Windows or for
 explicit cross targets, and `cc` for native Unix builds. Paths with spaces and
-native non-Unicode paths are supported. There is no shell interpolation and
+native paths are supported, including non-Unicode bytes on Linux filesystems
+that permit them. macOS filesystem names must be valid Unicode. There is no shell interpolation and
 `CFLAGS` is not consumed. MSVC's `cl.exe` driver syntax is not supported.
 
 The default `--emit exe` uses C11, `-O2`, `-Wall`, `-Wextra`, and `-Werror`.
