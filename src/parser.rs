@@ -1,4 +1,4 @@
-//! Parse print statements and integer expressions without executing them.
+//! Parse declarations, assignments, blocks, and print statements without execution.
 
 use crate::{
     ast::{
@@ -11,6 +11,9 @@ use crate::{
 
 /// Maximum nested expression parentheses, excluding the println call itself.
 pub const MAX_EXPRESSION_DEPTH: usize = 64;
+
+/// Maximum nested statement blocks, independent of expression parentheses.
+pub const MAX_BLOCK_DEPTH: usize = 64;
 
 /// Parse a token stream. An omitted EOF token is treated as the end of input.
 pub fn parse(tokens: &[Token]) -> Result<Program, Diagnostic> {
@@ -55,14 +58,48 @@ impl Parser<'_> {
     }
 
     fn program(mut self) -> Result<Program, Diagnostic> {
+        Ok(Program {
+            statements: self.statement_list(0, false)?,
+        })
+    }
+
+    fn statement_list(
+        &mut self,
+        depth: usize,
+        in_block: bool,
+    ) -> Result<Vec<Statement>, Diagnostic> {
         let mut statements = Vec::new();
         while let Some(token) = self.current() {
             match &token.kind {
                 TokenKind::Eof => {
+                    if in_block {
+                        return Err(self
+                            .expected("'}'")
+                            .with_help("close the statement block with '}'"));
+                    }
                     if self.cursor + 1 != self.tokens.len() {
                         return Err(self.expected("the end of the token stream"));
                     }
                     break;
+                }
+                TokenKind::RightBrace if in_block => break,
+                TokenKind::LeftBrace => {
+                    let opening = token.span;
+                    if depth >= MAX_BLOCK_DEPTH {
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::BlockNesting,
+                            opening,
+                            format!("block nesting exceeds {MAX_BLOCK_DEPTH} levels"),
+                        )
+                        .with_help("reduce the number of nested statement blocks"));
+                    }
+                    self.cursor += 1;
+                    let inner = self.statement_list(depth + 1, true)?;
+                    let end = self.punctuation(TokenKind::RightBrace, "'}'")?.end;
+                    statements.push(Statement::Block {
+                        statements: inner,
+                        span: Span::new(opening.start, end),
+                    });
                 }
                 TokenKind::Identifier(name) if name == "println" => {
                     let start = token.span.start;
@@ -161,7 +198,12 @@ impl Parser<'_> {
                 _ => return Err(self.expected("a println statement or binding declaration")),
             }
         }
-        Ok(Program { statements })
+        if in_block && self.current().is_none() {
+            return Err(self
+                .expected("'}'")
+                .with_help("close the statement block with '}'"));
+        }
+        Ok(statements)
     }
 
     fn sum(&mut self, nodes: &mut Vec<ExpressionNode>, depth: usize) -> Result<usize, Diagnostic> {

@@ -40,6 +40,8 @@ arithmetic and expression nesting rules are unchanged.
 | `E0010` | Unknown name, including forward or self-reference |
 | `E0011` | Duplicate declaration in the same scope |
 | `E0012` | Reserved name used as a variable |
+| `E0013` | Assignment to an immutable binding |
+| `E0014` | Block nesting limit exceeded |
 
 Duplicate-name diagnostics include the original declaration as a related source
 location. Reference and declaration spans refer to the original UTF-8 source.
@@ -88,5 +90,39 @@ An arithmetic failure in the right-hand expression highlights that expression's
 operator instead. Any such failure prevents all program output.
 
 There are no implicit declarations, uninitialized bindings, increment/decrement
-operators, assignment expressions, or string-valued variables. Block scopes are
-the next dependent milestone.
+operators, assignment expressions, or string-valued variables.
+
+## Lexical scopes and shadowing
+
+```scarp
+let mut total = 1;
+{
+    let total = total + 10;
+    println(total); // 11
+}
+total += 2;
+println(total); // 3
+```
+
+Braces introduce a statement scope and do not require a trailing semicolon.
+Declarations can shadow outer bindings, but duplicate declarations in the same
+scope are rejected. A shadowing initializer reads the previous outer value
+before the new name becomes visible. Without an outer declaration, a reference
+to the name being initialized is an unknown-name error.
+
+Assignment searches the nearest visible binding. An immutable inner binding
+hides a mutable outer binding and prevents assignment; resolution never skips
+an immutable declaration to find a mutable one. Assignment to an outer mutable
+binding persists after leaving the block. Inner declarations become invisible
+on exit, and sibling blocks cannot see each other's locals.
+
+Blocks are statements, not expression values. Empty blocks are valid. Block
+nesting is limited to 64 levels independently of the 64-level expression limit.
+Both the parser and resolver enforce the block limit. Runtime operations are
+flattened, so executing a block does not recurse.
+
+Every declaration receives a unique storage slot, including shadowed names in
+different blocks. Slots are retained for the duration of execution and are not
+reused on block exit. `binding_count` includes those slots; `statement_count`
+counts executable declarations, assignments, and prints, excluding block
+containers. Future storage optimization must preserve these semantics.

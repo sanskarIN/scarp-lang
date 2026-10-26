@@ -30,6 +30,7 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/arithmetic.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/bindings.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/mutable.srp')
+    Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/scopes.srp')
 }
 finally {
     $env:CARGO_INCREMENTAL = $previousIncremental

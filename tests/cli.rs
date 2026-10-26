@@ -289,6 +289,23 @@ fn runs_mutable_bindings_and_diagnoses_immutable_writes() {
     assert!(stderr(&output).contains("declared here"));
 }
 
+#[test]
+fn runs_scoped_variables_and_reports_names_that_leave_scope() {
+    let fixture = Fixture::new();
+    let path = fixture.file(
+        "scopes.srp",
+        "let x = 1; { let x = x + 1; println(x); } println(x);",
+    );
+    let output = command().arg("run").arg(path).output().unwrap();
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(output.stdout, b"2\n1\n");
+    let path = fixture.file("leak.srp", "{ let x = 1; } println(x);");
+    let output = command().arg("run").arg(path).output().unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(stderr(&output).contains("E0010"));
+}
+
 #[cfg(unix)]
 #[test]
 fn handles_non_unicode_native_paths_according_to_the_filesystem() {
