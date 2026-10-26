@@ -45,3 +45,6 @@ cargo run --locked -- verify examples/numerics.srp
 cargo run --locked -- exec examples/linear_fit.srp
 cargo run --locked -- verify examples/linear_fit.srp
 cargo run --locked -- exec examples/bit_fields.srp
+cargo run --locked -- exec examples/output_basics.srp
+cargo run --locked -- verify examples/output_basics.srp
+cargo run --locked -- inspect tokens examples/output_basics.srp
