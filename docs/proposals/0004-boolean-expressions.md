@@ -1,7 +1,7 @@
 # Boolean expressions and comparisons
 
-Status: implemented on `scarp/boolean-expressions`, dependent on the variable,
-string, and documentation stack. Unreleased; the published v0.0.1 is unchanged.
+Status: implemented on main for v0.0.2, following the variable, string, and
+documentation work. The v0.0.1 snapshot remains unchanged.
 
 ## Motivation
 

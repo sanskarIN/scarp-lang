@@ -1,11 +1,7 @@
 # Design 0002: variables
 
-**Status: development design for v0.0.2. No release or tag is authorized by this
-document.** Changes are developed in dependent feature PRs and remain outside
-`main` until the maintainer explicitly requests integration.
-
-All four slices below are implemented in the feature-branch stack. They remain
-subject to review and explicit authorization for integration and publication.
+**Status: implemented on main for the v0.0.2 variable milestone.** The maintainer
+authorized integration of the reviewed variable stack on 2026-10-26.
 
 This design describes the integer foundation. A separate
 [string-value extension](0003-string-bindings.md) generalizes initializers and
@@ -16,7 +12,7 @@ introduces primitive type checks without changing the scope and mutation rules.
 1. Immutable integer bindings and a distinct name-resolution phase.
 2. Explicit mutability, assignment, and checked compound assignment.
 3. Lexical block scopes with deliberate shadowing rules.
-4. A validation command and unreleased v0.0.2 development metadata.
+4. A validation command and v0.0.2 package metadata.
 
 ## Binding rules
 
