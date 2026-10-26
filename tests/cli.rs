@@ -48,28 +48,43 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
-fn emit_c_generates_supported_units_and_rejects_unsupported_values_atomically() {
+fn compile_emits_c_without_a_compiler_or_arithmetic_evaluation() {
     let fixture = Fixture::new();
-    let valid = fixture.file("bits.srp", "println(1 << 63);");
+    let valid = fixture.file("bits.srp", "println(1 / 0); println(1 << 63);");
     let invalid = fixture.file("float.srp", "println(1.0);");
-    let result = command().arg("emit-c").arg(&valid).output().unwrap();
+    let artifact = fixture.directory.join("program.c");
+    let result = command()
+        .args(["compile", "--emit", "c"])
+        .arg(&valid)
+        .arg("-o")
+        .arg(&artifact)
+        .env("SCARP_CC", "compiler-must-not-run")
+        .output()
+        .unwrap();
     assert!(result.status.success(), "{}", stderr(&result));
-    assert!(String::from_utf8_lossy(&result.stdout).contains("uint32_t scarp_run"));
+    assert!(result.stdout.is_empty());
+    assert!(fs::read_to_string(&artifact)
+        .unwrap()
+        .contains("uint32_t scarp_run"));
     assert!(result.stderr.is_empty());
-    let result = command().arg("emit-c").arg(&invalid).output().unwrap();
+    let rejected = fixture.directory.join("invalid.c");
+    let result = command()
+        .args(["compile", "--emit", "c"])
+        .arg(&invalid)
+        .arg("-o")
+        .arg(&rejected)
+        .output()
+        .unwrap();
     assert_eq!(result.status.code(), Some(1));
     assert!(result.stdout.is_empty());
     assert!(stderr(&result).contains("E0027"));
-    assert!(command()
-        .args(["emit-c", "--help"])
-        .output()
-        .unwrap()
-        .status
-        .success());
+    assert!(!rejected.exists());
     assert_eq!(
         command()
-            .args(["emit-c", "--max-steps", "1"])
+            .args(["compile", "--emit", "c", "--max-steps", "1"])
             .arg(&valid)
+            .arg("-o")
+            .arg(&rejected)
             .output()
             .unwrap()
             .status
@@ -89,10 +104,11 @@ fn numerical_kernels_run_and_shape_failures_keep_stdout_empty() {
         "invalid.srp",
         "println(\"before\"); println(dot([1.0], []));",
     );
-    let result = command().arg("run").arg(&valid).output().unwrap();
+    let result = command().arg("exec").arg(&valid).output().unwrap();
     assert!(result.status.success(), "{}", stderr(&result));
     assert_eq!(result.stdout, b"11.0\n[0.5, 0.5]\n");
-    for mode in ["run", "check"] {
+    {
+        let mode = "exec";
         let result = command().arg(mode).arg(&invalid).output().unwrap();
         assert_eq!(result.status.code(), Some(1));
         assert!(result.stdout.is_empty());
@@ -101,7 +117,7 @@ fn numerical_kernels_run_and_shape_failures_keep_stdout_empty() {
 }
 
 #[test]
-fn loop_budgets_are_available_to_run_and_check_without_partial_output() {
+fn exec_budgets_reject_unbounded_execution_without_partial_output() {
     let fixture = Fixture::new();
     let infinite = fixture.file("infinite.srp", "println(\"before\"); while true {}");
     let prints = fixture.file("prints.srp", "while true { println(1); }");
@@ -109,21 +125,15 @@ fn loop_budgets_are_available_to_run_and_check_without_partial_output() {
         "valid.srp",
         "let mut x = 0; while x < 3 { x += 1; } println(x);",
     );
-    for mode in ["run", "check"] {
+    {
+        let mode = "exec";
         let result = command()
             .args([mode, "--max-steps", "100", "--max-prints", "1"])
             .arg(&valid)
             .output()
             .unwrap();
         assert!(result.status.success(), "{}", stderr(&result));
-        assert_eq!(
-            result.stdout,
-            if mode == "run" {
-                b"3\n".as_slice()
-            } else {
-                b"".as_slice()
-            }
-        );
+        assert_eq!(result.stdout, b"3\n");
         let result = command()
             .args([mode, "--max-steps", "9"])
             .arg(&infinite)
@@ -148,13 +158,13 @@ fn malformed_execution_budget_options_are_usage_errors() {
     let fixture = Fixture::new();
     let file = fixture.file("valid.srp", "println(1);");
     for args in [
-        vec!["run", "--max-steps", "-1"],
-        vec!["run", "--max-steps", "+1"],
-        vec!["run", "--max-steps", "1.0"],
-        vec!["run", "--max-steps", "18446744073709551616"],
-        vec!["run", "--max-steps", "1", "--max-steps", "2"],
-        vec!["tokens", "--max-steps", "1"],
-        vec!["check", "--max-prints", "x"],
+        vec!["exec", "--max-steps", "-1"],
+        vec!["exec", "--max-steps", "+1"],
+        vec!["exec", "--max-steps", "1.0"],
+        vec!["exec", "--max-steps", "18446744073709551616"],
+        vec!["exec", "--max-steps", "1", "--max-steps", "2"],
+        vec!["inspect", "tokens", "--max-steps", "1"],
+        vec!["verify", "--max-prints", "x"],
     ] {
         let result = command().args(&args).arg(&file).output().unwrap();
         assert_eq!(
@@ -167,7 +177,7 @@ fn malformed_execution_budget_options_are_usage_errors() {
     }
     let dash = fixture.file("-program.srp", "println(1);");
     let result = command()
-        .args(["run", "--max-steps", "2", "--", "-program.srp"])
+        .args(["exec", "--max-steps", "2", "--", "-program.srp"])
         .current_dir(&fixture.directory)
         .output()
         .unwrap();
@@ -187,12 +197,12 @@ fn conditional_programs_run_and_skipped_static_errors_reach_stderr() {
         "invalid.srp",
         "println(\"before\"); if false { println(missing); }",
     );
-    for mode in ["run", "check"] {
+    for mode in ["exec", "verify"] {
         let success = command().arg(mode).arg(&valid).output().unwrap();
         assert!(success.status.success(), "{}", stderr(&success));
         assert_eq!(
             success.stdout,
-            if mode == "run" {
+            if mode == "exec" {
                 b"3\n".as_slice()
             } else {
                 b"".as_slice()
@@ -209,7 +219,7 @@ fn conditional_programs_run_and_skipped_static_errors_reach_stderr() {
 #[test]
 fn runs_the_repository_hello_example() {
     let output = command()
-        .args(["run", "examples/hello.srp"])
+        .args(["exec", "examples/hello.srp"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()
         .unwrap();
@@ -222,7 +232,11 @@ fn runs_the_repository_hello_example() {
 fn inspects_tokens_with_spans_and_locations() {
     let fixture = Fixture::new();
     let path = fixture.file("tokens.srp", "println(\"hé\\n\");\n");
-    let output = command().arg("tokens").arg(path).output().unwrap();
+    let output = command()
+        .args(["inspect", "tokens"])
+        .arg(path)
+        .output()
+        .unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     let tokens = String::from_utf8(output.stdout).unwrap();
     assert!(tokens.contains("1:1..1:8  identifier(println)  [0..7]"));
@@ -235,7 +249,11 @@ fn inspects_tokens_with_spans_and_locations() {
 fn tokens_does_not_require_a_syntactically_complete_program() {
     let fixture = Fixture::new();
     let path = fixture.file("incomplete.srp", "println(");
-    let output = command().arg("tokens").arg(path).output().unwrap();
+    let output = command()
+        .args(["inspect", "tokens"])
+        .arg(path)
+        .output()
+        .unwrap();
     assert!(output.status.success());
     assert!(String::from_utf8(output.stdout).unwrap().contains("<eof>"));
 }
@@ -244,7 +262,7 @@ fn tokens_does_not_require_a_syntactically_complete_program() {
 fn reports_syntax_errors_on_stderr_with_a_failure_code() {
     let fixture = Fixture::new();
     let path = fixture.file("invalid.srp", "// comment\r\nprintln(\"hello\")");
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     let errors = stderr(&output);
@@ -259,8 +277,8 @@ fn reports_syntax_errors_on_stderr_with_a_failure_code() {
 fn lexical_errors_never_leak_partial_output() {
     let fixture = Fixture::new();
     let path = fixture.file("invalid.srp", "println(\"first\"); @");
-    for subcommand in ["run", "tokens", "check"] {
-        let output = command().arg(subcommand).arg(&path).output().unwrap();
+    for prefix in [vec!["exec"], vec!["inspect", "tokens"], vec!["verify"]] {
+        let output = command().args(&prefix).arg(&path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
         assert!(stderr(&output).contains("error[E0001]"));
@@ -271,8 +289,8 @@ fn lexical_errors_never_leak_partial_output() {
 fn reports_missing_files_for_all_file_commands() {
     let fixture = Fixture::new();
     let missing = fixture.directory.join("missing.srp");
-    for subcommand in ["run", "tokens", "check"] {
-        let output = command().arg(subcommand).arg(&missing).output().unwrap();
+    for prefix in [vec!["exec"], vec!["inspect", "tokens"], vec!["verify"]] {
+        let output = command().args(&prefix).arg(&missing).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
         assert!(stderr(&output).contains("could not read"));
@@ -284,8 +302,8 @@ fn reports_missing_files_for_all_file_commands() {
 fn reports_non_utf8_files_as_read_errors() {
     let fixture = Fixture::new();
     let path = fixture.file("bytes.srp", [0xff, 0xfe, 0x80]);
-    for subcommand in ["run", "tokens", "check"] {
-        let output = command().arg(subcommand).arg(&path).output().unwrap();
+    for prefix in [vec!["exec"], vec!["inspect", "tokens"], vec!["verify"]] {
+        let output = command().args(&prefix).arg(&path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
         assert!(stderr(&output).contains("could not read"));
@@ -297,7 +315,7 @@ fn reports_non_utf8_files_as_read_errors() {
 fn reports_a_directory_instead_of_a_source_file() {
     let fixture = Fixture::new();
     let output = command()
-        .arg("run")
+        .arg("exec")
         .arg(&fixture.directory)
         .output()
         .unwrap();
@@ -312,7 +330,7 @@ fn supports_spaces_unicode_paths_and_crlf() {
         "hello café.srp",
         "// Windows file\r\nprintln(\"नमस्ते 🌍\");\r\n",
     );
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(String::from_utf8(output.stdout).unwrap(), "नमस्ते 🌍\n");
 }
@@ -322,7 +340,7 @@ fn supports_an_explicit_filename_separator() {
     let fixture = Fixture::new();
     fixture.file("-hello.srp", "println(\"ok\");");
     let output = command()
-        .args(["run", "--", "-hello.srp"])
+        .args(["exec", "--", "-hello.srp"])
         .current_dir(&fixture.directory)
         .output()
         .unwrap();
@@ -339,7 +357,7 @@ fn help_and_version_succeed_without_reading_a_file() {
         let text = String::from_utf8(output.stdout).unwrap();
         if flag == "--help" || flag == "-h" {
             assert!(text.contains("Usage:"));
-            assert!(text.contains("scarp tokens"));
+            assert!(text.contains("inspect tokens|ast"));
         } else {
             assert_eq!(text, format!("scarp {}\n", env!("CARGO_PKG_VERSION")));
         }
@@ -349,14 +367,13 @@ fn help_and_version_succeed_without_reading_a_file() {
 #[test]
 fn rejects_invalid_command_lines_with_usage_exit_code() {
     for args in [
-        vec![],
-        vec!["run"],
+        vec!["exec"],
         vec!["tokens"],
-        vec!["check"],
-        vec!["check", "--unknown"],
-        vec!["build", "example.srp"],
-        vec!["run", "one.srp", "two.srp"],
-        vec!["run", "--unknown"],
+        vec!["verify"],
+        vec!["verify", "--unknown"],
+        vec!["compile", "example.srp"],
+        vec!["exec", "one.srp", "two.srp"],
+        vec!["exec", "--unknown"],
         vec!["--version", "extra"],
     ] {
         let output = command().args(&args).output().unwrap();
@@ -374,7 +391,7 @@ fn runs_integer_expressions_and_existing_strings_together() {
         "expressions.srp",
         "println(1 + 2 * 3); println((1 + 2) * 3); println(\"done\");",
     );
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"7\n9\ndone\n");
     assert!(output.stderr.is_empty());
@@ -392,7 +409,7 @@ fn reports_arithmetic_errors_without_partial_program_output() {
             "arithmetic-error.srp",
             format!("println(\"first\");\nprintln({argument});"),
         );
-        let output = command().arg("run").arg(path).output().unwrap();
+        let output = command().arg("exec").arg(path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
         assert!(stderr(&output).contains(code));
@@ -405,7 +422,11 @@ fn reports_arithmetic_errors_without_partial_program_output() {
 fn token_inspection_does_not_evaluate_or_range_check_integers() {
     let fixture = Fixture::new();
     let path = fixture.file("tokens.srp", "println(9223372036854775808 / 0);");
-    let output = command().arg("tokens").arg(path).output().unwrap();
+    let output = command()
+        .args(["inspect", "tokens"])
+        .arg(path)
+        .output()
+        .unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     let tokens = String::from_utf8(output.stdout).unwrap();
     assert!(tokens.contains("integer(9223372036854775808)"));
@@ -416,7 +437,7 @@ fn token_inspection_does_not_evaluate_or_range_check_integers() {
 fn runs_bindings_and_reports_semantic_errors_on_stderr() {
     let fixture = Fixture::new();
     let valid = fixture.file("bindings.srp", "let value = 6 * 7; println(value);");
-    let output = command().arg("run").arg(valid).output().unwrap();
+    let output = command().arg("exec").arg(valid).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"42\n");
     for (source, code) in [
@@ -425,7 +446,7 @@ fn runs_bindings_and_reports_semantic_errors_on_stderr() {
         ("let println = 1;", "E0012"),
     ] {
         let invalid = fixture.file("names.srp", source);
-        let output = command().arg("run").arg(invalid).output().unwrap();
+        let output = command().arg("exec").arg(invalid).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
         assert!(stderr(&output).contains(code));
@@ -439,11 +460,11 @@ fn runs_mutable_bindings_and_diagnoses_immutable_writes() {
         "mutable.srp",
         "let mut value = 1; value += 41; println(value);",
     );
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"42\n");
     let path = fixture.file("immutable.srp", "let value = 1; println(value); value = 2;");
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     assert!(stderr(&output).contains("E0013"));
@@ -457,43 +478,50 @@ fn runs_scoped_variables_and_reports_names_that_leave_scope() {
         "scopes.srp",
         "let x = 1; { let x = x + 1; println(x); } println(x);",
     );
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"2\n1\n");
     let path = fixture.file("leak.srp", "{ let x = 1; } println(x);");
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     assert!(stderr(&output).contains("E0010"));
 }
 
 #[test]
-fn check_is_silent_on_success_and_validates_arithmetic() {
+fn verify_is_silent_and_reports_static_errors_without_evaluating_arithmetic() {
     let fixture = Fixture::new();
     let path = fixture.file("check.srp", "let mut x = 1; x += 2; println(x);");
-    let output = command().arg("check").arg(path).output().unwrap();
+    let output = command().arg("verify").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert!(output.stdout.is_empty() && output.stderr.is_empty());
     for (source, code) in [
         ("println(1); println(missing);", "E0010"),
         ("let x = 1; x = 2;", "E0013"),
-        ("println(1); let mut x = 1; x /= 0;", "E0008"),
-        ("let x = 9223372036854775807 + 1;", "E0007"),
     ] {
         let path = fixture.file("check-error.srp", source);
-        let output = command().arg("check").arg(path).output().unwrap();
+        let output = command().arg("verify").arg(path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
         assert!(stderr(&output).contains(code));
     }
+    for source in [
+        "println(1); let mut x=1; x/=0;",
+        "let x=9223372036854775807+1;",
+    ] {
+        let path = fixture.file("runtime.srp", source);
+        let result = command().arg("verify").arg(path).output().unwrap();
+        assert!(result.status.success(), "{}", stderr(&result));
+        assert!(result.stdout.is_empty() && result.stderr.is_empty());
+    }
 }
 
 #[test]
-fn check_supports_unicode_paths_and_an_explicit_separator() {
+fn verify_supports_unicode_paths_and_an_explicit_separator() {
     let fixture = Fixture::new();
     fixture.file("-café.srp", "println(\"नमस्ते\");");
     let output = command()
-        .args(["check", "--", "-café.srp"])
+        .args(["verify", "--", "-café.srp"])
         .current_dir(&fixture.directory)
         .output()
         .unwrap();
@@ -506,7 +534,11 @@ fn large_single_line_token_dumps_retain_exact_eof_locations() {
     let fixture = Fixture::new();
     let source = "let v = 1;".repeat(5_000);
     let path = fixture.file("large.srp", &source);
-    let output = command().arg("tokens").arg(path).output().unwrap();
+    let output = command()
+        .args(["inspect", "tokens"])
+        .arg(path)
+        .output()
+        .unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     let tokens = String::from_utf8(output.stdout).unwrap();
     assert_eq!(tokens.lines().count(), 25_001);
@@ -521,14 +553,14 @@ fn large_single_line_token_dumps_retain_exact_eof_locations() {
 
 #[test]
 fn each_file_command_exposes_help_before_requiring_a_path() {
-    for subcommand in ["run", "tokens", "check"] {
+    for prefix in [vec!["exec"], vec!["inspect", "tokens"], vec!["verify"]] {
         for flag in ["--help", "-h"] {
-            let output = command().args([subcommand, flag]).output().unwrap();
+            let output = command().args(&prefix).arg(flag).output().unwrap();
             assert!(output.status.success());
             assert!(output.stderr.is_empty());
             assert!(String::from_utf8(output.stdout)
                 .unwrap()
-                .contains(&format!("scarp {subcommand}")));
+                .contains(&format!("scarp {}", prefix.join(" "))));
         }
     }
 }
@@ -540,14 +572,14 @@ fn string_variables_run_and_type_errors_are_checked_before_output() {
         "strings.srp",
         "let mut text = \"first\"; println(text); text = \"second\"; println(text);",
     );
-    let output = command().arg("run").arg(&path).output().unwrap();
+    let output = command().arg("exec").arg(&path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"first\nsecond\n");
     fixture.file(
         "strings.srp",
         "println(1); let mut text = \"hello\"; text = 1;",
     );
-    for subcommand in ["run", "check"] {
+    for subcommand in ["exec", "verify"] {
         let output = command().arg(subcommand).arg(&path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));
         assert!(output.stdout.is_empty());
@@ -566,7 +598,7 @@ fn handles_non_unicode_native_paths_according_to_the_filesystem() {
         .directory
         .join(OsString::from_vec(b"file-\xff.srp".to_vec()));
     let creation = fs::write(&path, "println(\"native path\");");
-    let output = command().arg("run").arg(path).output().unwrap();
+    let output = command().arg("exec").arg(path).output().unwrap();
     match creation {
         Ok(()) => {
             assert!(output.status.success(), "{}", stderr(&output));

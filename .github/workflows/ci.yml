@@ -91,4 +91,4 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes clang llvm
       - name: Compare native behavior and inspect freestanding targets
-        run: cargo test --locked --offline --test c_backend --test build_cli
+        run: cargo test --locked --offline --test c_backend --test compile_cli

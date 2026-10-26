@@ -90,7 +90,7 @@ errors occur only when reached. All failures leave program output empty.
 `examples/linear_fit.srp` fits the known relation `y = 2*x`. It computes the
 explicit squared-error gradient `2*dot(inputs, residuals)/3`, updates one scalar
 coefficient for 40 iterations, and checks both the coefficient tolerance and
-final loss. Run it with `cargo run -- run examples/linear_fit.srp`; both checks
+final loss. Run it with `cargo run -- exec examples/linear_fit.srp`; both checks
 print `true`. The derivative is written in the program; automatic gradient
 tracking is not part of this feature. The example exercises vectors, typed
 scalars, native kernels, per-iteration locals, and deterministic budgets together.

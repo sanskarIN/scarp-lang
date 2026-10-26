@@ -61,14 +61,14 @@ Existing source/arithmetic/budget failures all leave program output empty.
 
 ## CLI and Rust hosts
 
-Before the file path, `run` and `check` accept `--max-steps <count>` and
+Before the file path, `exec` accepts `--max-steps <count>` and
 `--max-prints <count>` once each, in either order. Counts are unsigned decimal
 digits; zero is allowed. Invalid, duplicate, or overflowing options are usage
-errors with exit status 2. `tokens` does not accept execution limits.
+errors with exit status 2. Static `verify` and `inspect` do not accept execution limits.
 
 ```sh
-cargo run -- run --max-steps 2000000 --max-prints 10 examples/loops.srp
-cargo run -- check --max-steps 2000000 examples/loops.srp
+cargo run -- exec --max-steps 2000000 --max-prints 10 examples/loops.srp
+cargo run -- verify examples/loops.srp
 ```
 
 The explicit filename separator still works after options. Library hosts use

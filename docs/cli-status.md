@@ -1,13 +1,14 @@
 # CLI implementation inventory
 
 This inventory compares the supplied command proposal with the repository and
-the `scarp/cli-foundation` branch. It records capabilities rather than treating
+the `scarp/canonical-cli` branch. It records capabilities rather than treating
 the proposal as implemented. Main contains the v0.0.2 variable milestone; native
 compilation depends on unmerged PRs #20 and #22. Nothing here merges or publishes.
 
 The six implemented proposed groups are `guide`, `version`, file-only `exec`,
-subset-only `compile`, static `verify`, and `inspect tokens/ast`. Traditional
-`run`, `build`, `check`, `tokens`, help/version flags, and `emit-c` are retained.
+subset-only `compile`, static `verify`, and `inspect tokens/ast`. Only canonical
+command names are accepted. The documented help/version flags are retained;
+optional command aliases are rejected, following the maintainer's direction.
 Other proposed groups are absent from production help and return usage status 2.
 
 ## Catalog audit
@@ -19,13 +20,13 @@ services. Priorities follow the proposal and do not imply an implementation date
 
 | Proposed command | Existing implementation | Implemented subset here | Compiler/runtime/tooling work remaining | Project/service work remaining | Priority |
 | --- | --- | --- | --- | --- | --- |
-| `guide` | Global help flags | Contextual guide/help | None for current commands | None | P0 |
-| `version` | Version flags | Exact short-version alias | Component/verbose reporting | None | P0 |
+| `guide` | Global help flags | Contextual guide | None for current commands | None | P0 |
+| `version` | Version flags | Canonical short-version command | Component/verbose reporting | None | P0 |
 | `create` | None | None | Valid app templates | Adopt project layout/manifest | P0 |
 | `init` | None | None | Conflict-safe scaffolding | Adopt project layout/manifest | P0 |
-| `exec` | File `run` | File execution alias | Program argument API | Project entrypoint resolution | P0 |
+| `exec` | File execution engine | Canonical file execution | Program argument API | Project entrypoint resolution | P0 |
 | `launch` | None | None | Reuse execution engine | Project-only entrypoint model | P0/P1 |
-| `compile` | C backend and native build driver | Native executable/object subset | More value kinds and profiles | Project build model | P0 |
+| `compile` | C backend and native driver | Executable/object/C-source subset | More value kinds and profiles | Project build model | P0 |
 | `verify` | Resolver; check also evaluates | Static frontend checks | Warnings/JSON schema | Project source discovery | P0 |
 | `test` | Rust contributor tests | None | Scarp test engine/discovery | Project test model | P1 |
 | `clean` | None | None | Managed-artifact ownership checks | Adopt build root/records | P1 |
@@ -68,17 +69,19 @@ services. Priorities follow the proposal and do not imply an implementation date
 
 ## Compatibility decisions
 
-- Bare `scarp` retains usage status 2. `scarp guide`, `scarp help`, and help
-  flags provide successful discovery. This preserves the existing no-argument
-  status instead of changing it to the proposal's suggested zero.
-- `exec` and `run` have identical file behavior, budgets, and diagnostics.
+- Bare `scarp` and `scarp guide` show guidance and return 0, matching the proposal.
+- `exec` directly dispatches file execution with the documented budgets.
   A standalone `--` still introduces one filename; program arguments and
   implicit project entrypoints are rejected rather than silently ignored.
-- `compile` and `build` are equivalent. A fresh explicit output path is required;
+- `compile` is the sole artifact-producing command. A fresh explicit output path is required;
   no implicit build directories or source overwrites are introduced.
-- `verify` is deliberately distinct from `check`. The former stops after name
-  and type resolution; the latter evaluates the selected path with budgets.
+- `verify` stops after name and type resolution. `exec` evaluates the selected
+  path with budgets. The former CLI `check` spelling is not accepted.
   An infinite loop or `1/0` passes static verification if otherwise well typed.
+- Only canonical command groups are enabled; the proposal's optional aliases
+  are not adopted. Retired names return usage errors with migration guidance.
+  Token inspection uses `inspect tokens`; C emission uses `compile --emit c`
+  with an explicit output file and no external C compiler invocation.
 - Source and handled tool failures retain status 1; malformed/unsupported CLI
   usage retains status 2. The proposal's additional statuses are not adopted.
 - `--release`, `--strict`, `--json`, watch mode, manifests, and registry flags are
@@ -90,7 +93,7 @@ services. Priorities follow the proposal and do not imply an implementation date
 
 ## Verification and next milestone
 
-Integration tests exercise aliases, contextual help, version agreement, true
+Integration tests exercise canonical names, alias rejection, contextual help, version agreement, true
 static checking, unchanged files, byte/line diagnostics, AST/token inspection,
 unsupported commands/flags, native output, and path/separator behavior. Native
 build tests also run through CI on Windows, Linux, and macOS.

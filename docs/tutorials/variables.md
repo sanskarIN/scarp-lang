@@ -98,8 +98,8 @@ let answer = 42;
 Move the declaration before the print. Self-reference in an initializer also
 fails unless an outer binding with that name is already visible.
 
-Use `scarp check variables.srp` to check syntax, names, mutability, primitive
-types, and arithmetic without printing. Every execution starts with fresh
+Use `scarp verify variables.srp` to check syntax, names, mutability, primitive
+types without evaluating arithmetic or printing. Every execution starts with fresh
 variable storage, including repeated executions of one compiled library program.
 
 Next, use [scopes and shadowing](scopes.md) to reuse a name within a nested block.

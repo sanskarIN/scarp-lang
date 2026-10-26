@@ -12,9 +12,17 @@ use scarp::{
     lexer, ExecutionLimits, RunError,
 };
 
-mod build_cli;
 mod cli_help;
+mod compile_cli;
 use cli_help::GENERAL as HELP;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FileAction {
+    Exec,
+    Verify,
+    Tokens,
+    Ast,
+}
 
 fn main() -> ExitCode {
     let stdout = io::stdout();
@@ -28,30 +36,26 @@ fn main() -> ExitCode {
     ExitCode::from(status)
 }
 
-fn dispatch(mut args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Write) -> u8 {
+fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Write) -> u8 {
     if let Some(status) = cli_help::dispatch(&args, output, errors) {
         return status;
     }
     if matches!(
         args.first().and_then(|value| value.to_str()),
-        Some("build" | "compile")
+        Some("compile")
     ) {
-        return build_cli::dispatch(&args[1..], output, errors);
+        return compile_cli::dispatch(&args[1..], output, errors);
     }
     if let Some(command) = args.first() {
-        if command == "inspect" {
-            if !matches!(
-                args.get(1).and_then(|value| value.to_str()),
-                Some("tokens" | "ast")
-            ) {
-                let _ = writeln!(
-                    errors,
-                    "error: inspect supports tokens or ast followed by one source path\n\n{HELP}"
-                );
-                return 2;
-            }
-            args.remove(0);
-        } else if !file_command(command) {
+        if let Some(replacement) = command.to_str().and_then(cli_help::replacement) {
+            let _ = writeln!(
+                errors,
+                "error: {:?} is not a supported command; use {replacement}\n\n{HELP}",
+                command.to_string_lossy()
+            );
+            return 2;
+        }
+        if !matches!(command.to_str(), Some("exec" | "verify" | "inspect")) {
             let _ = writeln!(
                 errors,
                 "error: unknown command {:?}",
@@ -62,11 +66,9 @@ fn dispatch(mut args: Vec<OsString>, output: &mut impl Write, errors: &mut impl 
             }
             let _ = writeln!(errors, "\n{HELP}");
             return 2;
-        } else if command == "exec" {
-            args[0] = "run".into();
         }
     }
-    let (command, filename, limits) = match invocation(&args) {
+    let (action, filename, limits) = match invocation(&args) {
         Ok(invocation) => invocation,
         Err(message) => {
             let _ = writeln!(errors, "error: {message}\n\n{HELP}");
@@ -85,22 +87,17 @@ fn dispatch(mut args: Vec<OsString>, output: &mut impl Write, errors: &mut impl 
             return 1;
         }
     };
-    if command == "verify" {
+    if action == FileAction::Verify {
         match scarp::compile(&source) {
             Ok(_) => 0,
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
-    } else if command == "ast" {
+    } else if action == FileAction::Ast {
         match scarp::parse(&source) {
             Ok(program) => write_output(writeln!(output, "{program:#?}"), errors),
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
-    } else if command == "emit-c" {
-        match scarp::c_backend::emit_c(&source) {
-            Ok(unit) => write_output(output.write_all(unit.as_bytes()), errors),
-            Err(error) => report_diagnostic(&error, path, &source, errors),
-        }
-    } else if command == "tokens" {
+    } else if action == FileAction::Tokens {
         match lexer::lex(&source) {
             Ok(tokens) => {
                 let mut locations = LocationTracker::new(&source);
@@ -125,11 +122,6 @@ fn dispatch(mut args: Vec<OsString>, output: &mut impl Write, errors: &mut impl 
             }
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
-    } else if command == "check" {
-        match scarp::check_with_limits(&source, limits) {
-            Ok(()) => 0,
-            Err(error) => report_diagnostic(&error, path, &source, errors),
-        }
     } else {
         match scarp::run_with_limits(&source, output, limits) {
             Ok(()) => 0,
@@ -139,17 +131,18 @@ fn dispatch(mut args: Vec<OsString>, output: &mut impl Write, errors: &mut impl 
     }
 }
 
-fn file_command(command: &OsStr) -> bool {
-    matches!(
-        command.to_str(),
-        Some("run" | "exec" | "tokens" | "check" | "verify" | "emit-c")
-    )
-}
-
-fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'static str> {
-    let command = args.first().ok_or("expected a command and a file path")?;
+fn invocation(args: &[OsString]) -> Result<(FileAction, &OsStr, ExecutionLimits), &'static str> {
+    let (action, mut index) = match args.first().and_then(|value| value.to_str()) {
+        Some("exec") => (FileAction::Exec, 1),
+        Some("verify") => (FileAction::Verify, 1),
+        Some("inspect") => match args.get(1).and_then(|value| value.to_str()) {
+            Some("tokens") => (FileAction::Tokens, 2),
+            Some("ast") => (FileAction::Ast, 2),
+            _ => return Err("inspect supports tokens or ast followed by one source path"),
+        },
+        _ => return Err("expected a supported command and a source path"),
+    };
     let mut limits = ExecutionLimits::default();
-    let mut index = 1;
     let mut seen_steps = false;
     let mut seen_prints = false;
     let mut separator = false;
@@ -164,8 +157,8 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'
         if !steps && !prints {
             break;
         }
-        if command != "run" && command != "check" {
-            return Err("execution limits are available only for run and check");
+        if action != FileAction::Exec {
+            return Err("execution limits are available only for exec");
         }
         if (steps && seen_steps) || (prints && seen_prints) {
             return Err("execution limit options cannot be repeated");
@@ -195,7 +188,7 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'
     if index + 1 != args.len() || (!separator && filename.to_string_lossy().starts_with('-')) {
         return Err("expected a command and a file path");
     }
-    Ok((command.as_os_str(), filename.as_os_str(), limits))
+    Ok((action, filename.as_os_str(), limits))
 }
 
 fn report_diagnostic(error: &Diagnostic, path: &Path, source: &str, errors: &mut impl Write) -> u8 {

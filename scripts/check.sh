@@ -22,25 +22,25 @@ cargo test --locked
 cargo test --locked --release
 cargo build --locked
 cargo doc --locked --no-deps
-cargo run --locked -- run examples/hello.srp
-cargo run --locked -- tokens examples/hello.srp
-cargo run --locked -- run examples/arithmetic.srp
-cargo run --locked -- run examples/bindings.srp
-cargo run --locked -- run examples/mutable.srp
-cargo run --locked -- run examples/scopes.srp
-cargo run --locked -- check examples/scopes.srp
-cargo run --locked -- run examples/string_bindings.srp
-cargo run --locked -- check examples/string_bindings.srp
-cargo run --locked -- run examples/booleans.srp
-cargo run --locked -- check examples/booleans.srp
-cargo run --locked -- run examples/decisions.srp
-cargo run --locked -- check examples/decisions.srp
-cargo run --locked -- run examples/loops.srp
-cargo run --locked -- check examples/loops.srp
-cargo run --locked -- run examples/decimals.srp
-cargo run --locked -- check examples/decimals.srp
-cargo run --locked -- run examples/numerics.srp
-cargo run --locked -- check examples/numerics.srp
-cargo run --locked -- run examples/linear_fit.srp
-cargo run --locked -- check examples/linear_fit.srp
-cargo run --locked -- run examples/bit_fields.srp
+cargo run --locked -- exec examples/hello.srp
+cargo run --locked -- inspect tokens examples/hello.srp
+cargo run --locked -- exec examples/arithmetic.srp
+cargo run --locked -- exec examples/bindings.srp
+cargo run --locked -- exec examples/mutable.srp
+cargo run --locked -- exec examples/scopes.srp
+cargo run --locked -- verify examples/scopes.srp
+cargo run --locked -- exec examples/string_bindings.srp
+cargo run --locked -- verify examples/string_bindings.srp
+cargo run --locked -- exec examples/booleans.srp
+cargo run --locked -- verify examples/booleans.srp
+cargo run --locked -- exec examples/decisions.srp
+cargo run --locked -- verify examples/decisions.srp
+cargo run --locked -- exec examples/loops.srp
+cargo run --locked -- verify examples/loops.srp
+cargo run --locked -- exec examples/decimals.srp
+cargo run --locked -- verify examples/decimals.srp
+cargo run --locked -- exec examples/numerics.srp
+cargo run --locked -- verify examples/numerics.srp
+cargo run --locked -- exec examples/linear_fit.srp
+cargo run --locked -- verify examples/linear_fit.srp
+cargo run --locked -- exec examples/bit_fields.srp

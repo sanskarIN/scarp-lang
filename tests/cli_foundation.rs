@@ -52,11 +52,11 @@ fn guide_help_and_flags_agree_without_requiring_files() {
     let expected = command().arg("--help").output().unwrap();
     success(&expected);
     for args in [
+        vec![],
         vec!["-h"],
         vec!["guide"],
-        vec!["help"],
         vec!["guide", "--help"],
-        vec!["help", "-h"],
+        vec!["guide", "-h"],
     ] {
         let output = command().args(&args).output().unwrap();
         success(&output);
@@ -67,7 +67,7 @@ fn guide_help_and_flags_agree_without_requiring_files() {
     for implemented in ["exec", "compile", "verify", "inspect", "guide", "version"] {
         assert!(text.contains(implemented));
     }
-    assert_eq!(command().output().unwrap().status.code(), Some(2));
+    assert_eq!(command().output().unwrap().status.code(), Some(0));
 }
 
 #[test]
@@ -85,14 +85,12 @@ fn short_version_aliases_agree() {
 
 #[test]
 fn contextual_help_matches_each_command_and_nested_topic() {
-    for verb in [
-        "exec", "run", "compile", "build", "verify", "check", "tokens", "inspect", "emit-c",
-        "version",
-    ] {
+    for verb in ["exec", "compile", "verify", "inspect", "guide", "version"] {
         let expected = command().args([verb, "--help"]).output().unwrap();
         success(&expected);
         assert!(String::from_utf8_lossy(&expected.stdout).contains("Usage:"));
-        for alias in ["guide", "help"] {
+        {
+            let alias = "guide";
             let output = command().args([alias, verb]).output().unwrap();
             success(&output);
             assert_eq!(output.stdout, expected.stdout, "{alias} {verb}");
@@ -118,19 +116,23 @@ fn contextual_help_matches_each_command_and_nested_topic() {
 }
 
 #[test]
-fn exec_and_run_have_identical_success_and_failure_behavior() {
+fn exec_executes_source_and_preserves_runtime_diagnostics() {
     let fixture = Fixture::new();
-    for source in [
-        "let mut n=3; n+=2; println(n);",
-        "println(1); println(1/0);",
-        "println(missing);",
+    for (source, expected, code) in [
+        ("let mut n=3; n+=2; println(n);", b"5\n".as_slice(), None),
+        ("println(1); println(1/0);", b"".as_slice(), Some("E0008")),
+        ("println(missing);", b"".as_slice(), Some("E0010")),
     ] {
         let path = fixture.source(source);
-        let run = command().arg("run").arg(&path).output().unwrap();
         let exec = command().arg("exec").arg(&path).output().unwrap();
-        assert_eq!(run.status.code(), exec.status.code());
-        assert_eq!(run.stdout, exec.stdout);
-        assert_eq!(run.stderr, exec.stderr);
+        assert_eq!(exec.stdout, expected);
+        if let Some(code) = code {
+            assert_eq!(exec.status.code(), Some(1));
+            assert!(String::from_utf8_lossy(&exec.stderr).contains(code));
+        } else {
+            success(&exec);
+            assert!(exec.stderr.is_empty());
+        }
     }
     let path = fixture.source("println(1);");
     let output = command()
@@ -159,7 +161,7 @@ fn verify_is_static_and_does_not_execute_arithmetic_or_loops() {
         assert_eq!(fixture.entries(), before);
         assert_eq!(fs::read_to_string(&path).unwrap(), source);
         let checked = command()
-            .args(["check", "--max-steps", "30"])
+            .args(["exec", "--max-steps", "30"])
             .arg(path)
             .output()
             .unwrap();
@@ -192,19 +194,20 @@ fn verify_reports_actual_static_errors_and_unicode_crlf_locations() {
 }
 
 #[test]
-fn inspect_tokens_is_exactly_the_existing_lexer_view() {
+fn inspect_tokens_shows_lexer_spans_without_requiring_valid_syntax() {
     let fixture = Fixture::new();
     let path = fixture.source("println(missing) // parsed only by the AST command");
-    let old = command().arg("tokens").arg(&path).output().unwrap();
     let inspected = command()
         .args(["inspect", "tokens"])
         .arg(&path)
         .output()
         .unwrap();
-    success(&old);
     success(&inspected);
-    assert_eq!(old.stdout, inspected.stdout);
-    assert_eq!(old.stderr, inspected.stderr);
+    assert!(inspected.stderr.is_empty());
+    let tokens = String::from_utf8(inspected.stdout).unwrap();
+    assert!(tokens.contains("1:1..1:8  identifier(println)  [0..7]"));
+    assert!(tokens.contains("identifier(missing)"));
+    assert!(tokens.contains("<eof>"));
     let parsed = command()
         .args(["inspect", "ast"])
         .arg(path)
@@ -314,6 +317,62 @@ fn command_suggestions_never_execute_or_change_the_command() {
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
     assert!(String::from_utf8_lossy(&output.stderr).contains("did you mean 'verify'"));
+}
+
+#[test]
+fn production_help_lists_exactly_the_supported_canonical_groups() {
+    let output = command().arg("guide").output().unwrap();
+    success(&output);
+    let text = String::from_utf8(output.stdout).unwrap();
+    let commands: Vec<_> = text
+        .lines()
+        .filter_map(|line| line.strip_prefix("  "))
+        .filter_map(|line| line.split_whitespace().next())
+        .filter(|word| *word != "scarp")
+        .collect();
+    assert_eq!(
+        commands,
+        ["exec", "compile", "verify", "inspect", "guide", "version"]
+    );
+}
+
+#[test]
+fn retired_command_names_fail_without_dispatching_or_creating_artifacts() {
+    let fixture = Fixture::new();
+    let source = fixture.source("println(42);");
+    let before = fixture.entries();
+    for (old, preferred) in [
+        ("run", "exec"),
+        ("build", "compile"),
+        ("check", "verify"),
+        ("tokens", "inspect tokens"),
+        ("emit-c", "compile --emit c"),
+        ("help", "guide"),
+    ] {
+        let output = command()
+            .current_dir(&fixture.0)
+            .arg(old)
+            .arg(&source)
+            .args(["-o", "must-not-exist"])
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2), "{old}");
+        assert!(output.stdout.is_empty());
+        assert!(String::from_utf8_lossy(&output.stderr).contains(&format!("scarp {preferred}")));
+        let help = command().args([old, "--help"]).output().unwrap();
+        assert_eq!(help.status.code(), Some(2));
+        assert!(help.stdout.is_empty());
+        assert_eq!(
+            command()
+                .args(["guide", old])
+                .output()
+                .unwrap()
+                .status
+                .code(),
+            Some(2)
+        );
+        assert_eq!(fixture.entries(), before);
+    }
 }
 
 #[test]

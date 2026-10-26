@@ -9,7 +9,7 @@ you are running matches the documentation. Start with
 | Goal | Choose | What to expect |
 | --- | --- | --- |
 | Try a published interpreter | The v0.0.2 release | Variables, mutation, scopes, strings, booleans, and decisions |
-| Try the current development language | `scarp/cli-foundation` | Native builds, static verification, contextual help, and inspection |
+| Try the current development language | `scarp/canonical-cli` | Canonical command names, native compilation, static verification, and inspection |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
 The development package version is `0.0.3-dev`. It is not a published v0.0.3
@@ -25,7 +25,7 @@ Rust dependencies.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/cli-foundation
+git switch scarp/canonical-cli
 cargo build --locked --offline
 cargo run -- --version
 ```
@@ -39,13 +39,13 @@ scarp 0.0.3-dev
 Run commands from the repository root so relative example paths resolve:
 
 ```sh
-cargo run -- run examples/hello.srp
-cargo run -- run examples/string_bindings.srp
-cargo run -- check examples/scopes.srp
-cargo run -- tokens examples/arithmetic.srp
+cargo run -- exec examples/hello.srp
+cargo run -- exec examples/string_bindings.srp
+cargo run -- verify examples/scopes.srp
+cargo run -- inspect tokens examples/arithmetic.srp
 ```
 
-`check` is silent on success. `tokens` prints debugging information instead of
+`verify` is silent on success. `inspect tokens` prints debugging information instead of
 program output. See the [CLI reference](reference/cli.md) for exit codes and paths.
 
 ## Create a source file
@@ -64,7 +64,7 @@ Hello from Scarp!
 7
 ```
 
-Execute it with `cargo run -- run demo.srp`. The same program works in v0.0.1.
+Execute it with `cargo run -- exec demo.srp`. The same program works in v0.0.1.
 The `.srp` suffix is conventional; the CLI validates file contents rather than
 requiring a particular extension.
 

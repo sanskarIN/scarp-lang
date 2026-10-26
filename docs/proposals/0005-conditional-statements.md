@@ -34,7 +34,8 @@ Assignments to an outer mutable binding persist after the selected body ends.
 
 Source errors and arithmetic errors on the selected path still prevent all
 program output. Print values are captured before output, including prints made
-before a later selected failure. `check` selects the same path without writing.
+before a later selected failure. The Rust library's `check` API selects the same
+path without writing; CLI `verify` only performs static checks.
 
 ## Flat execution plan
 

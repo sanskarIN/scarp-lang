@@ -78,8 +78,9 @@ The unselected arithmetic is not evaluated. Names and types are checked in every
 body, however: replacing `1 / 0` with an unknown variable still fails compilation.
 This catches misspelled variables even in code paths not selected by this run.
 
-`scarp check examples/decisions.srp` validates the same selected path silently.
-If selected arithmetic fails, earlier print statements produce no output. The
+`scarp verify examples/decisions.srp` checks every body's syntax, names, and types
+without selecting or executing a path. During `exec`, a selected arithmetic
+failure prevents earlier print statements from producing output. The
 language continues to prepare the complete selected result before writing.
 See [the conditional design](../proposals/0005-conditional-statements.md) for
 precise branch ordering, limits, and Rust API changes.

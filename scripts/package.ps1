@@ -85,29 +85,30 @@ try {
     }
     foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'decimals', 'numerics', 'linear_fit', 'bit_fields')) {
         $source = Join-Path $extractedPackage "examples/$example.srp"
-        $actual = & $executable run $source
+        $actual = & $executable exec $source
         if ($LASTEXITCODE -ne 0) { throw "Packaged $example example failed" }
         $actualText = ($actual -join "`n") + "`n"
         $expected = [System.IO.File]::ReadAllText((Join-Path $extractedPackage "examples/$example.stdout"))
         if ($actualText -cne $expected) { throw "Packaged $example output differs" }
-        $checkOutput = & $executable check $source
+        $checkOutput = & $executable verify $source
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
     }
     $invalidSource = Join-Path $stagingRoot 'invalid.srp'
     $errorLog = Join-Path $stagingRoot 'invalid.stderr'
     [System.IO.File]::WriteAllText($invalidSource, 'println("first"); println(1 / 0);')
-    $invalidOutput = & $executable run $invalidSource 2> $errorLog
+    $invalidOutput = & $executable exec $invalidSource 2> $errorLog
     if ($LASTEXITCODE -ne 1 -or $invalidOutput) { throw 'Packaged error exit/output check failed' }
     if ([System.IO.File]::ReadAllText($errorLog) -notmatch 'E0008') {
         throw 'Packaged arithmetic diagnostic check failed'
     }
-    $unit = & $executable emit-c (Join-Path $extractedPackage 'examples/bit_fields.srp')
-    if ($LASTEXITCODE -ne 0 -or -not (($unit -join "`n") -match 'uint32_t scarp_run')) { throw 'Packaged C emission failed' }
-    foreach ($verb in @('build', 'compile')) {
+    $unitPath = Join-Path $stagingRoot 'program.c'
+    $unitOutput = & $executable compile --emit c -o $unitPath (Join-Path $extractedPackage 'examples/bit_fields.srp')
+    if ($LASTEXITCODE -ne 0 -or $unitOutput -or [System.IO.File]::ReadAllText($unitPath) -notmatch 'uint32_t scarp_run') { throw 'Packaged C compilation failed' }
+    foreach ($verb in @('compile')) {
         $buildHelp = & $executable $verb --help
-        if ($LASTEXITCODE -ne 0 -or -not (($buildHelp -join "`n") -match '--emit exe\|obj')) { throw 'Packaged build help failed' }
+        if ($LASTEXITCODE -ne 0 -or -not (($buildHelp -join "`n") -match '--emit exe\|obj\|c')) { throw 'Packaged compile help failed' }
     }
-    $tokens = & $executable tokens (Join-Path $extractedPackage 'examples/arithmetic.srp')
+    $tokens = & $executable inspect tokens (Join-Path $extractedPackage 'examples/arithmetic.srp')
     if ($LASTEXITCODE -ne 0 -or -not ($tokens -match 'integer\(1\)')) {
         throw 'Packaged token inspection failed'
     }
@@ -118,9 +119,15 @@ try {
     $staticOutput = & $executable verify $invalidSource
     if ($LASTEXITCODE -ne 0 -or $staticOutput) { throw 'Packaged static verification evaluated arithmetic' }
     $aliasOutput = & $executable exec (Join-Path $extractedPackage 'examples/hello.srp')
-    if ($LASTEXITCODE -ne 0 -or $aliasOutput -cne 'Hello from Scarp!') { throw 'Packaged execution alias failed' }
+    if ($LASTEXITCODE -ne 0 -or $aliasOutput -cne 'Hello from Scarp!') { throw 'Packaged execution failed' }
     $tree = & $executable inspect ast (Join-Path $extractedPackage 'examples/hello.srp')
     if ($LASTEXITCODE -ne 0 -or -not (($tree -join "`n") -match 'Println')) { throw 'Packaged AST inspection failed' }
+    foreach ($retired in @('run', 'build', 'check', 'tokens', 'emit-c', 'help')) {
+        $rejectedOutput = & $executable $retired --help 2> $errorLog
+        if ($LASTEXITCODE -ne 2 -or $rejectedOutput) { throw 'Packaged retired command was accepted' }
+    }
+    $defaultGuide = & $executable
+    if ($LASTEXITCODE -ne 0 -or -not (($defaultGuide -join "`n") -match 'Usage: scarp')) { throw 'Packaged default guidance failed' }
 
     $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     $checksum = "$hash  $([System.IO.Path]::GetFileName($archive))`n"

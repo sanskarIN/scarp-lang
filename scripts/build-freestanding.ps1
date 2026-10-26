@@ -10,12 +10,11 @@ Push-Location -LiteralPath $projectRoot
 try {
     $outputRoot = [System.IO.Path]::GetFullPath($OutputDirectory)
     if (Test-Path -LiteralPath $outputRoot) { throw 'Choose a fresh output directory; build records are never overwritten' }
-    $unit = & cargo run --locked --offline -- emit-c -- $SourcePath
-    if ($LASTEXITCODE -ne 0) { throw 'Scarp C emission failed' }
     New-Item -ItemType Directory -Path $outputRoot | Out-Null
     $source = Join-Path $outputRoot 'program.c'
     $object = Join-Path $outputRoot 'program.o'
-    [System.IO.File]::WriteAllText($source, ($unit -join "`n") + "`n")
+    & cargo run --locked --offline -- compile --emit c -o $source -- $SourcePath
+    if ($LASTEXITCODE -ne 0) { throw 'Scarp C compilation failed' }
     & clang -target $Target -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O2 -c $source -o $object
     if ($LASTEXITCODE -ne 0) { throw 'Freestanding object compilation failed' }
     $undefined = & llvm-nm --undefined-only $object
