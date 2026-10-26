@@ -26,7 +26,7 @@ const EXEC: &str = "Usage: scarp exec [options] [--] <file.srp>
 
 Execute the selected source path after static checks and checked evaluation.
   --max-steps <count>   Logical work budget (default 1000000)
-  --max-prints <count>  Selected print budget (default 100000)
+  --max-prints <count>  Output-statement budget for both streams (default 100000)
 Options precede the filename; -- permits a filename beginning with a dash.
 Program arguments and project discovery are not supported.
 For static verification without execution use scarp verify.

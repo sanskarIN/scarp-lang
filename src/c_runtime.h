@@ -10,12 +10,19 @@ struct scarp_host {
     void *context;
     int (*write)(void *, const uint8_t *, size_t);
 };
+/* Additive dual-stream API; existing scarp_host and scarp_run are preserved. */
+struct scarp_io {
+    const struct scarp_host *stdout_host, *stderr_host;
+    void *context;
+    int (*flush)(void *, unsigned);
+};
 struct scarp_workspace {
     int64_t slots[SCARP_SLOT_COUNT];
     int64_t values[SCARP_TEMP_COUNT];
     uint64_t remaining, error_start, error_end;
     size_t prints;
     uint32_t error_code;
+    unsigned streams, last_stream;
 };
 static inline int scarp_fail(struct scarp_workspace *w, uint32_t code,
                             uint64_t start, uint64_t end) {
@@ -79,15 +86,25 @@ static inline int scarp_write(struct scarp_workspace *w, const struct scarp_host
         return scarp_fail(w, SCARP_OUTPUT_ERROR, start, end);
     return 1;
 }
-static inline int scarp_print(struct scarp_workspace *w, const struct scarp_host *host,
+static inline int scarp_output(struct scarp_workspace *w, const struct scarp_io *io,
+    unsigned stream, const uint8_t *bytes, size_t count, uint64_t start, uint64_t end) {
+    if (!count) return 1;
+    if (!io) return scarp_fail(w, SCARP_OUTPUT_ERROR, start, end);
+    if (w->last_stream && w->last_stream != stream + 1u && io->flush &&
+        io->flush(io->context, w->last_stream - 1u))
+        return scarp_fail(w, SCARP_OUTPUT_ERROR, start, end);
+    w->last_stream = stream + 1u;
+    return scarp_write(w, stream ? io->stderr_host : io->stdout_host, bytes, count, start, end);
+}
+static inline int scarp_print(struct scarp_workspace *w, const struct scarp_io *io, unsigned stream,
     int64_t value, int boolean, uint64_t start, uint64_t end) {
     uint8_t buffer[22]; size_t cursor = sizeof buffer;
     uint64_t magnitude;
-    static const uint8_t yes[] = {116,114,117,101,10};
-    static const uint8_t no[] = {102,97,108,115,101,10};
-    if (boolean) return scarp_write(w,host,value ? yes : no,value ? sizeof yes : sizeof no,start,end);
-    magnitude = scarp_magnitude(value); buffer[--cursor] = 10;
+    static const uint8_t yes[] = {116,114,117,101};
+    static const uint8_t no[] = {102,97,108,115,101};
+    if (boolean) return scarp_output(w,io,stream,value ? yes : no,value ? sizeof yes : sizeof no,start,end);
+    magnitude = scarp_magnitude(value);
     do { buffer[--cursor] = (uint8_t)(48 + magnitude % 10); magnitude /= 10; } while (magnitude);
     if (value < 0) buffer[--cursor] = 45;
-    return scarp_write(w,host,buffer + cursor,sizeof buffer - cursor,start,end);
+    return scarp_output(w,io,stream,buffer + cursor,sizeof buffer - cursor,start,end);
 }

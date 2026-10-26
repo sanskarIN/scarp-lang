@@ -4,9 +4,9 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExecutionLimits {
-    /// Program instructions and expression tasks, including backward jumps.
+    /// Instructions, expression tasks, and additional output-argument separators.
     pub max_steps: u64,
-    /// Number of selected println statements, also enforced during validation.
+    /// Selected output statements on either stream, including empty raw writes.
     pub max_prints: usize,
 }
 

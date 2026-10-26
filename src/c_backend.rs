@@ -1,7 +1,7 @@
 //! Freestanding C11 emission for the closed integer/boolean language subset.
 
 use crate::{
-    ast::{BinaryOperator, ExpressionKind, LogicalOperator},
+    ast::{BinaryOperator, ExpressionKind, LogicalOperator, OutputTarget},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     resolver::{ResolvedArgument, ResolvedExpression, ResolvedProgram, ResolvedStatement},
     value::ValueType,
@@ -32,19 +32,24 @@ pub fn emit_program(program: &ResolvedProgram) -> Result<String, Diagnostic> {
     let mut total_nodes = 0;
     let mut text_bytes = 0;
     for operation in &program.statements {
-        let expression = match &operation.kind {
+        let mut expressions = Vec::new();
+        match &operation.kind {
             ResolvedStatement::Store { value, .. } | ResolvedStatement::Update { value, .. } => {
-                Some(value)
+                expressions.push(value);
             }
-            ResolvedStatement::JumpIfFalse { condition, .. } => Some(condition),
-            ResolvedStatement::Println(ResolvedArgument::Expression(value)) => Some(value),
-            ResolvedStatement::Println(ResolvedArgument::String(value)) => {
-                text_bytes += value.len();
-                None
+            ResolvedStatement::JumpIfFalse { condition, .. } => expressions.push(condition),
+            ResolvedStatement::Output { arguments, .. } => {
+                total_nodes += arguments.len().saturating_sub(1);
+                for argument in arguments {
+                    match argument {
+                        ResolvedArgument::Expression(value) => expressions.push(value),
+                        ResolvedArgument::String(value) => text_bytes += value.len(),
+                    }
+                }
             }
-            _ => None,
-        };
-        if let Some(expression) = expression {
+            _ => {}
+        }
+        for expression in expressions {
             if !matches!(expression.kind, ValueType::Integer | ValueType::Boolean) {
                 return Err(unsupported(operation.span));
             }
@@ -82,13 +87,17 @@ pub fn emit_program(program: &ResolvedProgram) -> Result<String, Diagnostic> {
             ResolvedStatement::JumpIfFalse { condition, .. } => {
                 emit_expression(&mut out, index, condition)
             }
-            ResolvedStatement::Println(ResolvedArgument::Expression(value)) => {
-                emit_expression(&mut out, index, value)
+            ResolvedStatement::Output { arguments, .. } => {
+                for (argument_index, argument) in arguments.iter().enumerate() {
+                    if let ResolvedArgument::Expression(value) = argument {
+                        emit_expression(&mut out, format!("{index}_{argument_index}"), value);
+                    }
+                }
             }
             _ => {}
         }
     }
-    out.push_str("\nstatic int scarp_pass(struct scarp_workspace *w, const struct scarp_host *host, int capture, uint64_t steps, size_t max_prints) {\nsize_t pc=0, i; int64_t value=0; (void)value; (void)host; (void)capture; (void)max_prints;\n(void)scarp_step; (void)scarp_binary; (void)scarp_print;\nw->remaining=steps; w->prints=0; w->error_code=0; w->error_start=0; w->error_end=0;\nfor(i=0;i<SCARP_SLOT_COUNT;++i) w->slots[i]=0;\nfor(;;) switch(pc) {\n");
+    out.push_str("\nstatic int scarp_pass(struct scarp_workspace *w, const struct scarp_io *io, int capture, uint64_t steps, size_t max_prints) {\nsize_t pc=0, i; int64_t value=0; (void)value; (void)io; (void)capture; (void)max_prints;\n(void)scarp_step; (void)scarp_binary; (void)scarp_print; (void)scarp_output;\nw->remaining=steps; w->prints=0; w->error_code=0; w->error_start=0; w->error_end=0; w->streams=0; w->last_stream=0;\nfor(i=0;i<SCARP_SLOT_COUNT;++i) w->slots[i]=0;\nfor(;;) switch(pc) {\n");
     for (index, operation) in program.statements.iter().enumerate() {
         writeln!(out, "case {index}: {{").unwrap();
         step(&mut out, operation.span);
@@ -121,41 +130,54 @@ pub fn emit_program(program: &ResolvedProgram) -> Result<String, Diagnostic> {
             ResolvedStatement::Jump { target } | ResolvedStatement::LoopControl { target } => {
                 writeln!(out, "pc={target};").unwrap();
             }
-            ResolvedStatement::Println(argument) => {
+            ResolvedStatement::Output {
+                arguments,
+                target,
+                newline,
+            } => {
                 writeln!(
                     out,
                     "if(w->prints>=max_prints) return scarp_fail(w,18u,{},{});\n++w->prints;",
                     operation.span.start, operation.span.end
                 )
                 .unwrap();
-                match argument {
-                    ResolvedArgument::Expression(expression) => {
-                        writeln!(out, "if(!scarp_e{index}(w,&value)) return 0;").unwrap();
-                        writeln!(
-                            out,
-                            "if(capture && !scarp_print(w,host,value,{}, {},{})) return 0;",
-                            usize::from(expression.kind == ValueType::Boolean),
-                            operation.span.start,
-                            operation.span.end
-                        )
-                        .unwrap();
+                let stream = usize::from(*target == OutputTarget::Stderr);
+                for (argument_index, argument) in arguments.iter().enumerate() {
+                    if argument_index > 0 {
+                        step(&mut out, operation.span);
+                        emit_bytes(&mut out, b" ", stream, operation.span);
                     }
-                    ResolvedArgument::String(value) => {
-                        out.push_str("static const uint8_t text[]={");
-                        for byte in value.as_bytes() {
-                            write!(out, "{byte},").unwrap();
+                    match argument {
+                        ResolvedArgument::Expression(expression) => {
+                            writeln!(out, "if(!scarp_e{index}_{argument_index}(w,&value)) return 0;\nw->streams|={}u;", 1 << stream).unwrap();
+                            writeln!(out, "if(capture && !scarp_print(w,io,{stream}u,value,{}, {},{})) return 0;", usize::from(expression.kind == ValueType::Boolean), operation.span.start, operation.span.end).unwrap();
                         }
-                        out.push_str("0}; static const uint8_t lf[]={10};\n");
-                        writeln!(out,"if(capture && (!scarp_write(w,host,text,{}, {},{}) || !scarp_write(w,host,lf,1,{},{}))) return 0;",value.len(),operation.span.start,operation.span.end,operation.span.start,operation.span.end).unwrap();
+                        ResolvedArgument::String(value) => {
+                            emit_bytes(&mut out, value.as_bytes(), stream, operation.span)
+                        }
                     }
+                }
+                if *newline {
+                    emit_bytes(&mut out, b"\n", stream, operation.span);
                 }
                 writeln!(out, "pc={};", index + 1).unwrap();
             }
         }
         out.push_str("break; }\n");
     }
-    out.push_str("default: return 1;\n}\n}\nuint32_t scarp_validate(struct scarp_workspace *w, uint64_t steps, size_t prints) {\nif(!w) return SCARP_OUTPUT_ERROR;\n(void)scarp_pass(w,0,0,steps,prints); return w->error_code;\n}\nuint32_t scarp_run(struct scarp_workspace *w, const struct scarp_host *host, uint64_t steps, size_t prints) {\nif(!w) return SCARP_OUTPUT_ERROR;\nif(!scarp_pass(w,0,0,steps,prints)) return w->error_code;\n(void)scarp_pass(w,host,1,steps,prints); return w->error_code;\n}\n");
+    out.push_str("default: return 1;\n}\n}\nuint32_t scarp_validate(struct scarp_workspace *w, uint64_t steps, size_t prints) {\nif(!w) return SCARP_OUTPUT_ERROR;\n(void)scarp_pass(w,0,0,steps,prints); return w->error_code;\n}\nuint32_t scarp_run_io(struct scarp_workspace *w, const struct scarp_io *io, uint64_t steps, size_t prints) {\nif(!w) return SCARP_OUTPUT_ERROR;\nif(!scarp_pass(w,0,0,steps,prints)) return w->error_code;\nif(((w->streams&1u) && (!io || !io->stdout_host || !io->stdout_host->write)) || ((w->streams&2u) && (!io || !io->stderr_host || !io->stderr_host->write))) { scarp_fail(w,SCARP_OUTPUT_ERROR,0,0); return w->error_code; }\n(void)scarp_pass(w,io,1,steps,prints); return w->error_code;\n}\nuint32_t scarp_run(struct scarp_workspace *w, const struct scarp_host *host, uint64_t steps, size_t prints) {\nconst struct scarp_io io={host,0,0,0};\nreturn scarp_run_io(w,&io,steps,prints);\n}\n");
     Ok(out)
+}
+
+fn emit_bytes(out: &mut String, bytes: &[u8], stream: usize, span: Span) {
+    if bytes.is_empty() {
+        return;
+    }
+    out.push_str("{ static const uint8_t text[]={");
+    for byte in bytes {
+        write!(out, "{byte},").unwrap();
+    }
+    writeln!(out, "0}}; w->streams|={}u;\nif(capture && !scarp_output(w,io,{stream}u,text,{}, {},{})) return 0; }}", 1 << stream, bytes.len(), span.start, span.end).unwrap();
 }
 
 fn step(out: &mut String, span: Span) {
@@ -204,7 +226,7 @@ enum Task {
     Logical(usize),
     Close(usize),
 }
-fn emit_expression(out: &mut String, id: usize, expression: &ResolvedExpression) {
+fn emit_expression(out: &mut String, id: impl std::fmt::Display, expression: &ResolvedExpression) {
     writeln!(
         out,
         "\nstatic int scarp_e{id}(struct scarp_workspace *w,int64_t *out) {{"
