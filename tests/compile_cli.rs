@@ -74,7 +74,7 @@ fn success(output: &Output) {
 }
 fn build(cc: &OsString, source: &Path, destination: &Path, flags: &[&str]) -> Output {
     command()
-        .arg("build")
+        .arg("compile")
         .args(flags)
         .arg(source)
         .arg("-o")
@@ -87,11 +87,12 @@ fn build(cc: &OsString, source: &Path, destination: &Path, flags: &[&str]) -> Ou
 
 #[test]
 fn build_help_and_invalid_invocations_do_not_read_source() {
-    for verb in ["build", "compile"] {
+    {
+        let verb = "compile";
         for help in ["--help", "-h"] {
             let output = command().args([verb, help]).output().unwrap();
             success(&output);
-            assert!(String::from_utf8_lossy(&output.stdout).contains("--emit exe|obj"));
+            assert!(String::from_utf8_lossy(&output.stdout).contains("--emit exe|obj|c"));
         }
     }
     for args in [
@@ -140,7 +141,7 @@ fn build_help_and_invalid_invocations_do_not_read_source() {
         vec!["-o", "app", "--"],
         vec!["-o", "app", "--", "one", "two"],
     ] {
-        let output = command().arg("build").args(&args).output().unwrap();
+        let output = command().arg("compile").args(&args).output().unwrap();
         assert_eq!(output.status.code(), Some(2), "{args:?}");
         assert!(output.stdout.is_empty());
         assert!(!String::from_utf8_lossy(&output.stderr).contains("could not read"));
@@ -148,13 +149,61 @@ fn build_help_and_invalid_invocations_do_not_read_source() {
 }
 
 #[test]
-fn native_executable_and_compile_alias_preserve_exact_output() {
+fn c_source_output_is_exclusive_and_rejects_options_that_would_be_ignored() {
+    let fixture = Fixture::new();
+    let source = fixture.source("println(1);");
+    let destination = fixture.0.join("source.c");
+    let result = command()
+        .args(["compile", "--emit", "c"])
+        .arg(&source)
+        .arg("-o")
+        .arg(&destination)
+        .env("SCARP_CC", "compiler-must-not-run")
+        .output()
+        .unwrap();
+    success(&result);
+    assert!(result.stdout.is_empty() && result.stderr.is_empty());
+    let bytes = fs::read(&destination).unwrap();
+    assert!(String::from_utf8_lossy(&bytes).contains("uint32_t scarp_run"));
+    let duplicate = command()
+        .args(["compile", "--emit", "c"])
+        .arg(&source)
+        .arg("-o")
+        .arg(&destination)
+        .output()
+        .unwrap();
+    assert_eq!(duplicate.status.code(), Some(1));
+    assert_eq!(fs::read(destination).unwrap(), bytes);
+    for flags in [
+        vec!["--cc", "clang"],
+        vec!["--target", "x86_64-unknown-none-elf"],
+        vec!["--max-steps", "1"],
+        vec!["--max-prints", "1"],
+    ] {
+        let rejected = fixture.0.join("rejected.c");
+        let result = command()
+            .args(["compile", "--emit", "c"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&rejected)
+            .args(flags)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(2));
+        assert!(!rejected.exists());
+    }
+    fixture.clean_staging();
+}
+
+#[test]
+fn native_compile_preserves_exact_output() {
     let Some(cc) = compiler() else { return };
     let fixture = Fixture::new();
     let source = fixture.source("println(\"compiled 🌍\0\"); let mut x=3; while x>0 { println(x); x-=1; } println(false and 1/0==0); println(-1 >>> 1);");
     let mut expected = Vec::new();
     scarp::run(&fs::read_to_string(&source).unwrap(), &mut expected).unwrap();
-    for verb in ["build", "compile"] {
+    {
+        let verb = "compile";
         let destination = fixture.output(&format!("{verb} ; 应用"));
         let output = command()
             .arg(verb)
@@ -238,7 +287,7 @@ fn executable_budgets_and_full_width_limit_constants_work() {
     }
     let destination = fixture.output("maximum-budget");
     let output = command()
-        .arg("build")
+        .arg("compile")
         .arg(fixture.source("println(7);"))
         .arg("-o")
         .arg(&destination)
@@ -322,7 +371,7 @@ fn filename_separator_and_native_object_mode_work() {
     fs::write(fixture.0.join("-input.srp"), "println(1);").unwrap();
     let output = command()
         .current_dir(&fixture.0)
-        .args(["build", "-o", "native.o", "--emit", "obj", "--cc"])
+        .args(["compile", "-o", "native.o", "--emit", "obj", "--cc"])
         .arg(cc)
         .args(["--", "-input.srp"])
         .output()
@@ -397,7 +446,7 @@ fn non_unicode_modes_and_existing_symlinks_are_rejected() {
     let fixture = Fixture::new();
     let source = fixture.source("println(9);");
     let output = command()
-        .arg("build")
+        .arg("compile")
         .arg(&source)
         .arg("-o")
         .arg(fixture.output("bad-mode"))
