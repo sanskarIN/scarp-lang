@@ -105,7 +105,7 @@ try {
     if ($LASTEXITCODE -ne 0 -or $actualVersion -ne "scarp $version") {
         throw 'Packaged version check failed'
     }
-    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'decimals', 'numerics', 'linear_fit', 'bit_fields', 'output_basics')) {
+    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'decimals', 'numerics', 'linear_fit', 'bit_fields', 'output_basics', 'functions', 'function_contracts', 'function_recursion')) {
         $source = Join-Path $extractedPackage "examples/$example.srp"
         $actual = Invoke-PackageProcess -Executable $executable -Arguments @('exec', $source)
         if ($actual.ExitCode -ne 0 -or $actual.Stderr.Length -ne 0) { throw "Packaged $example example failed" }

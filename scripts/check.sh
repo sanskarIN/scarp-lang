@@ -48,3 +48,7 @@ cargo run --locked -- exec examples/bit_fields.srp
 cargo run --locked -- exec examples/output_basics.srp
 cargo run --locked -- verify examples/output_basics.srp
 cargo run --locked -- inspect tokens examples/output_basics.srp
+for example in functions function_contracts function_recursion; do
+    cargo run --locked -- exec "examples/$example.srp"
+    cargo run --locked -- verify "examples/$example.srp"
+done

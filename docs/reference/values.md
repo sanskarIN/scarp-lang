@@ -21,7 +21,9 @@ integers do not automatically become strings for arithmetic.
 General collections and user-defined values are not implemented. The
 [numerical vector design](../proposals/0008-numeric-vectors.md) specifies the
 specialized float collection, indexing, native signatures, and work bounds.
-Type annotations and explicit conversion functions are also not implemented.
+Local type annotations and explicit conversion functions are not implemented.
+[Functions](../functions.md) require explicit parameter/result types, and add
+`unit` as a result-only type. Unit cannot be printed, bound, or used as an operand.
 
 ## Precedence and associativity
 

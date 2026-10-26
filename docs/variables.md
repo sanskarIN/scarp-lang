@@ -1,7 +1,7 @@
 # Variables in the development language
 
 This document describes the unreleased v0.0.3-dev syntax on
-`scarp/output-statements`. Published v0.0.2 supports variables using `let` and
+`scarp/funcra-function-system`. Published v0.0.2 supports variables using `let` and
 `let mut`; v0.0.1 has no declarations. See the
 [migration table](compatibility.md#declaration-syntax-migration) before moving a
 program between these versions.
@@ -18,7 +18,9 @@ println(area); // 42
 Declarations require `bind`, an ASCII identifier, `=`, a value expression, and
 `;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, `let`,
 `mut`, `print`, `println`, `write`, `eprint`, `ewrite`, `true`, `false`, `and`, `or`, `not`, `if`, `elif`, `else`,
-`while`, `break`, and `continue` are reserved binding names. A binding
+`while`, `break`, `continue`, `funcra`, `pure`, `return`, `needs`, and `ensures`
+are reserved binding names. User function names also cannot be binding names.
+A binding
 infers `integer`, `float`, `string`, `boolean`, or numerical `vector` from its initializer. Parenthesized
 values and names are value expressions; arithmetic requires same-kind numbers.
 
@@ -180,5 +182,7 @@ arithmetic failure, and every semantic error prevents all output. Standalone
 library evaluation also checks operand types when called without compilation.
 
 This is primitive-value validation, not a general type system with user-defined
-types, annotations, generics, or function inference. The optional extension is
+types, local type annotations, generics, or function signature inference.
+[Functions](functions.md) require explicit primitive parameter/result types.
+The optional string extension is
 recorded in [the string binding design](proposals/0003-string-bindings.md).

@@ -1,6 +1,6 @@
 # Typed funcra functions
 
-Status: implementation in progress, unreleased. Base: `scarp/output-statements`
+Status: core interpreter implemented and tested; unreleased. Base: `scarp/output-statements`
 at `4b1b3e2532c7769c5fe011f693fc47c42de1a5a5`, dependent on PR #26 and its
 ordered prerequisites. The separate `development` application-workflow checkpoint
 is not integrated. Main, tags, releases, and dependency versions are unchanged.
@@ -20,7 +20,11 @@ struct literals; extending it directly would break callers.
 
 Audit covered source stages, public APIs, native emission/runtime, examples,
 current proposals, contribution rules, and Windows/Linux/macOS/minimum-Rust CI.
-The complete offline baseline is recorded in the validation report when finished.
+The complete offline baseline (`./scripts/check.ps1 -Offline`) passed on this
+base: 580 test executions, zero failures/ignored tests, formatting, Clippy,
+debug/release builds, rustdoc, and all 14 existing examples. Clang was required,
+including x86_64-none-elf and aarch64-none-elf checks. No baseline failure was
+found. Local log: `dist/funcra-baseline.log` (ignored build evidence).
 
 ## Decisions
 
@@ -74,3 +78,29 @@ requires an explicit-frame C design, differential limits/contracts/recursion tes
 and freestanding checks before this restriction can be removed. Closure support
 requires typed callable values, immutable captures, effect compatibility, and
 allocation budgets before accepting its syntax.
+
+## Follow-up checklist
+
+The current value-kind enum and flat expression plan describe primitive results.
+First-class functions need a signature/effect table and callable value identities
+before closures can carry environments safely. Do not accept their grammar
+until all of the following are implemented together:
+
+- Typed callable IDs, explicit function parameter/result signatures, and pure to
+  impure-capable compatibility without the reverse conversion.
+- Named function values, indirect calls, returnable callables, and a static
+  noncallable-value diagnostic that cannot depend on runtime string lookup.
+- Anonymous expression parsing with bounded nesting, immutable captures by value,
+  rejection of external mutable captures, and frame-independent lifetimes.
+- Allocation/work limits for captured environments, nested-return tests, effect
+  checks for callbacks, scope-exit tests, and native rejection for unsupported kinds.
+
+Native named functions require explicit generated frames (including return PCs),
+forward prototypes/identities, deterministic argument/default/contract ordering,
+checked primitive arithmetic, and the same call/work failure categories. Preserve
+freestanding output validation/replay and document any host ABI extension. Add
+interpreter/native differential recursion, contracts, budgets, spans, and both
+streams at O0/O2, plus the existing freestanding/undefined-symbol/sanitizer gates.
+
+No release tag, PR merge, per-function annotations, closure syntax, or partial
+native function emission is authorized by this implementation proposal.

@@ -53,6 +53,10 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'exec', 'examples/output_basics.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'verify', 'examples/output_basics.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'inspect', 'tokens', 'examples/output_basics.srp')
+    foreach ($example in @('functions', 'function_contracts', 'function_recursion')) {
+        Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'exec', "examples/$example.srp")
+        Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'verify', "examples/$example.srp")
+    }
 }
 finally {
     $env:CARGO_INCREMENTAL = $previousIncremental

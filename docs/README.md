@@ -12,6 +12,7 @@ require this development branch and are not included in the published release.
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
 | [Output and explicit streams](output.md) | Use print/println/write, argument spacing, stderr, budgets, and embedding writers |
+| [Functions with funcra](functions.md) | Declare typed reusable logic, defaults, purity/contracts, and bounded recursion |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
 | [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |

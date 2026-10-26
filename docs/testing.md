@@ -104,6 +104,18 @@ Mutation tests insert, delete, or truncate source and alter public token streams
 they check panic handling and diagnostic boundaries. Preserve deterministic
 reproductions when a generated case fails.
 
+`tests/functions.rs` checks typed calls, independent frames, defaults and named
+argument order, purity, contracts, recursive limits, zero-output failures,
+call-graph metadata, and malformed signatures. It executes 10,000 recursive
+calls on a 128 KiB host thread stack to distinguish the heap frame engine from
+host recursion. The default language depth remains 256; the test opts into more.
+`tests/fixtures/functions` contains negative `.srp` files and exact `.stderr`
+goldens, including contract/call locations and Unicode source. Native CLI tests
+verify E0035 without output artifacts or replacement of existing files.
+
+The runnable function, contract, and recursion examples participate in the same
+exact-byte discovery test and extracted-package checks as earlier examples.
+
 ## Check documentation and packages
 
 `cargo doc` checks Rustdoc; it does not automatically compile code fences in
