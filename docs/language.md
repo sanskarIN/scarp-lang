@@ -1,7 +1,7 @@
 # Scarp prototype language reference
 
 This reference describes the unreleased v0.0.3-dev language on
-`scarp/bind-var-syntax`, following published v0.0.2. It is an
+`scarp/output-statements`, following published v0.0.2. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
 
@@ -13,7 +13,7 @@ Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
 Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms use
-`bind`, `var`, `println`, `if`, and `while`, with exactly that spelling and case. `elif` and `else`
+`bind`, `var`, output names, `if`, and `while`, with exactly that spelling and case. `elif` and `else`
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 `bind` and `var` are reserved binding names, as are legacy `let` and `mut`.
@@ -60,7 +60,7 @@ The following grammar applies after trivia has been removed:
 
 ```ebnf
 program         = { statement }, EOF ;
-statement       = print_statement | declaration | assignment | block | conditional | loop | loop_control ;
+statement       = output_statement | declaration | assignment | block | conditional | loop | loop_control ;
 loop            = "while", expression, block ;
 loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
@@ -70,8 +70,9 @@ declaration     = ("bind" | "var"), IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
                   | "<<=" | ">>=" | ">>>=" ;
-print_statement = "println", "(", argument, ")", ";" ;
-argument        = expression ;
+output_statement = output_name, "(", [ argument_list ], ")", ";" ;
+output_name     = "print" | "println" | "write" | "eprint" | "ewrite" ;
+argument_list   = expression, { ",", expression }, [ "," ] ;
 expression      = logical_or ;
 logical_or      = logical_and, { "or", logical_and } ;
 logical_and     = logical_not, { "and", logical_not } ;
@@ -93,7 +94,8 @@ builtin_call    = BUILTIN, "(", [ expression, { ",", expression }, [ "," ] ], ")
 
 `"println"` denotes an identifier with that exact value, not a substring of a
 longer identifier. `STRING` is one complete string token and a primitive value.
-`println` takes exactly one value expression. Native built-ins have fixed argument
+Output statements take zero or more expressions, with an optional trailing comma.
+Native built-ins have fixed argument
 lists described in [the vector design](proposals/0008-numeric-vectors.md). Semicolons
 are mandatory. Newlines do not terminate statements.
 
@@ -108,7 +110,9 @@ println("two");
 ```
 
 Empty and comment-only files are valid programs. Extra semicolons, concatenated
-strings and multiple arguments to `println` are invalid. Built-in calls can nest.
+strings and empty middle arguments are invalid. A comma is a separator, not an
+expression operator. Output parentheses do not increase expression depth.
+Built-in numerical calls can nest.
 Binary operators
 associate left to right. Multiplication, division, and remainder bind above
 addition and subtraction, followed by shifts, `&`, `^`, and `|`. One unary minus
@@ -171,9 +175,19 @@ Braces are mandatory and use the existing block-depth limit. See the
 [conditional design](proposals/0005-conditional-statements.md) and
 [decisions tutorial](tutorials/decisions.md).
 
-Each print statement writes its decoded string or decimal integer followed by one LF
-to the supplied output stream. Strings containing `\n` can therefore write several lines.
-Statements execute in source order. Empty programs write nothing.
+`print` and permanent alias `println` join displayed arguments with one ASCII
+space and append one LF. `write` omits the additional LF. `eprint` and `ewrite`
+do the same on the explicit stderr destination. Zero-argument line forms produce
+LF; zero-argument raw forms produce no bytes. Strings retain decoded newlines
+and literal braces. These five names are reserved variable names.
+
+Preparation evaluates selected arguments left to right and captures their values
+before either stream receives bytes. Each output statement counts once against
+`max_prints`, even an empty write; additional arguments cost one step per
+separator. Stream switches flush the previous writer; callers own final flushing.
+Single-writer APIs return `Output(Unsupported)` before replay if nonempty stderr
+is required. Validation evaluates without capturing, formatting, or writing.
+See [output](output.md) for the complete writer contract.
 
 An I/O failure is returned to the caller. Previously written bytes cannot be
 rolled back. The library returns broken-pipe errors like other output errors;
@@ -236,9 +250,9 @@ one path is required, and stdin is not a source input. The `.srp` extension is a
 convention rather than a filename check. Native non-Unicode paths are accepted
 where supported by the operating system; the file contents must remain UTF-8.
 
-Bare `scarp` shows guidance and returns 0. Program output, guidance, versions,
+Bare `scarp` shows guidance and returns 0. Program stdout, guidance, versions,
 and inspection listings use stdout. Diagnostics use
-stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
+stderr, alongside explicit program stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 `2` for invalid arguments. No commands install packages or publish releases.
 
 ## Scope

@@ -195,6 +195,236 @@ fn native_batch(
         .collect()
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct NativeOutput {
+    code: u32,
+    start: usize,
+    end: usize,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    flushes: String,
+}
+
+fn native_io(
+    cc: &OsString,
+    source: &str,
+    limits: ExecutionLimits,
+    flags: u32,
+    optimization: &str,
+) -> NativeOutput {
+    let directory = Directory::new();
+    fs::write(
+        directory.0.join("program.c"),
+        c_backend::emit_c(source).unwrap(),
+    )
+    .unwrap();
+    let harness = format!(
+        r#"
+#include "program.c"
+#include <stdio.h>
+struct sink {{ uint8_t bytes[4096]; size_t used; unsigned stream; }};
+static char flushes[64]; static size_t flushed; static unsigned mode={flags}u;
+static int capture(void *context,const uint8_t *bytes,size_t count) {{
+ struct sink *s=(struct sink *)context; size_t i;
+ if((s->stream==0u && (mode&4u)) || (s->stream==1u && (mode&8u)) || count>sizeof s->bytes-s->used) return 1;
+ for(i=0;i<count;++i) {{ s->bytes[s->used++]=bytes[i]; }} return 0;
+}}
+static int flush_stream(void *context,unsigned stream) {{
+ (void)context; if(flushed>=sizeof flushes) return 1;
+ flushes[flushed++]=stream?'e':'o'; return (mode&16u)?1:0;
+}}
+int main(void) {{
+ static struct scarp_workspace w; static struct sink out,err;
+ struct scarp_host oh,eh; struct scarp_io io; uint32_t code=0; size_t i,n;
+ out.stream=0; err.stream=1; oh.context=&out; oh.write=capture; eh.context=&err; eh.write=capture;
+ io.stdout_host=&oh; io.stderr_host=(mode&2u)?0:&eh; io.context=0; io.flush=flush_stream;
+ for(n=0;n<((mode&32u)?2u:1u);++n) {{
+  if(mode&64u) code=scarp_validate(&w,UINT64_C({steps}),{prints});
+  else if(mode&1u) code=scarp_run(&w,&oh,UINT64_C({steps}),{prints});
+  else code=scarp_run_io(&w,&io,UINT64_C({steps}),{prints});
+  if(code) break;
+ }}
+ printf("%u:%llu:%llu:",(unsigned)code,(unsigned long long)w.error_start,(unsigned long long)w.error_end);
+ for(i=0;i<out.used;++i) {{ printf("%02x",(unsigned)out.bytes[i]); }} putchar(':');
+ for(i=0;i<err.used;++i) {{ printf("%02x",(unsigned)err.bytes[i]); }} putchar(':');
+ for(i=0;i<flushed;++i) {{ putchar(flushes[i]); }} putchar('\n'); return 0;
+}}
+"#,
+        steps = limits.max_steps,
+        prints = limits.max_prints
+    );
+    fs::write(directory.0.join("host.c"), harness).unwrap();
+    let executable = directory
+        .0
+        .join(if cfg!(windows) { "host.exe" } else { "host" });
+    let mut build = Command::new(cc);
+    build
+        .current_dir(&directory.0)
+        .args(["-std=c11", "-Wall", "-Wextra", "-Werror", optimization]);
+    if std::env::var_os("SCARP_C_SANITIZE").is_some() {
+        build.args(["-fsanitize=undefined", "-fno-sanitize-recover=all"]);
+    }
+    let built = build
+        .arg("host.c")
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        built.status.success(),
+        "{}",
+        String::from_utf8_lossy(&built.stderr)
+    );
+    let result = Command::new(executable).output().unwrap();
+    assert!(
+        result.status.success() && result.stderr.is_empty(),
+        "{result:?}"
+    );
+    let text = String::from_utf8(result.stdout).unwrap();
+    let parts: Vec<_> = text.trim().split(':').collect();
+    let decode = |text: &str| {
+        text.as_bytes()
+            .chunks_exact(2)
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect()
+    };
+    NativeOutput {
+        code: parts[0].parse().unwrap(),
+        start: parts[1].parse().unwrap(),
+        end: parts[2].parse().unwrap(),
+        stdout: decode(parts[3]),
+        stderr: decode(parts[4]),
+        flushes: parts[5].into(),
+    }
+}
+
+#[test]
+fn native_dual_stream_output_matches_rust_bytes_errors_budgets_and_order() {
+    let Some(cc) = compiler() else { return };
+    let defaults = ExecutionLimits::default();
+    let cases = [
+        ("write(\"A\"); ewrite(\"B\"); print(1, true,);", defaults),
+        ("eprint(); ewrite(); eprint(\"\", \"x\");", defaults),
+        (
+            "eprint(\"π 🌍\0\", -9223372036854775808); print(\"ok\");",
+            defaults,
+        ),
+        (
+            "print(\"before\"); eprint(\"suppress\"); print(1, 1 / 0);",
+            defaults,
+        ),
+        ("eprint(1 / 0, 9223372036854775807 + 1);", defaults),
+        ("eprint(9223372036854775807 + 1, 1 / 0);", defaults),
+        (
+            "if false { eprint(1 / 0); } print(false and 1 / 0 == 0, true);",
+            defaults,
+        ),
+        (
+            "var n=0; while n<3 { print(n); eprint(n); n+=1; }",
+            defaults,
+        ),
+        (
+            "eprint(\"a\", \"b\", \"c\");",
+            ExecutionLimits {
+                max_steps: 2,
+                max_prints: 1,
+            },
+        ),
+        (
+            "eprint(\"a\", \"b\", \"c\");",
+            ExecutionLimits {
+                max_steps: 3,
+                max_prints: 1,
+            },
+        ),
+        (
+            "ewrite();",
+            ExecutionLimits {
+                max_steps: 100,
+                max_prints: 0,
+            },
+        ),
+    ];
+    for optimization in ["-O0", "-O2"] {
+        for (source, limits) in cases {
+            let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+            let mut expected = NativeOutput {
+                code: 0,
+                start: 0,
+                end: 0,
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+                flushes: String::new(),
+            };
+            if let Err(error) =
+                scarp::run_with_io_and_limits(source, &mut stdout, &mut stderr, limits)
+            {
+                let RunError::Diagnostic(error) = error else {
+                    panic!("{error}")
+                };
+                expected.code = error.kind.code()[1..].parse().unwrap();
+                expected.start = error.span.start;
+                expected.end = error.span.end;
+            }
+            expected.stdout = stdout;
+            expected.stderr = stderr;
+            let mut actual = native_io(&cc, source, limits, 0, optimization);
+            if source == cases[0].0 {
+                assert_eq!(actual.flushes, "oe");
+            }
+            actual.flushes.clear();
+            assert_eq!(actual, expected, "{optimization}: {source}");
+        }
+    }
+}
+
+#[test]
+fn native_legacy_host_missing_sinks_and_callback_failures_are_explicit() {
+    let Some(cc) = compiler() else { return };
+    let limits = ExecutionLimits::default();
+    let source = "write(\"A\"); ewrite(\"B\");";
+    for flags in [1, 2] {
+        let result = native_io(&cc, source, limits, flags, "-O2");
+        assert_eq!(result.code, 65535);
+        assert!(result.stdout.is_empty() && result.stderr.is_empty());
+    }
+    for flags in [4, 8, 16] {
+        let result = native_io(&cc, source, limits, flags, "-O2");
+        assert_eq!(result.code, 65535);
+        assert_eq!(
+            result.stdout,
+            if flags == 4 {
+                b"".as_slice()
+            } else {
+                b"A".as_slice()
+            }
+        );
+        assert!(result.stderr.is_empty());
+    }
+    let result = native_io(&cc, source, limits, 64 | 4 | 8, "-O2");
+    assert_eq!(result.code, 0);
+    assert!(result.stdout.is_empty() && result.stderr.is_empty() && result.flushes.is_empty());
+    let result = native_io(
+        &cc,
+        "ewrite(); ewrite(\"\"); print(\"ok\");",
+        limits,
+        1,
+        "-O2",
+    );
+    assert_eq!(result.code, 0);
+    assert_eq!(result.stdout, b"ok\n");
+    let result = native_io(
+        &cc,
+        "var n=1; print(n); n+=1; eprint(n);",
+        limits,
+        32,
+        "-O2",
+    );
+    assert_eq!(result.code, 0);
+    assert_eq!(result.stdout, b"1\n1\n");
+    assert_eq!(result.stderr, b"2\n2\n");
+}
+
 #[test]
 fn unsupported_values_and_backend_resource_caps_are_diagnosed() {
     for source in [
@@ -239,6 +469,14 @@ fn emitted_c_matches_interpreter_output_errors_spans_and_budgets() {
     let defaults = ExecutionLimits::default();
     let cases=[
         ("",defaults),
+        ("print(); println(); write(); print(\"\"); write(\"\");",defaults),
+        ("write(\"A\"); print(\"B\",1,true,); println(\"\", \"x\");",defaults),
+        ("print(1 + 2 * 3, (1 + 2) * 3, false);",defaults),
+        ("print(\"a\", \"b\", \"c\");",ExecutionLimits{max_steps:2,max_prints:1}),
+        ("print(\"a\", \"b\", \"c\");",ExecutionLimits{max_steps:3,max_prints:1}),
+        ("write();",ExecutionLimits{max_steps:100,max_prints:0}),
+        ("print(\"first\"); write(1, 1 / 0);",defaults),
+        ("ewrite(); ewrite(\"\"); print(\"ok\");",defaults),
         ("println(\"Hello 🌍\\nA\0B\"); println(true); println(false);",defaults),
         ("println(-9223372036854775808); println(9223372036854775807); println(-9223372036854775808 * 1); println(-9223372036854775808 * 0);",defaults),
         ("println(-7 / 2); println(-7 % 2); println(-1 >>> 1); println(-8 >> 1); println(1 << 63); println(~0); println(3 | 8 ^ 7 & 1);",defaults),

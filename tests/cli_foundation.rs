@@ -48,6 +48,50 @@ fn success(output: &Output) {
 }
 
 #[test]
+fn exec_routes_program_output_streams_and_static_verification_stays_silent() {
+    let fixture = Fixture::new();
+    let path = fixture.source(
+        "write(\"Loading\"); ewrite(\"Warning\"); print(\"...\", true); eprint(\"!\", 2,);",
+    );
+    let result = command().arg("exec").arg(&path).output().unwrap();
+    assert!(result.status.success());
+    assert_eq!(result.stdout, b"Loading... true\n");
+    assert_eq!(result.stderr, b"Warning! 2\n");
+    let checked = command().arg("verify").arg(&path).output().unwrap();
+    assert!(checked.status.success());
+    assert!(checked.stdout.is_empty() && checked.stderr.is_empty());
+    let tree = command()
+        .args(["inspect", "ast"])
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(tree.status.success() && tree.stderr.is_empty());
+    let tree = String::from_utf8(tree.stdout).unwrap();
+    assert!(tree.contains("Output") && tree.contains("Stderr") && tree.contains("newline: false"));
+}
+
+#[test]
+fn cli_failures_suppress_both_program_streams_and_keep_diagnostics_separate() {
+    let fixture = Fixture::new();
+    for tail in ["print(missing);", "print(1 / 0);"] {
+        let path = fixture.source(&format!(
+            "print(\"suppress stdout\"); eprint(\"suppress program stderr\"); {tail}"
+        ));
+        let result = command().arg("exec").arg(&path).output().unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        let expected = scarp::check(&fs::read_to_string(&path).unwrap())
+            .unwrap_err()
+            .render(&path.to_string_lossy(), &fs::read_to_string(&path).unwrap())
+            + "\n";
+        assert_eq!(result.stderr, expected.as_bytes());
+    }
+    let path = fixture.source("eprint(1 / 0);");
+    let result = command().arg("verify").arg(&path).output().unwrap();
+    assert!(result.status.success() && result.stdout.is_empty() && result.stderr.is_empty());
+}
+
+#[test]
 fn guide_help_and_flags_agree_without_requiring_files() {
     let expected = command().arg("--help").output().unwrap();
     success(&expected);

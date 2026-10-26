@@ -4,8 +4,8 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, PrintArgument, Program,
-        Statement,
+        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, OutputTarget,
+        PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     parser::MAX_BLOCK_DEPTH,
@@ -67,7 +67,11 @@ pub(crate) enum ResolvedStatement {
         value: ResolvedExpression,
         operator_span: Span,
     },
-    Println(ResolvedArgument),
+    Output {
+        arguments: Vec<ResolvedArgument>,
+        target: OutputTarget,
+        newline: bool,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -260,13 +264,15 @@ impl Resolver {
                     self.emit(ResolvedStatement::Store { slot, value }, span);
                 }
                 Statement::Println { argument, .. } => {
-                    let argument = match argument {
-                        PrintArgument::String(value) => ResolvedArgument::String(value),
-                        PrintArgument::Expression(expression) => ResolvedArgument::Expression(
-                            resolve_expression(expression, &self.scopes)?,
-                        ),
-                    };
-                    self.emit(ResolvedStatement::Println(argument), span);
+                    self.output(vec![argument], OutputTarget::Stdout, true, span)?;
+                }
+                Statement::Output {
+                    arguments,
+                    target,
+                    newline,
+                    ..
+                } => {
+                    self.output(arguments, target, newline, span)?;
                 }
                 Statement::Assign {
                     name,
@@ -371,6 +377,33 @@ impl Resolver {
         self.scopes.push(HashMap::new());
         self.statement_list(statements)?;
         self.scopes.pop();
+        Ok(())
+    }
+
+    fn output(
+        &mut self,
+        arguments: Vec<PrintArgument>,
+        target: OutputTarget,
+        newline: bool,
+        span: Span,
+    ) -> Result<(), Diagnostic> {
+        let arguments = arguments
+            .into_iter()
+            .map(|argument| match argument {
+                PrintArgument::String(value) => Ok(ResolvedArgument::String(value)),
+                PrintArgument::Expression(expression) => {
+                    resolve_expression(expression, &self.scopes).map(ResolvedArgument::Expression)
+                }
+            })
+            .collect::<Result<_, _>>()?;
+        self.emit(
+            ResolvedStatement::Output {
+                arguments,
+                target,
+                newline,
+            },
+            span,
+        );
         Ok(())
     }
 
@@ -551,6 +584,10 @@ fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
             | "let"
             | "mut"
             | "println"
+            | "print"
+            | "write"
+            | "eprint"
+            | "ewrite"
             | "true"
             | "false"
             | "and"

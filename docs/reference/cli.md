@@ -46,10 +46,13 @@ never executes the artifact automatically.
 ## Execution, verification, and inspection
 
 `exec` checks the complete source before evaluation, then prepares selected
-prints before writing output. Runtime overflow, invalid shifts, zero divisors,
-shape/index failures, and exhausted budgets therefore leave stdout empty.
+output events before writing either program stream. Runtime overflow, invalid
+shifts, zero divisors, shape/index failures, and exhausted budgets therefore
+leave program stdout and program stderr empty. Diagnostics still use stderr.
 It accepts `--max-steps <count>` and `--max-prints <count>` before the filename.
-Defaults are 1,000,000 steps and 100,000 selected prints. Each option can occur
+Defaults are 1,000,000 steps and 100,000 selected output statements across both
+streams, including empty writes. Additional arguments cost one step per separator.
+Each option can occur
 once; unsigned decimal zero is valid. Malformed options return usage status 2.
 
 `verify` stops after lexing, parsing, and resolution/type checking. It evaluates
@@ -112,7 +115,7 @@ semantics. Historical release notes describe their own shipped command names.
 
 | Result | stdout | stderr | Exit |
 | --- | --- | --- | --- |
-| Successful execution | Program output | Empty | 0 |
+| Successful execution | Program stdout | Program stderr, if requested | 0 |
 | Successful verification/compilation | Empty | Empty | 0 |
 | Guidance, version, or inspection | Requested report | Empty | 0 |
 | Source, file, compiler, or output failure | No program output on source failure | Diagnostic | 1 |

@@ -9,7 +9,7 @@ you are running matches the documentation. Start with
 | Goal | Choose | What to expect |
 | --- | --- | --- |
 | Try a published interpreter | The v0.0.2 release | Variables, mutation, scopes, strings, booleans, and decisions |
-| Try the current development language | `scarp/bind-var-syntax` | Explicit declarations, canonical command names, native compilation, static verification, and inspection |
+| Try the current development language | `scarp/output-statements` | Explicit declarations, output arguments/streams, canonical CLI, native compilation, and inspection |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
 The development package version is `0.0.3-dev`. It is not a published v0.0.3
@@ -25,7 +25,7 @@ Rust dependencies.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/bind-var-syntax
+git switch scarp/output-statements
 cargo build --locked --offline
 cargo run -- --version
 ```

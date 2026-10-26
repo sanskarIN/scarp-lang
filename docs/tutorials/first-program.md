@@ -3,6 +3,9 @@
 This tutorial works with both the published v0.0.1 interpreter and the development
 branch. It teaches the complete file-to-output path before introducing variables.
 Use [getting started](../getting-started.md) to select an executable.
+These examples retain `println` for published-version compatibility. Development
+prefers `print`, with the same newline behavior. It also supports `write` without
+a newline, zero/multiple arguments, and explicit stderr; see [output](../output.md).
 
 ## Statements, comments, and output
 

@@ -8,6 +8,28 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 $projectRoot = Split-Path -Parent $PSScriptRoot
+function Invoke-PackageProcess {
+    param([string]$Executable, [string[]]$Arguments)
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo.FileName = $Executable
+    $process.StartInfo.UseShellExecute = $false
+    $process.StartInfo.CreateNoWindow = $true
+    $process.StartInfo.RedirectStandardOutput = $true
+    $process.StartInfo.RedirectStandardError = $true
+    foreach ($argument in $Arguments) { $process.StartInfo.ArgumentList.Add($argument) }
+    $stdoutBytes = [System.IO.MemoryStream]::new()
+    $stderrBytes = [System.IO.MemoryStream]::new()
+    try {
+        if (-not $process.Start()) { throw 'Could not start packaged executable' }
+        $stdoutCopy = $process.StandardOutput.BaseStream.CopyToAsync($stdoutBytes)
+        $stderrCopy = $process.StandardError.BaseStream.CopyToAsync($stderrBytes)
+        $process.WaitForExit()
+        $stdoutCopy.GetAwaiter().GetResult()
+        $stderrCopy.GetAwaiter().GetResult()
+        [pscustomobject]@{ ExitCode = $process.ExitCode; Stdout = $stdoutBytes.ToArray(); Stderr = $stderrBytes.ToArray() }
+    }
+    finally { $stdoutBytes.Dispose(); $stderrBytes.Dispose(); $process.Dispose() }
+}
 Push-Location -LiteralPath $projectRoot
 try {
     $metadataText = & cargo metadata --locked --offline --no-deps --format-version 1
@@ -83,15 +105,20 @@ try {
     if ($LASTEXITCODE -ne 0 -or $actualVersion -ne "scarp $version") {
         throw 'Packaged version check failed'
     }
-    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'decimals', 'numerics', 'linear_fit', 'bit_fields')) {
+    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'decimals', 'numerics', 'linear_fit', 'bit_fields', 'output_basics')) {
         $source = Join-Path $extractedPackage "examples/$example.srp"
-        $actual = & $executable exec $source
-        if ($LASTEXITCODE -ne 0) { throw "Packaged $example example failed" }
-        $actualText = ($actual -join "`n") + "`n"
-        $expected = [System.IO.File]::ReadAllText((Join-Path $extractedPackage "examples/$example.stdout"))
-        if ($actualText -cne $expected) { throw "Packaged $example output differs" }
+        $actual = Invoke-PackageProcess -Executable $executable -Arguments @('exec', $source)
+        if ($actual.ExitCode -ne 0 -or $actual.Stderr.Length -ne 0) { throw "Packaged $example example failed" }
+        $expected = [System.IO.File]::ReadAllBytes((Join-Path $extractedPackage "examples/$example.stdout"))
+        if ([Convert]::ToBase64String($actual.Stdout) -cne [Convert]::ToBase64String($expected)) { throw "Packaged $example output differs" }
         $checkOutput = & $executable verify $source
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
+    }
+    $streamSource = Join-Path $stagingRoot 'streams.srp'
+    [System.IO.File]::WriteAllText($streamSource, 'write("out"); ewrite("err"); print(1, true,); eprint();')
+    $streams = Invoke-PackageProcess -Executable $executable -Arguments @('exec', $streamSource)
+    if ($streams.ExitCode -ne 0 -or [System.Text.Encoding]::UTF8.GetString($streams.Stdout) -cne "out1 true`n" -or [System.Text.Encoding]::UTF8.GetString($streams.Stderr) -cne "err`n") {
+        throw 'Packaged explicit output stream check failed'
     }
     $invalidSource = Join-Path $stagingRoot 'invalid.srp'
     $errorLog = Join-Path $stagingRoot 'invalid.stderr'

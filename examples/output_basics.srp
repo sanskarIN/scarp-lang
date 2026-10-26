@@ -1,0 +1,20 @@
+// Preferred line output and the permanent println spelling.
+print("Hello, Scarp!");
+println("Hello, Scarp!");
+bind name = "Scarp";
+bind version = 2;
+bind ready = true;
+print("Language:", name, "Version:", version);
+println("Ready?", ready);
+print(10 + 5 * 2);
+write("Loading");
+write("...");
+print(" done");
+print();
+write();
+print(
+    "Values:",
+    version,
+    ready,
+);
+write("Tail"); // Deliberately no final LF in the expected output.

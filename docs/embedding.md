@@ -35,6 +35,8 @@ these instructions use a local dependency rather than a registry release.
 | `interpreter::validate` | Resolved program | Success or `Diagnostic` | Yes | No |
 | `interpreter::execute` | Resolved program and writer | Success or `RunError` | Yes | Yes |
 | `run` | Source text and writer | Success or `RunError` | Yes | Yes |
+| `run_with_io` | Source text and two writers | Success or `RunError` | Yes | Both explicit streams |
+| `interpreter::execute_with_io` | Resolved program and two writers | Success or `RunError` | Yes | Both explicit streams |
 
 Compilation resolves names, scopes, mutability, and primitive types. Arithmetic
 failures such as division by zero require validation or execution. Parsing alone
@@ -120,6 +122,36 @@ different: a writer can fail after accepting earlier bytes. The library returns
 `RunError::Output` for a broken pipe too; only the CLI treats it as normal
 termination. Select a host-side buffering or persistence policy appropriate to
 your writer if writes must be committed separately.
+
+## Explicit stdout and stderr
+
+```rust
+fn main() -> Result<(), scarp::RunError> {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    scarp::run_with_io(
+        "write(\"answer:\"); print(42); eprint(\"warning\", true);",
+        &mut stdout,
+        &mut stderr,
+    )?;
+    assert_eq!(stdout, b"answer:42\n");
+    assert_eq!(stderr, b"warning true\n");
+    Ok(())
+}
+```
+
+`run_with_io_and_limits` and `execute_with_io_and_limits` take explicit
+`ExecutionLimits`. All destinations are caller-supplied; the library never
+touches global stdout/stderr. Preparation captures one ordered event list before
+replay. Source/evaluation errors affect neither writer. Stream switches flush
+the previous writer, and a flush failure stops replay. Callers own final flushing
+and buffering; I/O failures can leave earlier bytes written.
+
+Old single-writer APIs remain valid for stdout-only programs. If a selected
+statement needs nonempty stderr, they return `RunError::Output` with kind
+`Unsupported` after evaluation and before stdout. Unselected stderr and zero-byte
+raw writes require no second writer. `check` evaluates both kinds of arguments
+without output; CLI `verify` remains static. See [output](output.md) for the
+language rules and [compatibility](compatibility.md) for additive AST variants.
 
 ## Standalone values and API boundaries
 

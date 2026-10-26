@@ -160,7 +160,7 @@ fn rejects_invalid_characters_without_splitting_unicode() {
 
 #[test]
 fn rejects_unknown_statement_names() {
-    for name in ["print", "println_extra", "Println", "_println"] {
+    for name in ["prnt", "println_extra", "Println", "_println"] {
         let source = format!("{name}(\"text\");");
         let error = compile(&source).unwrap_err();
         assert_eq!(error.kind, DiagnosticKind::UnknownStatement);
@@ -176,10 +176,10 @@ fn diagnoses_missing_punctuation_and_arguments() {
         ("println(\"x\")", "';'"),
         ("println", "'('"),
         ("println(", "a string literal"),
-        ("println()", "a string literal"),
+        ("println()", "';'"),
         ("println(\"x\"", "')'"),
-        (";", "a println statement"),
-        ("println(\"x\");;", "a println statement"),
+        (";", "an output statement"),
+        ("println(\"x\");;", "an output statement"),
         ("println(\"x\" \"y\");", "')'"),
     ] {
         let error = compile(source).unwrap_err();

@@ -1,7 +1,7 @@
 # Variables in the development language
 
 This document describes the unreleased v0.0.3-dev syntax on
-`scarp/bind-var-syntax`. Published v0.0.2 supports variables using `let` and
+`scarp/output-statements`. Published v0.0.2 supports variables using `let` and
 `let mut`; v0.0.1 has no declarations. See the
 [migration table](compatibility.md#declaration-syntax-migration) before moving a
 program between these versions.
@@ -17,7 +17,7 @@ println(area); // 42
 
 Declarations require `bind`, an ASCII identifier, `=`, a value expression, and
 `;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, `let`,
-`mut`, `println`, `true`, `false`, `and`, `or`, `not`, `if`, `elif`, `else`,
+`mut`, `print`, `println`, `write`, `eprint`, `ewrite`, `true`, `false`, `and`, `or`, `not`, `if`, `elif`, `else`,
 `while`, `break`, and `continue` are reserved binding names. A binding
 infers `integer`, `float`, `string`, `boolean`, or numerical `vector` from its initializer. Parenthesized
 values and names are value expressions; arithmetic requires same-kind numbers.

@@ -48,6 +48,8 @@ cargo doc --locked --no-deps
 | Branch selection, scoped bodies, and unreachable static errors | `tests/conditionals.rs` |
 | Validation and incremental locations | `tests/validation.rs` |
 | Arguments, paths, streams, and exit codes | `tests/cli.rs` |
+| Output bytes, alias parity, dual writers, and I/O/flush failures | `tests/output.rs`, `tests/cli_foundation.rs` |
+| Native dual-host API, stream prevalidation, and output parity | `tests/c_backend.rs`, `tests/compile_cli.rs` |
 | Generated programs and malformed input | `tests/conformance.rs` |
 | Shipped source/output pairs | `tests/examples.rs` |
 
@@ -77,6 +79,9 @@ tested
 The expected file contains the two output lines and their final LF. Save it as
 UTF-8 with LF line endings. Empty strings, embedded `\n`, and final newlines are
 significant bytes. Cargo progress messages are stderr, not expected program output.
+Raw `write` output may intentionally lack a final LF: `output_basics.stdout`
+ends with `Tail` and no newline. Package checks capture stdout/stderr as raw
+bytes and compare exact fixtures, preserving that distinction across platforms.
 
 The example test discovers every `.srp` file, executes it, compares exact bytes,
 and rejects orphaned `.stdout` files. Invalid programs belong in focused negative

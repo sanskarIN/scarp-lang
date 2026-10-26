@@ -125,7 +125,8 @@ inside a string is invalid. Parenthesized strings are supported in development.
 
 Arithmetic and compound assignment require matching numeric kinds. There is no string
 concatenation, indexing, interpolation, or automatic formatting of placeholders.
-Print labels and values with separate statements:
+Development can join labels and values with `print("count:", count);`.
+The legacy separate-statement form remains supported:
 
 ```scarp
 bind count = 3;
@@ -144,3 +145,6 @@ String assignment replaces a value without changing earlier copies. Pending
 print values also keep the contents captured when their statement was evaluated.
 See [variables](../variables.md) for mutation and scope examples, and
 [diagnostics](diagnostics.md) for type mismatch repairs.
+All output forms use these same value representations. Empty strings preserve
+inter-argument spaces; `write` omits the final LF. Braces and `%s` are literal.
+See [output](../output.md) for stream and formatting rules.

@@ -123,7 +123,7 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else {
-        match scarp::run_with_limits(&source, output, limits) {
+        match scarp::run_with_io_and_limits(&source, output, errors, limits) {
             Ok(()) => 0,
             Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
             Err(RunError::Output(error)) => write_output(Err(error), errors),

@@ -2,6 +2,11 @@
 
 ## Unreleased — v0.0.3 development
 
+- Preferred `print`, permanent `println`, raw `write`, zero/multiple arguments,
+  exact single-space separators, and optional trailing commas.
+- Explicit `eprint`/`ewrite`, dual-writer Rust and native-host APIs, ordered
+  stream replay, prevalidation, and unsupported-stderr errors in single-writer APIs.
+- Exact-byte package output checks, including raw output without a final LF.
 - Breaking declaration syntax: immutable `bind` and mutable `var` replace
   `let` and `let mut`, with migration diagnostics. The Rust AST variant is now
   `Statement::Declaration`; scope, typing, and execution rules are unchanged.

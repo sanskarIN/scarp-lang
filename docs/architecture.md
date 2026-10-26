@@ -107,6 +107,16 @@ Boolean logic traverses only the required operands at runtime. Both operands
 still participate in static name and type checks. No runtime traversal recurses
 with flat logical-chain length.
 
+Output spellings lower to one resolved operation carrying arguments, target, and
+newline mode. Public `Statement::Println` remains for one argument; the additive
+`Statement::Output` covers the other forms. Preparation creates one flat ordered
+event list with owned/shared values and borrowed literals, rather than a
+concatenated output string. Validation evaluates and discards each argument.
+Dual-writer replay uses explicit destinations and flushes at stream boundaries;
+single-writer calls reject required stderr before replay. The library never
+accesses global streams. The C backend retains fixed-workspace validation/replay
+with an additive dual-host API. See [output](output.md) for failure behavior.
+
 ## Validation
 
 The test suite separates language semantics from CLI process behavior. It checks

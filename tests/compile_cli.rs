@@ -227,6 +227,44 @@ fn native_compile_preserves_exact_output() {
 }
 
 #[test]
+fn native_output_arguments_and_both_streams_match_the_interpreter() {
+    let Some(cc) = compiler() else { return };
+    let fixture = Fixture::new();
+    let source = fixture.source("write(\"Loading\"); ewrite(\"Warning\"); print(\"...\", 42, true,); eprint(\"!\", false); print(); write();");
+    let destination = fixture.output("dual-stream");
+    success(&build(&cc, &source, &destination, &[]));
+    let executed = Command::new(&destination).output().unwrap();
+    assert!(executed.status.success());
+    assert_eq!(executed.stdout, b"Loading... 42 true\n\n");
+    assert_eq!(executed.stderr, b"Warning! false\n");
+    fixture.clean_staging();
+}
+
+#[test]
+fn native_runtime_failure_does_not_leak_either_program_stream() {
+    let Some(cc) = compiler() else { return };
+    let fixture = Fixture::new();
+    let source =
+        fixture.source("print(\"suppress stdout\"); eprint(\"suppress stderr\"); write(1, 1 / 0);");
+    let destination = fixture.output("dual-error");
+    success(&build(&cc, &source, &destination, &[]));
+    let executed = Command::new(&destination).output().unwrap();
+    assert_eq!(executed.status.code(), Some(1));
+    assert!(executed.stdout.is_empty());
+    let text = fs::read_to_string(&source).unwrap();
+    let operator = text.find('/').unwrap();
+    assert_eq!(
+        executed.stderr,
+        format!(
+            "error[E0008] at source bytes {operator}..{}\n",
+            operator + 1
+        )
+        .as_bytes()
+    );
+    fixture.clean_staging();
+}
+
+#[test]
 fn compiled_failures_preserve_empty_output_and_diagnostic_spans() {
     let Some(cc) = compiler() else { return };
     let fixture = Fixture::new();
