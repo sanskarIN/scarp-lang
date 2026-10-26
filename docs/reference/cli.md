@@ -12,16 +12,21 @@ development stack; see [compatibility](../compatibility.md).
 | `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes |
 | `scarp check <path>` | Validate names, types, and arithmetic without printing | No | Yes |
 | `scarp emit-c <path>` | Emit supported source as a freestanding C11 unit | No | Yes |
+| `scarp build <path> -o <output>` | Compile an executable or object with a C compiler | No | Yes |
+| `scarp compile ...` | Alias for `build` | No | Yes |
 | `scarp --help` or `scarp -h` | Show usage | Yes | Yes |
 | `scarp --version` or `scarp -V` | Print the package version | Yes | Yes |
 | `scarp run --help` | Show usage before requiring a file | No | Yes |
 
 Development `tokens` and `check` commands also accept `--help` and `-h` after the
 command name. Only one source path is accepted. There is no stdin input mode,
-watch mode, import path, or `scarp build` command.
+watch mode, or import path.
 The separate `emit-c` command generates source without running it or invoking a
 C compiler. It accepts one path and an optional filename separator, but no
 execution-limit flags. See [the backend guide](../proposals/0010-freestanding-c.md).
+`build` and `compile` have their own `--help`, compiler/output options, and
+executable runtime budgets. See [native builds](../proposals/0011-native-build-cli.md)
+for supported values, targets, exit codes, and output preservation.
 
 From a source checkout, place Cargo's separator before the Scarp arguments:
 

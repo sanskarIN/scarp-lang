@@ -2,13 +2,13 @@
 
 **Build Beyond Boundaries.**
 
-This development branch adds variables for the planned v0.0.2 milestone. The
-latest published version is v0.0.1; its packages do not contain these additions.
+This development branch adds native build commands and experimental features
+beyond the published v0.0.2 variable milestone. Main and v0.0.2 stay unchanged.
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains **v0.0.2-dev**: a working lexer, parser, name resolver, interpreter,
+contains **v0.0.3-dev**: a working lexer, parser, name resolver, interpreter,
 and command-line interface. Syntax and library APIs may change. This development
-version has no v0.0.2 tag or published prerelease.
+version has no v0.0.3 tag or published prerelease.
 
 ```scarp
 // My first Scarp program
@@ -27,7 +27,7 @@ guides. Start there for a reading path matched to your task.
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[v0.0.1 notes](docs/releases/v0.0.1.md) for platform support, verification, and
+[v0.0.2 notes](docs/releases/v0.0.2.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:
@@ -39,7 +39,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/freestanding-c-backend
+git switch scarp/native-build-cli
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -187,6 +187,11 @@ The complete check sequence, including rustdoc, is available as
 
 ## Prototype limits and planned roadmap
 
+`scarp build file.srp -o app` compiles a native executable for the supported
+integer/boolean subset; `scarp compile` is an alias. A Clang/GCC-style C compiler
+is required for these experimental commands. Object output supports low-level
+embedding. See the [native build guide](docs/proposals/0011-native-build-cli.md).
+
 `scarp emit-c file.srp` emits an experimental freestanding C11 computation unit
 for the integer/boolean subset. A caller supplies fixed workspace and output.
 The [backend guide](docs/proposals/0010-freestanding-c.md) covers supported syntax,
@@ -234,9 +239,9 @@ These capabilities are not implemented. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Immutable integer bindings are implemented on this branch. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [draft v0.0.2 notes](docs/releases/v0.0.2.md) describe the unmerged milestone
-and remaining integration/publication gates. All variable work remains on
-feature branches until the maintainer explicitly requests integration.
+The [v0.0.2 notes](docs/releases/v0.0.2.md) describe the published variable
+milestone. Later numerical, low-level, and native-build features remain on
+separate branches until the maintainer requests integration.
 
 ## License
 

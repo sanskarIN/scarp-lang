@@ -217,10 +217,13 @@ errors, invalid UTF-8, and output errors are CLI errors without source spans.
 | `scarp check <path>` | Validate syntax, names, and arithmetic without printing |
 | `scarp tokens <path>` | Lex a file and print tokens without parsing |
 | `scarp emit-c <path>` | Emit freestanding C for the supported integer/boolean subset |
+| `scarp compile <path> -o <output>` | Build an experimental native executable or freestanding object |
 | `scarp --help` or `scarp -h` | Show command usage |
 | `scarp --version` or `scarp -V` | Show the package development version |
 
-The file commands accept an optional `--` before the path. Exactly
+`build` aliases `compile`; see the [native build guide](proposals/0011-native-build-cli.md)
+for compiler selection and supported output kinds. The other file commands accept
+an optional `--` before the path. Exactly
 one path is required, and stdin is not a source input. The `.srp` extension is a
 convention rather than a filename check. Native non-Unicode paths are accepted
 where supported by the operating system; the file contents must remain UTF-8.

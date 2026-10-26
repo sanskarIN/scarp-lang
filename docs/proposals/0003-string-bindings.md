@@ -1,8 +1,7 @@
 # Design 0003: string-valued bindings
 
-**Status: separate development extension for review.** This work depends on the
-integer-variable stack and remains outside main. It does not authorize a tag or
-release.
+**Status: implemented on main for v0.0.2.** This extension builds on the
+integer-variable rules and is included in the variable prerelease.
 
 Bindings infer either `integer` or `string` from their initializer. Mutable
 assignment must preserve that type. Inner scopes may shadow a binding with a

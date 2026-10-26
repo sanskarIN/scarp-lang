@@ -132,4 +132,4 @@ execution for complete programs with declarations.
 
 Run `cargo doc --no-deps --open` in the selected checkout to inspect Rust API
 documentation. The API remains experimental; review the
-[draft migration notes](releases/v0.0.2.md) before updating an embedding host.
+[migration notes](releases/v0.0.2.md) before updating an embedding host.
