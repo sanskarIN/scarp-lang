@@ -105,10 +105,14 @@ impl Parser<'_> {
                     let start = token.span.start;
                     self.cursor += 1;
                     self.punctuation(TokenKind::LeftParen, "'('")?;
+                    let direct_string = self
+                        .tokens
+                        .get(self.cursor + 1)
+                        .is_some_and(|token| token.kind == TokenKind::RightParen);
                     let argument = if let Some(Token {
                         kind: TokenKind::String(value),
                         ..
-                    }) = self.current()
+                    }) = self.current().filter(|_| direct_string)
                     {
                         let argument = PrintArgument::String(value.clone());
                         self.cursor += 1;
@@ -118,16 +122,17 @@ impl Parser<'_> {
                             self.current().map(|token| &token.kind),
                             Some(
                                 TokenKind::Integer(_)
+                                    | TokenKind::String(_)
                                     | TokenKind::Identifier(_)
                                     | TokenKind::Minus
                                     | TokenKind::LeftParen
                             )
                         ) {
-                            return Err(self.expected("a string literal or integer expression"));
+                            return Err(self.expected("a string literal or value expression"));
                         }
                         let mut nodes = Vec::new();
                         let root = self.sum(&mut nodes, 0)?;
-                        PrintArgument::Integer(Expression { nodes, root })
+                        PrintArgument::Expression(Expression { nodes, root })
                     };
                     self.punctuation(TokenKind::RightParen, "')'")?;
                     let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
@@ -289,6 +294,15 @@ impl Parser<'_> {
     ) -> Result<usize, Diagnostic> {
         match self.current() {
             Some(Token {
+                kind: TokenKind::String(value),
+                span,
+            }) => {
+                let kind = ExpressionKind::String(value.clone());
+                let span = *span;
+                self.cursor += 1;
+                Ok(push(nodes, kind, span))
+            }
+            Some(Token {
                 kind: TokenKind::Identifier(name),
                 span,
             }) => {
@@ -335,7 +349,7 @@ impl Parser<'_> {
                     Span::new(start, end),
                 ))
             }
-            _ => Err(self.expected("an integer literal, variable name, or '('")),
+            _ => Err(self.expected("a literal, variable name, or '('")),
         }
     }
 }

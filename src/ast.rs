@@ -43,7 +43,7 @@ pub enum AssignmentOperator {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PrintArgument {
     String(String),
-    Integer(Expression),
+    Expression(Expression),
 }
 
 /// A flat, postorder syntax tree. Children always precede their parent.
@@ -74,6 +74,7 @@ pub struct ExpressionNode {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionKind {
     Integer(i64),
+    String(String),
     Name(String),
     Negate {
         operand: usize,

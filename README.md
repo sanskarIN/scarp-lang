@@ -35,7 +35,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/variable-check-tooling
+git switch scarp/string-bindings
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -68,9 +68,10 @@ the CLI does not reject other filename extensions.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
-- Immutable integer bindings with `let name = expression;` and resolved names.
+- Immutable integer/string bindings with `let name = expression;` and resolved names.
 - Explicit `let mut` bindings, assignment, and checked compound assignment.
 - Lexical block scopes, shadowing, and nearest-binding assignment.
+- Inferred primitive types, checked same-type assignment, and string value snapshots.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -98,12 +99,13 @@ println(-9223372036854775808); // the minimum signed 64-bit integer
 
 Integer overflow, division by zero, and out-of-range literals are errors in both
 debug and release builds. Grouping is limited to 64 nested parentheses; long
-binary chains use a flat syntax tree. Strings remain direct print arguments,
-with no concatenation or mixed string/integer arithmetic.
+binary chains use a flat syntax tree. Strings can be bound, copied, reassigned
+with the same type, and printed. Concatenation and mixed string/integer arithmetic
+are unsupported.
 
-`check` validates syntax, names, mutability, scopes, and arithmetic without writing
+`check` validates syntax, names, mutability, scopes, primitive types, and arithmetic without writing
 program output. It returns zero and remains silent on success. In this pure
-integer language it evaluates declarations and assignments in fresh local
+value language it evaluates declarations and assignments in fresh local
 storage, so unused arithmetic failures are still reported. `compile` alone does
 not evaluate arithmetic.
 
@@ -138,7 +140,8 @@ The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
 `evaluator::evaluate`, `interpreter::execute`, and `run`. `parse` exposes syntax;
 `compile` validates syntax and resolves names into an immutable `ResolvedProgram`.
 `check` and `interpreter::validate` also evaluate without an output destination.
-`evaluator::evaluate` checks standalone literal arithmetic. `execute` and `run` validate all
+`evaluator::evaluate` preserves an integer result, while `evaluate_value` returns
+an integer/string `Value`. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
 
@@ -171,7 +174,7 @@ The complete check sequence, including rustdoc, is available as
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. It has no user-defined functions,
-booleans, floating-point values, types, imports, loops, standard library,
+booleans, floating-point values, type annotations, user-defined types, imports, loops, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -183,9 +186,9 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Additional value types for variables, beginning with strings.
+1. Boolean values and comparisons.
 2. User-defined functions.
-3. Type checking.
+3. User-defined types and function type checking.
 4. A compiler backend.
 5. Developer tooling.
 6. Domain-specific libraries.

@@ -6,16 +6,17 @@ use crate::{
     diagnostics::Diagnostic,
     evaluator,
     resolver::{ResolvedArgument, ResolvedProgram, ResolvedStatement},
+    value::Value,
     RunError,
 };
 
 enum PrintValue<'a> {
     String(&'a str),
-    Integer(i64),
+    Value(Value),
 }
 
 fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic> {
-    let mut environment = vec![0; program.slots];
+    let mut environment = vec![Value::Integer(0); program.binding_count()];
     let mut output = Vec::new();
     for statement in &program.statements {
         match statement {
@@ -25,10 +26,10 @@ fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic>
                 value,
                 operator_span,
             } => {
-                let previous = environment[*slot];
+                let previous = environment[*slot].clone();
                 let right = evaluator::evaluate_resolved(value, &environment)?;
                 environment[*slot] =
-                    evaluator::apply_binary(*operator, previous, right, *operator_span)?;
+                    evaluator::apply_binary(*operator, &previous, &right, *operator_span)?;
             }
             ResolvedStatement::Store { slot, value } => {
                 environment[*slot] = evaluator::evaluate_resolved(value, &environment)?;
@@ -36,8 +37,8 @@ fn prepare(program: &ResolvedProgram) -> Result<Vec<PrintValue<'_>>, Diagnostic>
             ResolvedStatement::Println(argument) => {
                 output.push(match argument {
                     ResolvedArgument::String(value) => PrintValue::String(value),
-                    ResolvedArgument::Integer(expression) => {
-                        PrintValue::Integer(evaluator::evaluate_resolved(expression, &environment)?)
+                    ResolvedArgument::Expression(expression) => {
+                        PrintValue::Value(evaluator::evaluate_resolved(expression, &environment)?)
                     }
                 });
             }
@@ -53,7 +54,7 @@ pub fn execute(program: &ResolvedProgram, output: &mut impl Write) -> Result<(),
     for value in values {
         match value {
             PrintValue::String(value) => writeln!(output, "{value}"),
-            PrintValue::Integer(value) => writeln!(output, "{value}"),
+            PrintValue::Value(value) => writeln!(output, "{value}"),
         }
         .map_err(RunError::Output)?;
     }

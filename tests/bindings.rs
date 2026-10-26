@@ -132,7 +132,7 @@ fn malformed_declarations_are_diagnosed_without_panics() {
         "let x 1;",
         "let x =;",
         "let x = 1",
-        "let x = \"text\";",
+        "let x = \"text\" 1;",
     ] {
         assert_eq!(
             error(source).kind,
@@ -186,7 +186,7 @@ fn parses_bindings_without_resolving_and_evaluator_rejects_unbound_names() {
     assert!(scarp::resolver::resolve(ast).is_err());
     let ast = scarp::parse("println(missing);").unwrap();
     let scarp::ast::Statement::Println {
-        argument: scarp::ast::PrintArgument::Integer(expression),
+        argument: scarp::ast::PrintArgument::Expression(expression),
         ..
     } = &ast.statements[0]
     else {

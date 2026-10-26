@@ -3,7 +3,7 @@
 This document describes implemented variable behavior on the v0.0.2 development
 branches. The published v0.0.1 interpreter does not support declarations.
 
-## Immutable integer bindings
+## Immutable bindings
 
 ```scarp
 let width = 6;
@@ -12,10 +12,11 @@ let area = width * height;
 println(area); // 42
 ```
 
-Declarations require `let`, an ASCII identifier, `=`, an integer expression, and
+Declarations require `let`, an ASCII identifier, `=`, a value expression, and
 `;`. Names are case-sensitive. `_` is an ordinary name. `let`, `mut`, and `println`
-are reserved and cannot be used as variables. Strings remain direct print
-arguments; string variables are not implemented.
+are reserved and cannot be used as variables. A binding infers either `integer`
+or `string` from its initializer. Parenthesized strings and names are value
+expressions; arithmetic remains integer-only.
 
 A declaration becomes visible after its initializer. Initializers and print
 expressions can reference earlier bindings. Forward and self-references are
@@ -42,6 +43,7 @@ arithmetic and expression nesting rules are unchanged.
 | `E0012` | Reserved name used as a variable |
 | `E0013` | Assignment to an immutable binding |
 | `E0014` | Block nesting limit exceeded |
+| `E0015` | Primitive type mismatch |
 
 Duplicate-name diagnostics include the original declaration as a related source
 location. Reference and declaration spans refer to the original UTF-8 source.
@@ -53,8 +55,10 @@ location. Reference and declaration spans refer to the original UTF-8 source.
 `scarp::compile` combines those steps. `interpreter::execute` accepts the resolved
 program; `run` still accepts source and an explicit writer. `binding_count` and
 `statement_count` expose executable metadata without exposing mutable slot plans.
+`binding_types` exposes inferred slot types in declaration order.
 
-`evaluator::evaluate` remains useful for standalone literal expressions. Without
+`evaluator::evaluate` preserves its integer result API. `evaluate_value` returns a
+primitive `Value`, including strings. Without
 a program's binding context, a name reference returns `E0010`. Use `compile` and
 `execute` for expressions that depend on declarations.
 
@@ -79,7 +83,7 @@ environment, and its result is combined with the target's previous value using
 the same checked arithmetic as ordinary operators. Assignments require a
 previous declaration and are statements, not expressions.
 
-Initializers copy integer values; bindings do not alias one another. Print
+Initializers copy values; reassignment does not mutate existing copies. Print
 values are captured when their statement is evaluated, so a later assignment
 does not change an earlier pending print. Repeated and concurrent executions of
 one resolved program still use separate storage.
@@ -90,7 +94,7 @@ An arithmetic failure in the right-hand expression highlights that expression's
 operator instead. Any such failure prevents all program output.
 
 There are no implicit declarations, uninitialized bindings, increment/decrement
-operators, assignment expressions, or string-valued variables.
+operators, assignment expressions, string concatenation, or string mutation.
 
 ## Lexical scopes and shadowing
 
@@ -142,3 +146,33 @@ Library callers can use `check(source)` or `interpreter::validate(&compiled)`.
 Pure parsing and name resolution remain available separately. Adding future
 I/O or other side-effecting language features will require an explicit policy
 for validation; the current language only changes local variables and prints.
+
+## String values and primitive type checks
+
+```scarp
+let mut greeting = "Hello";
+let original = greeting;
+println(greeting);
+greeting = "नमस्ते 🌍";
+println(original); // Hello
+println(greeting);
+```
+
+A mutable binding must keep the type inferred at its declaration. Assigning an
+integer to a string binding, or a string to an integer binding, produces
+`E0015` with the declaration as a related source location. Inner declarations
+can shadow an outer binding with a different type because their slots are distinct.
+
+Strings preserve Unicode, escapes, and empty values. Their storage is shared
+immutably; replacing a binding never changes earlier copies or pending prints.
+All arithmetic, negation, and compound assignment require integer operands.
+There is no implicit conversion or string concatenation, including with `+=`.
+
+Name resolution and primitive type inference complete before arithmetic
+evaluation. A later type mismatch can therefore be reported before an earlier
+arithmetic failure, and every semantic error prevents all output. Standalone
+library evaluation also checks operand types when called without compilation.
+
+This is primitive-value validation, not a general type system with user-defined
+types, annotations, generics, or function inference. The optional extension is
+recorded in [the string binding design](proposals/0003-string-bindings.md).
