@@ -11,6 +11,7 @@
 //! ```
 
 pub mod ast;
+pub mod builder;
 pub mod c_backend;
 pub mod diagnostics;
 pub mod evaluator;
