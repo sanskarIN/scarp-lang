@@ -7,7 +7,7 @@ you can fix the failing layer first.
 ## A documented feature is rejected
 
 Run `scarp --version`. The published v0.0.1 interpreter does not support variables,
-blocks, or `check`. The complete development stack reports `scarp 0.0.2-dev`.
+blocks, or `check`. The variable prerelease reports `scarp 0.0.2`.
 See [compatibility](compatibility.md) for the feature matrix.
 
 An older executable on `PATH` can differ from your checkout. Compare:

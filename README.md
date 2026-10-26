@@ -2,13 +2,12 @@
 
 **Build Beyond Boundaries.**
 
-This development branch adds variables for the planned v0.0.2 milestone. The
-latest published version is v0.0.1; its packages do not contain these additions.
+Scarp v0.0.2 introduces variables, mutation, lexical scopes, strings, booleans,
+and conditional statements. These features are integrated into `main`.
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains **v0.0.2-dev**: a working lexer, parser, name resolver, interpreter,
-and command-line interface. Syntax and library APIs may change. This development
-version has no v0.0.2 tag or published prerelease.
+contains **v0.0.2**, an experimental interpreter prerelease with a lexer, parser,
+name resolver, and command-line interface. Syntax and library APIs may change.
 
 ```scarp
 // My first Scarp program
@@ -27,7 +26,7 @@ guides. Start there for a reading path matched to your task.
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[v0.0.1 notes](docs/releases/v0.0.1.md) for platform support, verification, and
+[v0.0.2 notes](docs/releases/v0.0.2.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:
@@ -39,7 +38,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/execution-workspace
+git switch main
 cargo build --locked
 cargo run -- run examples/hello.srp
 cargo run -- run examples/arithmetic.srp
@@ -76,6 +75,8 @@ the CLI does not reject other filename extensions.
 - Explicit `let mut` bindings, assignment, and checked compound assignment.
 - Lexical block scopes, shadowing, and nearest-binding assignment.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
+- Boolean comparisons and short-circuit `and`, `or`, and `not` expressions.
+- Scoped `if`/`elif`/`else` statements with explicit boolean conditions.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -212,13 +213,13 @@ Future work is **planned**, in this order:
 5. Developer tooling.
 6. Domain-specific libraries.
 
-These capabilities are not implemented. Integer expressions are implemented as
+These capabilities are excluded from this prerelease. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
-Immutable integer bindings are implemented on this branch. Read the
+Integer, string, and boolean bindings are implemented on main. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [draft v0.0.2 notes](docs/releases/v0.0.2.md) describe the unmerged milestone
-and remaining integration/publication gates. All variable work remains on
-feature branches until the maintainer explicitly requests integration.
+The [v0.0.2 notes](docs/releases/v0.0.2.md) describe the integrated variable
+milestone, downloads, and limitations. Later features remain separate PRs and
+require an explicit integration decision.
 
 ## License
 

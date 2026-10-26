@@ -1,9 +1,9 @@
 # Scarp documentation
 
 Choose a guide by the task you want to complete. These pages document the
-published v0.0.1 snapshot and the complete `0.0.2-dev` feature stack, including
-the optional string-binding extension. Development examples are labeled;
-they are not claims that a v0.0.2 release has been published.
+v0.0.1 snapshot and the v0.0.2 variable milestone, including string bindings,
+booleans, and conditionals. References to development APIs describe v0.0.2;
+later unmerged feature branches are outside this documentation snapshot.
 
 ## Guides and what each adds
 
@@ -37,8 +37,8 @@ For a Rust host, begin with compatibility and embedding. Parsing, compilation,
 validation, and execution intentionally have different results and effects.
 
 For a contribution, read testing and the root
-[contribution guide](../CONTRIBUTING.md). The current variable work remains a
-feature-branch stack, with integration and release decisions left to the maintainer.
+[contribution guide](../CONTRIBUTING.md). The variable milestone is integrated
+into main; further work uses separate branches and PRs.
 
 ## Exact rules and project records
 
@@ -56,7 +56,7 @@ The [conditional design](proposals/0005-conditional-statements.md) explains scop
 bodies, flat branch execution, and checks in unselected paths.
 
 Published behavior is recorded in the [v0.0.1 notes](releases/v0.0.1.md).
-The [v0.0.2 notes](releases/v0.0.2.md) are a development draft.
+The [v0.0.2 notes](releases/v0.0.2.md) describe the variable prerelease.
 [Release preparation](releasing.md) describes the separate packaging and
 publication process. The root [changelog](../CHANGELOG.md) distinguishes released
 work from unmerged development changes.

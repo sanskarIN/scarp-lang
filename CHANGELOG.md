@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v0.0.2 development
+## 0.0.2 — 2026-10-26 — prerelease
 
 - Execution-local expression work buffers, immediate disposal of validation print
   values, and reproducible stage benchmarks with verified workloads.
@@ -9,7 +9,7 @@
   static checking of all paths, and execution of the selected path only.
 
 - Boolean values, same-type equality, integer ordering, and short-circuit `and`,
-  `or`, and `not` expressions on a separate dependent feature branch.
+  `or`, and `not` expressions.
 
 - Immutable integer bindings and names in expressions.
 - Explicit mutable bindings, assignment, and checked `+=`, `-=`, `*=`, `/=`.
@@ -21,12 +21,13 @@
 - Silent `check` validation of syntax, names, mutability, scopes, and arithmetic.
 - Sequential token locations without repeated source-prefix scans.
 - Generated-program conformance cases and malformed source/token mutation corpora.
-- Development package version `0.0.2-dev`; no v0.0.2 tag or release.
-- A separate draft extension adds string variables, primitive type inference,
+- Package version `0.0.2`, native archives, and verified source/checksum records.
+- String variables, primitive type inference,
   same-type mutable assignment, and immutable string value snapshots.
 
-These changes are under development on feature branches and are not part of the
-published v0.0.1 release.
+The variable milestone is integrated into main. Loops, floating-point/vector
+arithmetic, bit operations, and freestanding C emission remain in separate PRs
+and are excluded from this prerelease.
 
 ## 0.0.1 — 2026-10-25 — prerelease
 

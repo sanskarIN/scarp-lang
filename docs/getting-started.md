@@ -8,12 +8,12 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Try a published interpreter | The v0.0.1 release | Printing and checked integer expressions |
-| Try variables and the current guides | `scarp/execution-workspace` | The complete development stack, including decisions and execution improvements |
+| Try variables and the current guides | The v0.0.2 prerelease or `main` | Variables, scopes, strings, booleans, and decisions |
+| Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-The development package version is `0.0.2-dev`. It is not a published v0.0.2
-release. The feature and documentation PRs remain subject to review.
+The package version is `0.0.2`. This is an experimental prerelease, with
+syntax and APIs subject to change. Later feature PRs are outside this version.
 
 ## Build the development checkout
 
@@ -25,7 +25,7 @@ Rust dependencies.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/execution-workspace
+git switch main
 cargo build --locked --offline
 cargo run -- --version
 ```
@@ -33,7 +33,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.2-dev
+scarp 0.0.2
 ```
 
 Run commands from the repository root so relative example paths resolve:
@@ -80,4 +80,4 @@ Rust for running programs. Their platform and checksum instructions are in the
 [v0.0.1 release notes](releases/v0.0.1.md).
 
 Next, follow [your first program](tutorials/first-program.md), then the
-[variable tutorial](tutorials/variables.md) on the development branch.
+[variable tutorial](tutorials/variables.md) on main or in the v0.0.2 package.

@@ -7,7 +7,7 @@ differences.
 
 ## Add the local library
 
-Use a source checkout of the documented development branch. In a sibling Rust
+Use a source checkout of main or the v0.0.2 tag. In a sibling Rust
 application, a path dependency can select that checkout:
 
 ```toml

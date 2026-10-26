@@ -1,7 +1,6 @@
 # Conditional statements
 
-Status: implemented on `scarp/conditional-statements`, dependent on the boolean
-expression branch. Unreleased; integration and releases remain separate actions.
+Status: implemented on main for v0.0.2, following the boolean-expression work.
 
 ## Readable decisions
 
