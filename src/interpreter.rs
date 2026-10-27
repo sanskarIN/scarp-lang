@@ -4,7 +4,7 @@ use std::io::{self, Write};
 
 use crate::{
     ast::OutputTarget,
-    diagnostics::{Diagnostic, DiagnosticKind},
+    diagnostics::{Diagnostic, DiagnosticKind, Span},
     evaluator,
     limits::{Budget, ExecutionLimits},
     resolver::{ResolvedArgument, ResolvedProgram, ResolvedStatement},
@@ -35,7 +35,7 @@ impl OutputEvent<'_> {
         self.newline || self.has_text()
     }
 
-    fn write_to(&self, output: &mut dyn Write) -> io::Result<()> {
+    fn write_to(&self, output: &mut (impl Write + ?Sized)) -> io::Result<()> {
         if self.has_text() {
             match &self.value {
                 PrintValue::String(value) => output.write_all(value.as_bytes())?,
@@ -47,6 +47,37 @@ impl OutputEvent<'_> {
         }
         Ok(())
     }
+}
+
+fn output_value<'a>(
+    argument: &'a ResolvedArgument,
+    environment: &[Value],
+    workspace: &mut evaluator::Workspace,
+    budget: &mut Budget,
+) -> Result<PrintValue<'a>, Diagnostic> {
+    match argument {
+        ResolvedArgument::String(value) => Ok(PrintValue::String(value)),
+        ResolvedArgument::Expression(expression) => workspace
+            .evaluate(expression, environment, budget)
+            .map(PrintValue::Value),
+    }
+}
+
+fn charge_output(
+    prints: &mut usize,
+    limits: ExecutionLimits,
+    span: Span,
+) -> Result<(), Diagnostic> {
+    if *prints >= limits.max_prints {
+        return Err(Diagnostic::new(
+            DiagnosticKind::OutputLimit,
+            span,
+            format!("print count limit of {} exceeded", limits.max_prints),
+        )
+        .with_help("reduce output calls or raise --max-prints / ExecutionLimits.max_prints"));
+    }
+    *prints += 1;
+    Ok(())
 }
 
 fn prepare(
@@ -133,22 +164,23 @@ fn prepare(
             ResolvedStatement::Store { slot, value } => {
                 environment[*slot] = workspace.evaluate(value, &environment, &mut budget)?;
             }
+            ResolvedStatement::Println(argument) => {
+                charge_output(&mut prints, limits, operation.span)?;
+                let value = output_value(argument, &environment, &mut workspace, &mut budget)?;
+                if capture {
+                    output.push(OutputEvent {
+                        target: OutputTarget::Stdout,
+                        value,
+                        newline: true,
+                    });
+                }
+            }
             ResolvedStatement::Output {
                 arguments,
                 target,
                 newline,
             } => {
-                if prints >= limits.max_prints {
-                    return Err(Diagnostic::new(
-                        DiagnosticKind::OutputLimit,
-                        operation.span,
-                        format!("print count limit of {} exceeded", limits.max_prints),
-                    )
-                    .with_help(
-                        "reduce output calls or raise --max-prints / ExecutionLimits.max_prints",
-                    ));
-                }
-                prints += 1;
+                charge_output(&mut prints, limits, operation.span)?;
                 for (index, argument) in arguments.iter().enumerate() {
                     if index > 0 {
                         budget.charge(1, operation.span)?;
@@ -160,14 +192,7 @@ fn prepare(
                             });
                         }
                     }
-                    let value = match argument {
-                        ResolvedArgument::String(value) => PrintValue::String(value),
-                        ResolvedArgument::Expression(expression) => {
-                            let value =
-                                workspace.evaluate(expression, &environment, &mut budget)?;
-                            PrintValue::Value(value)
-                        }
-                    };
+                    let value = output_value(argument, &environment, &mut workspace, &mut budget)?;
                     if capture {
                         output.push(OutputEvent {
                             target: *target,
@@ -243,11 +268,11 @@ pub fn execute_with_io_and_limits(
             }
             .map_err(RunError::Output)?;
         }
-        let writer: &mut dyn Write = match event.target {
-            OutputTarget::Stdout => stdout,
-            OutputTarget::Stderr => stderr,
-        };
-        event.write_to(writer).map_err(RunError::Output)?;
+        match event.target {
+            OutputTarget::Stdout => event.write_to(stdout),
+            OutputTarget::Stderr => event.write_to(stderr),
+        }
+        .map_err(RunError::Output)?;
         previous = Some(event.target);
     }
     Ok(())

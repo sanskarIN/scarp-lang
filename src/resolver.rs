@@ -80,6 +80,7 @@ pub(crate) enum ResolvedStatement {
         value: ResolvedExpression,
         operator_span: Span,
     },
+    Println(ResolvedArgument),
     Output {
         arguments: Vec<ResolvedArgument>,
         target: OutputTarget,
@@ -340,7 +341,13 @@ impl Resolver {
                     self.emit(ResolvedStatement::Store { slot, value }, span);
                 }
                 Statement::Println { argument, .. } => {
-                    self.output(vec![argument], OutputTarget::Stdout, true, span)?;
+                    let argument = match argument {
+                        PrintArgument::String(value) => ResolvedArgument::String(value),
+                        PrintArgument::Expression(expression) => ResolvedArgument::Expression(
+                            resolve_expression(expression, &self.scopes)?,
+                        ),
+                    };
+                    self.emit(ResolvedStatement::Println(argument), span);
                 }
                 Statement::Output {
                     arguments,

@@ -296,6 +296,8 @@ impl Parser<'_> {
         self.cursor += 1;
         self.punctuation(TokenKind::LeftParen, "'('")?;
         let mut arguments = Vec::new();
+        // Keep ordinary one-argument line output free of list allocations.
+        let mut first_argument = None;
         if !matches!(
             self.current().map(|token| &token.kind),
             Some(TokenKind::RightParen)
@@ -329,7 +331,14 @@ impl Parser<'_> {
                     let root = self.logical_or(&mut nodes, 0)?;
                     PrintArgument::Expression(Expression { nodes, root })
                 };
-                arguments.push(argument);
+                if arguments.is_empty() && first_argument.is_none() {
+                    first_argument = Some(argument);
+                } else {
+                    if let Some(first) = first_argument.take() {
+                        arguments.push(first);
+                    }
+                    arguments.push(argument);
+                }
                 if !matches!(
                     self.current().map(|token| &token.kind),
                     Some(TokenKind::Comma)
@@ -348,19 +357,20 @@ impl Parser<'_> {
         self.punctuation(TokenKind::RightParen, "')'")?;
         let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
         let span = Span::new(start, end);
-        if target == OutputTarget::Stdout && newline && arguments.len() == 1 {
-            Ok(Statement::Println {
-                argument: arguments.pop().unwrap(),
-                span,
-            })
-        } else {
-            Ok(Statement::Output {
-                arguments,
-                target,
-                newline,
-                span,
-            })
+        if target == OutputTarget::Stdout && newline && arguments.is_empty() {
+            if let Some(argument) = first_argument.take() {
+                return Ok(Statement::Println { argument, span });
+            }
         }
+        if let Some(argument) = first_argument {
+            arguments.push(argument);
+        }
+        Ok(Statement::Output {
+            arguments,
+            target,
+            newline,
+            span,
+        })
     }
 
     fn block(&mut self, depth: usize) -> Result<(Vec<Statement>, Span), Diagnostic> {

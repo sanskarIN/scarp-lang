@@ -132,8 +132,10 @@ remains a separate maintainer action.
 
 ## Output replay
 
-All output forms lower to one operation with an argument list, destination, and
-newline flag. Preparation captures values in source order after budget checks.
+General output forms lower to an argument list, destination, and newline flag.
+Single-argument stdout lines retain a compact operation and avoid argument-list
+allocations during parsing and resolution. Both paths share value evaluation,
+limit checks, and event replay. Preparation captures values in source order.
 Replay uses supplied writers and explicit LF bytes; stream changes flush the
 previous writer. Validation discards values immediately and creates no replay
 events. Single-writer hosts reject required stderr before replay. See the
