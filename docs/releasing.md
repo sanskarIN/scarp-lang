@@ -7,7 +7,7 @@ maintainer action after the final source revision has passed validation.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. For the
-iteration beta, the version and tag are `0.0.3-beta.1` and `v0.0.3-beta.1`, and the GitHub
+current beta, the version and tag are `0.0.3-beta.3.dev` and `v0.0.3-beta.3.dev`, and the GitHub
 Release is marked as a prerelease. `v0.0.0.1` is not a three-part version.
 
 Run local checks, then package on a machine with the matching native Rust
@@ -44,9 +44,9 @@ are not promised to be byte-for-byte reproducible across hosts or build times.
    then combine the archive checksums into `SHA256SUMS`. Python 3.11 or later can
    verify all three archives, required contents, executable permissions, clean
    source records, and digests with the dependency-free helper:
-   `python scripts/verify-release.py dist/release-assets --version 0.0.3-beta.1 --commit <full-sha> --write-manifest`.
+   `python scripts/verify-release.py dist/release-assets --version 0.0.3-beta.3.dev --commit <full-sha> --write-manifest`.
    Omit `--write-manifest` to recheck an existing manifest.
-4. Create an annotated `v0.0.3-beta.1` tag on the verified revision with the maintainer's
+4. Create an annotated `v0.0.3-beta.3.dev` tag on the verified revision with the maintainer's
    commit email and push only that tag. Do not move an existing published tag.
 5. Create a draft GitHub Release using the existing tag, the versioned release
    notes, the three archives, their checksum files, and `SHA256SUMS`.

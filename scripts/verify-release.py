@@ -58,11 +58,15 @@ def verify(directory, version, commit):
             "examples/repeat.srp", "examples/repeat.stdout",
             "examples/control_escapes.srp", "examples/control_escapes.stdout",
         ) if version.startswith("0.0.3-") else ()
+        syntax_migration_files = (
+            "examples/output.srp", "examples/output.stdout",
+            "docs/output.md", "docs/syntax-migration.md",
+        ) if version == "0.0.3-beta.3.dev" else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",
             "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
-            *iteration_examples,
+            *iteration_examples, *syntax_migration_files,
         ):
             if root + "/" + member not in paths:
                 raise ValueError(f"{name}: missing {member}")
