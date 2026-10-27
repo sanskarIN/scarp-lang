@@ -17,6 +17,17 @@ spec.loader.exec_module(verifier)
 COMMIT = "a" * 40
 
 
+class ReleasedExamples(unittest.TestCase):
+    def test_v002_examples_retain_their_published_bytes(self):
+        root = Path(__file__).resolve().parents[1]
+        manifest = root / "tests/fixtures/v0.0.2-examples.sha256"
+        entries = manifest.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(entries), 22)
+        for entry in entries:
+            expected, name = entry.split("  ", 1)
+            self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), expected, name)
+
+
 class ReleaseAssets(unittest.TestCase):
     def setUp(self):
         self.scratch = tempfile.TemporaryDirectory()

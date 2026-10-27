@@ -42,3 +42,5 @@ cargo run --locked -- check examples/repeat.srp
 
 cargo run --locked -- run examples/escapes.srp
 cargo run --locked -- check examples/escapes.srp
+cargo run --locked -- run examples/control_escapes.srp
+cargo run --locked -- check examples/control_escapes.srp

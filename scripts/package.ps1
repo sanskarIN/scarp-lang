@@ -108,8 +108,11 @@ try {
     if ($LASTEXITCODE -ne 0 -or $actualVersion -ne "scarp $version") {
         throw 'Packaged version check failed'
     }
-    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'repeat', 'escapes')) {
-        $source = Join-Path $extractedPackage "examples/$example.srp"
+    $exampleSources = @(Get-ChildItem -LiteralPath (Join-Path $extractedPackage 'examples') -Filter '*.srp' -File | Sort-Object Name)
+    if ($exampleSources.Count -eq 0) { throw 'Packaged example corpus is empty' }
+    foreach ($exampleFile in $exampleSources) {
+        $example = $exampleFile.BaseName
+        $source = $exampleFile.FullName
         $actual = Invoke-ScarpProcess -Executable $executable -Arguments @('run', $source)
         if ($actual.ExitCode -ne 0 -or $actual.Stderr.Length -ne 0) { throw "Packaged $example example failed" }
         $expected = [System.IO.File]::ReadAllBytes((Join-Path $extractedPackage "examples/$example.stdout"))
