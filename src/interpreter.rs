@@ -30,6 +30,50 @@ fn prepare(
     while let Some(operation) = program.statements.get(pc) {
         budget.charge(1, operation.span)?;
         match &operation.kind {
+            ResolvedStatement::RepeatInit {
+                count,
+                count_slot,
+                index_slot,
+            } => {
+                let value = workspace
+                    .evaluate(count, &environment, &mut budget)?
+                    .require_integer(operation.span)?;
+                if value < 0 {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::RepeatCount,
+                        operation.span,
+                        "repeat count must be nonnegative",
+                    )
+                    .with_help("use zero to skip the loop or a positive integer count"));
+                }
+                environment[*count_slot] = Value::Integer(value);
+                environment[*index_slot] = Value::Integer(0);
+            }
+            ResolvedStatement::RepeatGuard {
+                count_slot,
+                index_slot,
+                target,
+            } => {
+                if environment[*index_slot].require_integer(operation.span)?
+                    >= environment[*count_slot].require_integer(operation.span)?
+                {
+                    pc = *target;
+                    continue;
+                }
+            }
+            ResolvedStatement::RepeatNext { index_slot } => {
+                let next = environment[*index_slot]
+                    .require_integer(operation.span)?
+                    .checked_add(1)
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::ArithmeticOverflow,
+                            operation.span,
+                            "repeat index overflow",
+                        )
+                    })?;
+                environment[*index_slot] = Value::Integer(next);
+            }
             ResolvedStatement::JumpIfFalse { condition, target } => {
                 let value = workspace.evaluate(condition, &environment, &mut budget)?;
                 let span = condition.syntax.nodes()[condition.syntax.root()].span;

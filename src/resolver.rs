@@ -47,6 +47,19 @@ pub(crate) struct ResolvedOperation {
 
 #[derive(Debug, Clone)]
 pub(crate) enum ResolvedStatement {
+    RepeatInit {
+        count: ResolvedExpression,
+        count_slot: usize,
+        index_slot: usize,
+    },
+    RepeatGuard {
+        count_slot: usize,
+        index_slot: usize,
+        target: usize,
+    },
+    RepeatNext {
+        index_slot: usize,
+    },
     LoopControl {
         target: usize,
     },
@@ -121,8 +134,8 @@ struct Resolver {
 }
 
 struct LoopContext {
-    start: usize,
     breaks: Vec<usize>,
+    continues: Vec<usize>,
 }
 
 impl Resolver {
@@ -130,6 +143,64 @@ impl Resolver {
         for statement in statements {
             let span = statement.span();
             match statement {
+                Statement::Repeat {
+                    count,
+                    index,
+                    index_span,
+                    statements,
+                    span,
+                } => {
+                    let count = resolve_expression(count, &self.scopes)?;
+                    let count_span = count.syntax.nodes()[count.syntax.root()].span;
+                    require_type(count.kind, ValueType::Integer, count_span)?;
+                    check_name(&index, index_span)?;
+                    let count_slot = self.slot_types.len();
+                    let index_slot = count_slot + 1;
+                    self.slot_types
+                        .extend([ValueType::Integer, ValueType::Integer]);
+                    self.emit(
+                        ResolvedStatement::RepeatInit {
+                            count,
+                            count_slot,
+                            index_slot,
+                        },
+                        count_span,
+                    );
+                    let start = self.emit(
+                        ResolvedStatement::RepeatGuard {
+                            count_slot,
+                            index_slot,
+                            target: 0,
+                        },
+                        count_span,
+                    );
+                    self.loops.push(LoopContext {
+                        breaks: Vec::new(),
+                        continues: Vec::new(),
+                    });
+                    self.enter_scope(span)?;
+                    self.scopes.last_mut().unwrap().insert(
+                        index,
+                        Binding {
+                            slot: index_slot,
+                            declaration: index_span,
+                            mutable: false,
+                            kind: ValueType::Integer,
+                        },
+                    );
+                    self.statement_list(statements)?;
+                    self.scopes.pop();
+                    let next = self.emit(ResolvedStatement::RepeatNext { index_slot }, index_span);
+                    self.emit(ResolvedStatement::Jump { target: start }, count_span);
+                    let end = self.statements.len();
+                    if let ResolvedStatement::RepeatGuard { target, .. } =
+                        &mut self.statements[start].kind
+                    {
+                        *target = end;
+                    }
+                    let context = self.loops.pop().unwrap();
+                    self.finish_loop(context, next, end);
+                }
                 Statement::While {
                     condition,
                     statements,
@@ -146,8 +217,8 @@ impl Resolver {
                         condition_span,
                     );
                     self.loops.push(LoopContext {
-                        start,
                         breaks: Vec::new(),
+                        continues: Vec::new(),
                     });
                     self.scoped_statements(statements, span)?;
                     let context = self.loops.pop().unwrap();
@@ -158,13 +229,7 @@ impl Resolver {
                     {
                         *target = end;
                     }
-                    for index in context.breaks {
-                        if let ResolvedStatement::LoopControl { target } =
-                            &mut self.statements[index].kind
-                        {
-                            *target = end;
-                        }
-                    }
+                    self.finish_loop(context, start, end);
                 }
                 Statement::Break { span } => {
                     if self.loops.is_empty() {
@@ -174,8 +239,11 @@ impl Resolver {
                     self.loops.last_mut().unwrap().breaks.push(index);
                 }
                 Statement::Continue { span } => {
-                    let start = self.loops.last().ok_or_else(|| loop_control(span))?.start;
-                    self.emit(ResolvedStatement::LoopControl { target: start }, span);
+                    if self.loops.is_empty() {
+                        return Err(loop_control(span));
+                    }
+                    let index = self.emit(ResolvedStatement::LoopControl { target: 0 }, span);
+                    self.loops.last_mut().unwrap().continues.push(index);
                 }
                 Statement::If {
                     branches,
@@ -356,6 +424,13 @@ impl Resolver {
         statements: Vec<Statement>,
         span: Span,
     ) -> Result<(), Diagnostic> {
+        self.enter_scope(span)?;
+        self.statement_list(statements)?;
+        self.scopes.pop();
+        Ok(())
+    }
+
+    fn enter_scope(&mut self, span: Span) -> Result<(), Diagnostic> {
         if self.scopes.len() > MAX_BLOCK_DEPTH {
             return Err(Diagnostic::new(
                 DiagnosticKind::BlockNesting,
@@ -365,9 +440,18 @@ impl Resolver {
             .with_help("reduce the number of nested statement blocks"));
         }
         self.scopes.push(HashMap::new());
-        self.statement_list(statements)?;
-        self.scopes.pop();
         Ok(())
+    }
+
+    fn finish_loop(&mut self, context: LoopContext, next: usize, end: usize) {
+        for (indices, destination) in [(context.breaks, end), (context.continues, next)] {
+            for index in indices {
+                if let ResolvedStatement::LoopControl { target } = &mut self.statements[index].kind
+                {
+                    *target = destination;
+                }
+            }
+        }
     }
 
     fn emit(&mut self, kind: ResolvedStatement, span: Span) -> usize {
