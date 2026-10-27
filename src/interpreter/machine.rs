@@ -76,7 +76,12 @@ pub(super) fn prepare(
     options: ExecutionOptions,
 ) -> Result<Vec<OutputEvent<'_>>, Diagnostic> {
     if program.binding_count() > options.max_live_slots {
-        return Err(limit(Span::default(), "live binding slot limit exceeded"));
+        return Err(limit(
+            Span::default(),
+            "live binding slot",
+            options.max_live_slots,
+            "max_live_slots",
+        ));
     }
     let mut frames = vec![Frame {
         function: None,
@@ -116,14 +121,29 @@ pub(super) fn prepare(
                             .as_ref()
                             .expect("resolved call identity");
                         let function = &program.functions[call.function];
-                        if depth > options.max_call_depth || calls >= options.max_calls {
+                        if depth > options.max_call_depth {
                             return Err(limit(
                                 span,
-                                "function call depth or total call limit exceeded",
+                                "function call depth",
+                                options.max_call_depth,
+                                "max_call_depth",
+                            ));
+                        }
+                        if calls >= options.max_calls {
+                            return Err(limit(
+                                span,
+                                "total function call",
+                                options.max_calls,
+                                "max_calls",
                             ));
                         }
                         if function.slots > options.max_live_slots.saturating_sub(live_slots) {
-                            return Err(limit(span, "live binding slot limit exceeded"));
+                            return Err(limit(
+                                span,
+                                "live binding slot",
+                                options.max_live_slots,
+                                "max_live_slots",
+                            ));
                         }
                         // Charge frame initialization before allocating its storage.
                         budget.charge(1 + function.slots as u64, span)?;
@@ -395,9 +415,20 @@ pub(super) fn prepare(
     Ok(events)
 }
 
-fn limit(span: Span, message: &str) -> Diagnostic {
-    Diagnostic::new(DiagnosticKind::CallLimit, span, message)
-        .with_help("check recursion and frame size, or select a larger execution option")
+fn limit(
+    span: Span,
+    resource: &str,
+    configured: impl std::fmt::Display,
+    field: &str,
+) -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticKind::CallLimit,
+        span,
+        format!("{resource} limit of {configured} exceeded"),
+    )
+    .with_help(format!(
+        "check recursion and frame size, or raise ExecutionOptions.{field}"
+    ))
 }
 
 fn bounded_name(name: &str) -> String {
