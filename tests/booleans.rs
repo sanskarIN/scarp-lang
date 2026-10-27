@@ -25,16 +25,16 @@ fn error(source: &str) -> Diagnostic {
 
 #[test]
 fn boolean_bindings_capture_values_and_preserve_types() {
-    let source = "let mut ready = false; let saved = ready; println(ready); ready = true; println(saved); println(ready);";
+    let source = "var ready = false; bind saved = ready; println(ready); ready = true; println(saved); println(ready);";
     assert_eq!(output(source), "false\nfalse\ntrue\n");
     assert_eq!(
         scarp::compile(source).unwrap().binding_types(),
         &[ValueType::Boolean, ValueType::Boolean]
     );
     for source in [
-        "let mut x = true; x = 1;",
-        "let mut x = 1; x = false;",
-        "let mut x = true; x += false;",
+        "var x = true; x = 1;",
+        "var x = 1; x = false;",
+        "var x = true; x += false;",
     ] {
         let diagnostic = error(source);
         assert_eq!(diagnostic.kind, DiagnosticKind::TypeMismatch);
@@ -50,7 +50,7 @@ fn comparisons_cover_ordering_equality_and_integer_extremes() {
 
 #[test]
 fn equality_compares_string_contents_and_booleans_without_coercion() {
-    assert_eq!(output("let a = \"नमस्ते 🌍\"; let b = \"नमस्ते 🌍\"; println(a == b); println(\"\" != \"x\"); println(true == (not false));"), "true\ntrue\ntrue\n");
+    assert_eq!(output("bind a = \"नमस्ते 🌍\"; bind b = \"नमस्ते 🌍\"; println(a == b); println(\"\" != \"x\"); println(true == (not false));"), "true\ntrue\ntrue\n");
     assert_eq!(
         output("println(\"é\" == \"é\"); println(false != true);"),
         "false\ntrue\n"
@@ -119,11 +119,11 @@ fn skipped_operands_still_resolve_names_and_check_types() {
 fn boolean_words_are_reserved_but_longer_names_are_allowed() {
     for name in ["true", "false", "and", "or", "not"] {
         assert_eq!(
-            error(&format!("let {name} = 1;")).kind,
+            error(&format!("bind {name} = 1;")).kind,
             DiagnosticKind::ReservedName
         );
     }
-    assert_eq!(output("let true_value = true; let notable = false; let orange = 7; println(true_value and not notable); println(orange);"), "true\n7\n");
+    assert_eq!(output("bind true_value = true; bind notable = false; bind orange = 7; println(true_value and not notable); println(orange);"), "true\n7\n");
 }
 
 #[test]
@@ -133,7 +133,7 @@ fn chained_comparisons_require_explicit_boolean_composition() {
         assert_eq!(diagnostic.kind, DiagnosticKind::UnexpectedToken);
         assert!(diagnostic.help.unwrap().contains("and"));
     }
-    assert_eq!(output("let x = 2; println(1 < x and x < 3);"), "true\n");
+    assert_eq!(output("bind x = 2; println(1 < x and x < 3);"), "true\n");
 }
 
 #[test]
@@ -261,7 +261,7 @@ fn generated_comparison_results_agree_with_an_independent_model() {
 
 #[test]
 fn public_syntax_cannot_use_comparison_as_compound_assignment() {
-    let mut program = scarp::parse("let mut x = 1; x += 1;").unwrap();
+    let mut program = scarp::parse("var x = 1; x += 1;").unwrap();
     let Statement::Assign { operator, .. } = &mut program.statements[1] else {
         panic!("expected assignment");
     };
@@ -275,7 +275,7 @@ fn public_syntax_cannot_use_comparison_as_compound_assignment() {
 #[test]
 fn compiled_boolean_programs_are_reusable_and_thread_safe() {
     let program =
-        scarp::compile("let mut ready = false; println(ready); ready = not ready; println(ready);")
+        scarp::compile("var ready = false; println(ready); ready = not ready; println(ready);")
             .unwrap();
     std::thread::scope(|scope| {
         for _ in 0..8 {

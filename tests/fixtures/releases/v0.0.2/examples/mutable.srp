@@ -1,0 +1,9 @@
+let mut count = 2;
+let original = count;
+count += 5;
+println(count);
+count *= 3;
+count -= 1;
+count /= 4;
+println(count);
+println(original);

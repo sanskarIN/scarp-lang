@@ -9,7 +9,7 @@ fn all_five_escapes_decode_and_print_exact_bytes() {
         (r#"println("");"#, "\n"),
         (r#"println("\t\r\n\\\"");"#, "\t\r\n\\\"\n"),
         (r#"println("\\t\\r");"#, "\\t\\r\n"),
-        (r#"let text="π\t数\r終"; println(text);"#, "π\t数\r終\n"),
+        (r#"bind text="π\t数\r終"; println(text);"#, "π\t数\r終\n"),
         (r#"println("\r");"#, "\r\n"),
     ] {
         let mut out = Vec::new();

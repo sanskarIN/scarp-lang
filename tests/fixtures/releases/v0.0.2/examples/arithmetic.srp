@@ -1,0 +1,6 @@
+// Multiplication binds more tightly than addition.
+println(1 + 2 * 3);
+println((1 + 2) * 3);
+println(-7 / 2);
+println(-9223372036854775808);
+println("Arithmetic complete.");

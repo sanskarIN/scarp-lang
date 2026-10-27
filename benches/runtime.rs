@@ -36,9 +36,9 @@ fn main() {
     println!(
         "workload,compile_us,validate_us,execute_us,source_bytes,operations,bindings,output_bytes"
     );
-    let assignments = format!("let mut x = 0;{}println(x);", "x += 1;".repeat(4096));
+    let assignments = format!("var x = 0;{}println(x);", "x += 1;".repeat(4096));
     let branches = format!(
-        "let mut x = 0;{}println(x);",
+        "var x = 0;{}println(x);",
         "if x < 20000 and not false { x += 2; } else { x += 1; }".repeat(1024)
     );
     let prints = "println(1 + 2 * 3);".repeat(4096);

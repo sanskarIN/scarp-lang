@@ -8,4 +8,4 @@ error[E0013]: cannot assign to immutable binding "i"
   |
 1 | repeat 1 as i { i=2; }
   |             ^
- = help: repeat indices are read-only; copy the index into a separate let mut variable to change a local value
+ = help: repeat indices are read-only; copy the index into a separate var variable to change a local value

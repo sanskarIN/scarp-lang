@@ -1,0 +1,10 @@
+let mut greeting = "Hello from Scarp!";
+let original = greeting;
+println(greeting);
+greeting = "नमस्ते 🌍";
+{
+    let greeting = 42;
+    println(greeting);
+}
+println(original);
+println(greeting);

@@ -1,0 +1,13 @@
+let mut total = 1;
+{
+    let total = total + 10;
+    println(total);
+    {
+        let mut total = total * 2;
+        total += 1;
+        println(total);
+    }
+    println(total);
+}
+total += 2;
+println(total);
