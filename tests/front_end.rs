@@ -134,7 +134,7 @@ fn rejects_unterminated_strings_at_eof_or_a_physical_line_break() {
 
 #[test]
 fn rejects_unknown_escapes_at_the_escape_span() {
-    for escape in ["t", "r", "0", "u", "🌍"] {
+    for escape in ["x", "b", "0", "u", "🌍"] {
         let source = format!("\"\\{escape}\"");
         let error = lex(&source).unwrap_err();
         assert_eq!(error.kind, DiagnosticKind::InvalidEscape);
