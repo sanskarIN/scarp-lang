@@ -1,13 +1,13 @@
 # Iteration and safe control flow
 
 v0.0.3 adds counted `repeat` alongside the integrated `while` implementation.
-Published v0.0.2 does not have either loop. Keep the release's existing `let`,
-`let mut`, `println`, and `run/check/tokens` spellings.
+Published v0.0.2 does not have either loop. Keep the release's existing `bind`,
+`var`, `println`, and `run/check/tokens` spellings.
 
 ## A counted loop
 
 ```scarp
-let mut total = 0;
+var total = 0;
 repeat 5 as index {
     total += index;
 }
@@ -28,19 +28,19 @@ this release. The body is always checked for names/types, even when count is zer
 
 The loop owns an immutable integer index and a lexical body scope. The index can
 shadow an outer name; the count still reads the outer scope. It cannot escape the
-loop or be assigned to. Use another `let mut` variable for a local accumulator.
+loop or be assigned to. Use another `var` variable for a local accumulator.
 A same-scope declaration cannot duplicate the index, while an explicit inner
 block can shadow it. Body declarations initialize on each reached iteration.
 
 Only `repeat expression as identifier { statements }` is accepted. `as` and the
 braces are mandatory. There is no trailing semicolon or alternative counted-loop
 keyword. Both repeat/as stay contextual identifier tokens, preserving variables
-such as `let mut repeat = 2; repeat += 1;` and `let as = 3;`.
+such as `var repeat = 2; repeat += 1;` and `bind as = 3;`.
 
 ## While and nearest-loop control
 
 ```scarp
-let mut index = 0;
+var index = 0;
 while index < 5 {
     index += 1;
     if index == 2 { continue; }

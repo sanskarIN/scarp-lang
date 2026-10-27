@@ -1,9 +1,12 @@
 # Scarp documentation
 
+Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
+
 Choose a guide by the task you want to complete. These pages document the
 v0.0.1 snapshot and the v0.0.2 variable milestone, including string bindings,
 booleans, and conditionals. v0.0.3-beta.1 adds bounded while/repeat loops and tab/CR escapes.
-The later numerical, function, native, and syntax redesign stacks remain separate.
+Development main adds the declaration migration. Numerical, function, native,
+and CLI redesign stacks remain separate.
 
 ## Guides and what each adds
 

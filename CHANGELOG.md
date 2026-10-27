@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — 0.0.3-beta.2.dev
+
+- Immutable `bind` and mutable `var` declarations replace `let`/`let mut`.
+  Legacy declarations report E0005 with migration help; Rust syntax uses
+  `Statement::Declaration` instead of `Statement::Let`.
+- Current examples and guides use the new declarations; the v0.0.2 source
+  examples remain preserved as exact historical compatibility fixtures.
+
 ## 0.0.3-beta.1 — 2026-10-27 — prerelease
 
 - Actionable loop/count/index diagnostics, configured limits in budget errors,

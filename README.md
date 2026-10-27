@@ -1,5 +1,7 @@
 # Scarp
 
+Development declarations use `bind` and `var`; see the [migration guide](docs/syntax-migration.md). Published tags retain their original syntax.
+
 **Build Beyond Boundaries.**
 
 Scarp v0.0.2 introduces variables, mutation, lexical scopes, strings, booleans,
@@ -9,7 +11,7 @@ work/print budgets, and tab/CR escapes. See the [iteration guide](docs/iteration
 and [budget guide](docs/budgets.md). Published v0.0.2 packages retain their language.
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains **v0.0.3-beta.1**, the Iteration & Safe Execution beta with a lexer, parser,
+contains **0.0.3-beta.2.dev**, development after the Iteration & Safe Execution beta, with a lexer, parser,
 name resolver, and command-line interface. Syntax and library APIs may change.
 
 ```scarp
@@ -74,8 +76,8 @@ the CLI does not reject other filename extensions.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
-- Immutable integer/string/boolean bindings with `let name = expression;` and resolved names.
-- Explicit `let mut` bindings, assignment, and checked compound assignment.
+- Immutable integer/string/boolean bindings with `bind name = expression;` and resolved names.
+- Explicit `var` bindings, assignment, and checked compound assignment.
 - Lexical block scopes, shadowing, and nearest-binding assignment.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
 - Boolean comparisons and short-circuit `and`, `or`, and `not` expressions.

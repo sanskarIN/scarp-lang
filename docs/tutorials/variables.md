@@ -8,9 +8,9 @@ results when values change. The precise rules are in the
 ## Name a result
 
 ```scarp
-let columns = 8;
-let rows = 5;
-let cells = columns * rows;
+bind columns = 8;
+bind rows = 5;
+bind cells = columns * rows;
 println(cells);
 ```
 
@@ -20,7 +20,7 @@ Output:
 40
 ```
 
-`let` introduces a binding after its initializer. `cells` can use `columns` and
+`bind` introduces a binding after its initializer. `cells` can use `columns` and
 `rows` because they are already declared. Names are case-sensitive ASCII
 identifiers; `rows` and `Rows` are different names.
 
@@ -30,8 +30,8 @@ semicolon. There are no implicit declarations or uninitialized variables.
 ## Change a value explicitly
 
 ```scarp
-let mut remaining = 10;
-let starting = remaining;
+var remaining = 10;
+bind starting = remaining;
 remaining -= 3;
 remaining = remaining * 2;
 println(starting);
@@ -45,7 +45,7 @@ Output:
 14
 ```
 
-`let mut` permits assignment. The immutable `starting` keeps the value it copied;
+`var` permits assignment. The immutable `starting` keeps the value it copied;
 it is not an alias for the storage of `remaining`. Compound assignment supports
 `+=`, `-=`, `*=`, and `/=` and follows the checked integer rules in the
 [value and operator reference](../reference/values.md).
@@ -53,11 +53,11 @@ it is not an alias for the storage of `remaining`. Compound assignment supports
 This attempt to change an immutable binding fails with `E0013`:
 
 ```scarp-invalid
-let remaining = 10;
+bind remaining = 10;
 remaining -= 3;
 ```
 
-Use `let mut` only when later assignment is needed. The diagnostic also points
+Use `var` only when later assignment is needed. The diagnostic also points
 to the declaration that established immutability.
 
 ## Bind and replace strings
@@ -65,8 +65,8 @@ to the declaration that established immutability.
 The string extension infers a binding's primitive type from its initializer:
 
 ```scarp
-let mut label = "Draft";
-let original = label;
+var label = "Draft";
+bind original = label;
 println(label);
 label = "Ready for review";
 println(original);
@@ -92,7 +92,7 @@ This forward reference fails with `E0010`:
 
 ```scarp-invalid
 println(answer);
-let answer = 42;
+bind answer = 42;
 ```
 
 Move the declaration before the print. Self-reference in an initializer also
