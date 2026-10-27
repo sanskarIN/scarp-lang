@@ -16,7 +16,7 @@ name resolver, and command-line interface. Syntax and library APIs may change.
 
 ```scarp
 // My first Scarp program
-println("Hello from Scarp!");
+print("Hello from Scarp!");
 ```
 
 ```text
@@ -72,7 +72,7 @@ the CLI does not reject other filename extensions.
 
 ## What works now
 
-- `println("text");` statements, executed in source order.
+- `print("text");` statements, executed in source order.
 - Multiple statements, empty strings, and empty or comment-only files.
 - Signed 64-bit integers with `+`, `-`, `*`, `/`, unary minus, and parentheses.
 - Operator precedence, left-associative binary operators, and checked arithmetic.
@@ -89,10 +89,12 @@ the CLI does not reject other filename extensions.
 - `run`, `check`, `tokens`, `--help`/`-h`, and `--version`/`-V` commands.
 - Syntax errors with a code, filename, line, column, source excerpt, and help.
 
-`println` appends a newline. Physical line breaks inside a string are rejected;
+`print` appends a newline; `write` omits it. `println` remains a supported alias.
+Both accept zero or more comma-separated values. `eprint` and `ewrite` use stderr.
+See the [output guide](docs/output.md) for exact bytes and embedding APIs. Physical line breaks inside a string are rejected;
 use `\n` instead. Identifiers use ASCII letters, digits, and underscores, cannot
 start with a digit, and are case-sensitive. Statements include declarations,
-assignments, blocks, `if`/`elif`/`else` decisions, and `println` calls. Escapes other than the three listed
+assignments, blocks, `if`/`elif`/`else` decisions, and `print` calls. Escapes other than the three listed
 above are rejected.
 
 The entire file is lexed, parsed, resolved, checked for primitive type consistency,
@@ -103,10 +105,10 @@ failure can occur after earlier statements have been written. A closed output
 pipe is treated as normal CLI termination.
 
 ```scarp
-println(1 + 2 * 3);           // 7
-println((1 + 2) * 3);         // 9
-println(-7 / 2);              // -3, division truncates toward zero
-println(-9223372036854775808); // the minimum signed 64-bit integer
+print(1 + 2 * 3);           // 7
+print((1 + 2) * 3);         // 9
+print(-7 / 2);              // -3, division truncates toward zero
+print(-9223372036854775808); // the minimum signed 64-bit integer
 ```
 
 Integer overflow, division by zero, and out-of-range literals are errors in both
@@ -135,7 +137,7 @@ one token per line, including decoded string text, one-based line/column ranges,
 and half-open UTF-8 byte ranges. For the hello example, the first token is:
 
 ```text
-2:1..2:8  identifier(println)  [26..33]
+2:1..2:6  identifier(print)  [27..32]
 ```
 
 An end-of-file token is always included. Columns count Unicode scalar values;
@@ -144,11 +146,11 @@ Tabs are expanded to four spaces in error excerpts.
 
 ```text
 error[E0004]: expected ';', found <eof>
- --> example.srp:1:17
+ --> example.srp:1:15
   |
-1 | println("hello")
-  |                 ^
- = help: use println("text"); or println(1 + 2);
+1 | print("hello")
+  |               ^
+ = help: use print("text"); or print(1 + 2);
 ```
 
 Exit codes are `0` for success, `1` for source, file, or output errors, and `2` for
@@ -168,7 +170,7 @@ execution usable without redirecting process-wide standard output.
 
 ```rust
 let mut output = Vec::new();
-scarp::run(r#"println("Hello from Scarp!");"#, &mut output).unwrap();
+scarp::run(r#"print("Hello from Scarp!");"#, &mut output).unwrap();
 assert_eq!(output, b"Hello from Scarp!\n");
 ```
 

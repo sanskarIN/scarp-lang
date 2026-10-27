@@ -1,5 +1,8 @@
 # Design 0002: variables
 
+Historical design record: current declaration and output spellings are documented
+in the [syntax migration](../syntax-migration.md) and [output guide](../output.md).
+
 **Status: implemented on main for the v0.0.2 variable milestone.** The maintainer
 authorized integration of the reviewed variable stack on 2026-10-26.
 

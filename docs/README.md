@@ -2,10 +2,10 @@
 
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
-Choose a guide by the task you want to complete. These pages document the
-v0.0.1 snapshot and the v0.0.2 variable milestone, including string bindings,
-booleans, and conditionals. v0.0.3-beta.1 adds bounded while/repeat loops and tab/CR escapes.
-Development main adds the declaration migration. Numerical, function, native,
+Choose a guide by the task you want to complete. Current tutorials target development main. Release notes describe the
+published snapshots. The language includes variables, string bindings, booleans,
+conditionals, bounded while/repeat loops, and five string escapes.
+Development main adds the declaration migration and [output statements](output.md). Numerical, function, native,
 and CLI redesign stacks remain separate.
 
 ## Guides and what each adds
@@ -14,6 +14,7 @@ and CLI redesign stacks remain separate.
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
+| [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
 | [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |

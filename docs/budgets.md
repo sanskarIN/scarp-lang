@@ -1,7 +1,7 @@
 # Work and print budgets
 
 Every run and check starts with 1,000,000 logical work steps and 100,000 selected
-`println` statements. The limits include both while and repeat, nested control
+output statements across both streams, including empty writes. The limits include both while and repeat, nested control
 flow, and expressions. They do not measure wall time, parse memory, or the byte
 length of a single string. These are deterministic execution limits rather than
 a general resource sandbox.
@@ -22,7 +22,7 @@ executes selected arithmetic/loops without printing; it is not static-only.
 
 E0017 identifies the operation/expression that cannot consume another work step,
 with the configured limit and help for `--max-steps`. E0018 identifies the print
-that exceeds `--max-prints`, before evaluating its argument. Check loop progress
+that exceeds `--max-prints`, before evaluating its arguments. Check loop progress
 before raising a limit. Static errors, arithmetic failures, negative repeat
 counts, and exhausted budgets all leave program output empty.
 
@@ -40,3 +40,8 @@ repeated or concurrent calls start fresh. Standalone expression evaluation has
 finite syntax and no loop access, and retains its existing API.
 
 See [iteration](iteration.md) for control flow and [CLI help](reference/cli.md).
+
+Each extra argument separator consumes one work step. A selected `write();` or
+`ewrite();` consumes one output-statement allowance even though it emits no bytes.
+Dual-stream hosts can use `run_with_io_and_limits` or
+`interpreter::execute_with_io_and_limits` with the same limits.

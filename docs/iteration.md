@@ -2,7 +2,7 @@
 
 v0.0.3 adds counted `repeat` alongside the integrated `while` implementation.
 Published v0.0.2 does not have either loop. Keep the release's existing `bind`,
-`var`, `println`, and `run/check/tokens` spellings.
+`var`, `print`, and `run/check/tokens` spellings.
 
 ## A counted loop
 
@@ -11,7 +11,7 @@ var total = 0;
 repeat 5 as index {
     total += index;
 }
-println(total);
+print(total);
 ```
 
 Output:
@@ -45,7 +45,7 @@ while index < 5 {
     index += 1;
     if index == 2 { continue; }
     if index == 4 { break; }
-    println(index);
+    print(index);
 }
 ```
 

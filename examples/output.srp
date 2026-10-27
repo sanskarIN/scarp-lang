@@ -1,0 +1,6 @@
+// Output without a final newline.
+bind name = "Scarp";
+write("Hello, ");
+print(name, 3, true,);
+print();
+write("done");

@@ -2,5 +2,5 @@
 bind width = 6;
 bind height = 7;
 bind area = width * height;
-println("Area:");
-println(area);
+print("Area:");
+print(area);

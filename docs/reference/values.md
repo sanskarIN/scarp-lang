@@ -33,11 +33,11 @@ Type annotations and explicit conversion functions are also not implemented.
 | Boolean disjunction | `or` | Skip the right boolean if the left is true |
 
 ```scarp
-println(1 + 2 * 3);
-println((1 + 2) * 3);
-println(8 - 3 - 1);
-println(24 / 3 / 2);
-println(-7 / 2);
+print(1 + 2 * 3);
+print((1 + 2) * 3);
+print(8 - 3 - 1);
+print(24 / 3 / 2);
+print(-7 / 2);
 ```
 
 Output:
@@ -67,9 +67,9 @@ The minimum value needs a special literal rule. Its magnitude
 parentheses is already out of range.
 
 ```scarp
-println(-9223372036854775808);
-println(0007);
-println(-9223372036854775808 + 1);
+print(-9223372036854775808);
+print(0007);
+print(-9223372036854775808 + 1);
 ```
 
 Output:
@@ -121,8 +121,8 @@ Print labels and values with separate statements:
 
 ```scarp
 bind count = 3;
-println("count:");
-println(count);
+print("count:");
+print(count);
 ```
 
 Output:

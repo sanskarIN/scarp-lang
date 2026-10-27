@@ -1,5 +1,8 @@
 # Counted repeat and the v0.0.3 iteration scope
 
+Historical design record: current declaration and output spellings are documented
+in the [syntax migration](../syntax-migration.md) and [output guide](../output.md).
+
 Base: main `62ee83a1f5b98a04a54a1e5349d0145a476a9958`, after PR #28 integrated
 the exact source/test work of PR #16. Direct retargeting had five documentation
 conflicts; the focused integration preserved published v0.0.2 notes and left all

@@ -1,4 +1,4 @@
 // Tabs and carriage returns are bytes, not a new formatting system.
-println("column\tvalue");
-println("line\rstart");
-println("\\t \\r");
+print("column\tvalue");
+print("line\rstart");
+print("\\t \\r");

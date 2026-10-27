@@ -2,6 +2,13 @@
 
 ## Unreleased — 0.0.3-beta.2.dev
 
+- Canonical `print`, raw `write`, and explicit stderr `eprint`/`ewrite`, with
+  zero/multiple arguments and optional trailing commas. `println` remains an
+  exact alias. Output events preserve snapshots, budgets, and atomic diagnostics.
+- Additive dual-writer execution APIs; the CLI routes program stderr explicitly.
+  Single-writer hosts receive an actionable error before stdout when a program
+  requires stderr. Current examples and guides use `print` by default.
+
 - Immutable `bind` and mutable `var` declarations replace `let`/`let mut`.
   Legacy declarations report E0005 with migration help; Rust syntax uses
   `Statement::Declaration` instead of `Statement::Let`.

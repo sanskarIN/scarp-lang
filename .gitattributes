@@ -3,3 +3,4 @@
 *.srp text eol=lf
 *.ps1 text eol=crlf
 examples/control_escapes.stdout -text
+examples/output.stdout -text

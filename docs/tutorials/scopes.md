@@ -10,9 +10,9 @@ statements between `{` and `}` and does not need a trailing semicolon.
 bind value = 2;
 {
     bind value = value + 3;
-    println(value);
+    print(value);
 }
-println(value);
+print(value);
 ```
 
 Output:
@@ -36,9 +36,9 @@ var count = 1;
 {
     count += 2;
     bind local = count * 10;
-    println(local);
+    print(local);
 }
-println(count);
+print(count);
 ```
 
 Output:
@@ -58,7 +58,7 @@ restores name visibility; it does not undo writes to an outer variable.
 {
     bind local = 30;
 }
-println(local);
+print(local);
 ```
 
 Sibling blocks cannot see each other's local declarations either.
@@ -88,9 +88,9 @@ In the string extension, separate declarations can have different types:
 bind label = "outside";
 {
     bind label = 7;
-    println(label);
+    print(label);
 }
-println(label);
+print(label);
 ```
 
 Output:

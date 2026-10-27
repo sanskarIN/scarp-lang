@@ -1,2 +1,2 @@
 // My first Scarp program
-println("Hello from Scarp!");
+print("Hello from Scarp!");

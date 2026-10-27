@@ -13,11 +13,11 @@ Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
 Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms use
-`bind`, `var`, `println`, and `if`, with exactly that spelling and case. `elif` and `else`
+`bind`, `var`, `print`, and `if`, with exactly that spelling and case. `elif` and `else`
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
-Punctuation tokens are `(`, `)`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
+Punctuation tokens are `(`, `)`, `{`, `}`, `,`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Comparison tokens use longest match: `==`, `!=`, `<`, `<=`, `>`,
 and `>=`. Integers contain one or more ASCII decimal digits; leading zeros
@@ -55,7 +55,7 @@ The following grammar applies after trivia has been removed:
 
 ```ebnf
 program         = { statement }, EOF ;
-statement       = print_statement | declaration | assignment | block | conditional | loop | loop_control ;
+statement       = output_statement | declaration | assignment | block | conditional | loop | loop_control ;
 loop            = "while", expression, block | "repeat", expression, "as", IDENTIFIER, block ;
 loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
@@ -64,8 +64,9 @@ block           = "{", { statement }, "}" ;
 declaration     = ("bind" | "var"), IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
-print_statement = "println", "(", argument, ")", ";" ;
-argument        = expression ;
+output_statement = output_name, "(", [ argument_list ], ")", ";" ;
+output_name      = "print" | "println" | "write" | "eprint" | "ewrite" ;
+argument_list    = expression, { ",", expression }, [ "," ] ;
 expression      = logical_or ;
 logical_or      = logical_and, { "or", logical_and } ;
 logical_and     = logical_not, { "and", logical_not } ;
@@ -77,23 +78,25 @@ unary           = [ "-" ], primary ;
 primary         = INTEGER | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
 ```
 
-`"println"` denotes an identifier with that exact value, not a substring of a
+`"print"` denotes an identifier with that exact value, not a substring of a
 longer identifier. `STRING` is one complete string token and a primitive value.
-There is no argument list: a call takes exactly one value expression. Semicolons
-are mandatory. Newlines do not terminate statements.
+Output statements accept zero or more expressions, separated by one ASCII space
+in displayed output. A trailing comma is accepted; empty middle arguments are
+errors. Semicolons are mandatory. Newlines do not terminate statements. See
+[output](output.md) for raw writes, stderr, and the permanent `println` alias.
 
 ```scarp
 // Valid: comments and whitespace can separate tokens.
-println
+print
 (
     "one"
 )
 ;
-println("two");
+print("two");
 ```
 
 Empty and comment-only files are valid programs. Extra semicolons, concatenated
-strings, multiple arguments, and nested calls are invalid. Binary operators
+strings and nested calls are invalid. Multiple output arguments are valid. Binary operators
 associate left to right. Multiplication and division have higher precedence
 than addition and subtraction. One unary minus is allowed before a primary:
 `--1` is invalid, while `-(-1)` and `1--2` are valid. Unary plus is unsupported.
@@ -112,7 +115,7 @@ results, negating the minimum integer, and dividing it by `-1` are errors.
 Diagnostics highlight the responsible operator. Evaluation follows source order
 and postorder within each expression, stopping at the first arithmetic error.
 
-Grouping is limited to 64 nested pairs of parentheses, excluding the `println`
+Grouping is limited to 64 nested pairs of parentheses, excluding the `print`
 call itself. Greater depth produces `E0009`. Flat operator chains have no fixed
 language limit and are processed without recursive evaluation or destruction.
 Available memory still limits the size of a program. Floats, numeric separators,
@@ -144,8 +147,10 @@ Braces are mandatory and use the existing block-depth limit. See the
 [conditional design](proposals/0005-conditional-statements.md) and
 [decisions tutorial](tutorials/decisions.md).
 
-Each print statement writes its decoded string or decimal integer followed by one LF
-to the supplied output stream. Strings containing `\n` can therefore write several lines.
+Line output appends one LF; raw output appends none. Strings, signed decimal
+integers, and lowercase booleans use their normal display form. One ASCII space
+separates arguments. `eprint` and `ewrite` target the explicit stderr writer.
+Strings containing `\n` can therefore write several lines.
 Statements execute in source order. Empty programs write nothing.
 
 An I/O failure is returned to the caller. Previously written bytes cannot be

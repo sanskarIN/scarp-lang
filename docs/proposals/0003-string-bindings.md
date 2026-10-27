@@ -1,5 +1,8 @@
 # Design 0003: string-valued bindings
 
+Historical design record: current declaration and output spellings are documented
+in the [syntax migration](../syntax-migration.md) and [output guide](../output.md).
+
 **Status: implemented on main for v0.0.2.** This extension builds on the
 integer-variable rules and is included in the variable prerelease.
 

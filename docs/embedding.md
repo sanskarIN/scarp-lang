@@ -7,7 +7,7 @@ differences.
 
 ## Add the local library
 
-Use a source checkout of main or the v0.0.2 tag. In a sibling Rust
+Use a source checkout of main for the examples below. In a sibling Rust
 application, a path dependency can select that checkout:
 
 ```toml
@@ -46,8 +46,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = r#"
         var count = 1;
         count += 2;
-        println("Count:");
-        println(count);
+        print("Count:");
+        print(count);
     "#;
     let mut output = Vec::new();
     scarp::run(source, &mut output)?;
@@ -65,7 +65,7 @@ standard streams.
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let program = scarp::compile(
-        "var count = 1; count += 2; println(count);"
+        "var count = 1; count += 2; print(count);"
     )?;
     assert_eq!(program.binding_count(), 1);
     assert_eq!(program.binding_types(), &[scarp::value::ValueType::Integer]);
@@ -91,7 +91,7 @@ all scopes. `binding_types` follows declaration/slot order.
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let source = "bind value = 1 / 0; println(value);";
+    let source = "bind value = 1 / 0; print(value);";
     let mut output = Vec::new();
     match scarp::run(source, &mut output) {
         Err(scarp::RunError::Diagnostic(error)) => {
@@ -131,4 +131,8 @@ execution for complete programs with declarations.
 
 Run `cargo doc --no-deps --open` in the selected checkout to inspect Rust API
 documentation. The API remains experimental; review the
-[draft migration notes](releases/v0.0.2.md) before updating an embedding host.
+[syntax migration](syntax-migration.md) before updating an embedding host.
+
+Development output uses `print`/`write` with `println` retained as a permanent
+alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
+[output and dual-writer migration](output.md) for semantics and new AST variants.

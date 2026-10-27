@@ -1,7 +1,8 @@
 # Your first Scarp program
 
-This tutorial works with both the published v0.0.1 interpreter and the development
-branch. It teaches the complete file-to-output path before introducing variables.
+This tutorial uses development main and its canonical `print` statement. Older
+published interpreters use `println` for these single-argument examples. It
+teaches the complete file-to-output path before introducing variables.
 Use [getting started](../getting-started.md) to select an executable.
 
 ## Statements, comments, and output
@@ -10,8 +11,8 @@ Save the following as `first.srp`:
 
 ```scarp
 // A comment explains the program without producing output.
-println("Build Beyond Boundaries.");
-println(6 * 7);
+print("Build Beyond Boundaries.");
+print(6 * 7);
 ```
 
 Output:
@@ -22,13 +23,13 @@ Build Beyond Boundaries.
 ```
 
 From a checkout, run `cargo run -- run first.srp`. With an installed command, use
-`scarp run first.srp`. Each `println` adds one LF line break. Statements run in
+`scarp run first.srp`. Each `print` adds one LF line break. Statements run in
 source order, and every print statement needs a terminating semicolon.
 
 `//` starts a comment outside a string. Inside a string, it is ordinary text:
 
 ```scarp
-println("https://example.invalid is text here");
+print("https://example.invalid is text here");
 ```
 
 Output:
@@ -46,9 +47,9 @@ line break, `\"` for a double quote, and `\\` for a backslash. A physical CR or 
 inside a string is invalid; write `\n` instead.
 
 ```scarp
-println("Line one\nLine two");
-println("नमस्ते 🌍");
-println("C:\\Scarp");
+print("Line one\nLine two");
+print("नमस्ते 🌍");
+print("C:\\Scarp");
 ```
 
 Output:
@@ -68,7 +69,7 @@ are also valid and print nothing.
 This file is missing its final semicolon and fails with `E0004`:
 
 ```scarp-invalid
-println("Hello")
+print("Hello")
 ```
 
 Add `;` after the closing parenthesis. The diagnostic identifies the filename,

@@ -8,8 +8,8 @@ if score >= 90 {
 } else {
     grade = "C";
 }
-println(grade);
+print(grade);
 if true or 1 / 0 == 0 {
     bind message = "Selected safely.";
-    println(message);
+    print(message);
 }

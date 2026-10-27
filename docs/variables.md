@@ -10,11 +10,11 @@ This document describes implemented variable behavior on development main. The p
 bind width = 6;
 bind height = 7;
 bind area = width * height;
-println(area); // 42
+print(area); // 42
 ```
 
 Declarations require `bind` or `var`, an ASCII identifier, `=`, a value expression, and
-`;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, legacy `let`/`mut`, `println`,
+`;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, legacy `let`/`mut`, `print`,
 `true`, `false`, `and`, `or`, `not`, `if`, `elif`, and `else` are reserved binding names. A binding
 infers `integer`, `string`, or `boolean` from its initializer. Parenthesized values and names are value
 expressions; arithmetic remains integer-only.
@@ -75,8 +75,8 @@ Bindings are immutable with `bind` and mutable when declared with `var`:
 var count = 2;
 bind original = count;
 count += 5;
-println(count);    // 7
-println(original); // 2
+print(count);    // 7
+print(original); // 2
 ```
 
 Simple assignment uses `name = expression;`. Compound assignment supports `+=`,
@@ -104,10 +104,10 @@ operators, assignment expressions, string concatenation, or string mutation.
 var total = 1;
 {
     bind total = total + 10;
-    println(total); // 11
+    print(total); // 11
 }
 total += 2;
-println(total); // 3
+print(total); // 3
 ```
 
 Braces introduce a statement scope and do not require a trailing semicolon.
@@ -154,10 +154,10 @@ for validation; the current language only changes local variables and prints.
 ```scarp
 var greeting = "Hello";
 bind original = greeting;
-println(greeting);
+print(greeting);
 greeting = "नमस्ते 🌍";
-println(original); // Hello
-println(greeting);
+print(original); // Hello
+print(greeting);
 ```
 
 A mutable binding must keep the type inferred at its declaration. Assigning an

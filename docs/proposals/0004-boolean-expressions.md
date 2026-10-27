@@ -1,5 +1,8 @@
 # Boolean expressions and comparisons
 
+Historical design record: current declaration and output spellings are documented
+in the [syntax migration](../syntax-migration.md) and [output guide](../output.md).
+
 Status: implemented on main for v0.0.2, following the variable, string, and
 documentation work. The v0.0.1 snapshot remains unchanged.
 

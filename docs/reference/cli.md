@@ -109,7 +109,7 @@ diagnosing a failure.
 The hello example starts with this token:
 
 ```text
-2:1..2:8  identifier(println)  [26..33]
+2:1..2:6  identifier(print)  [27..32]
 ```
 
 The first range is one-based line/column information. The bracketed range is a
@@ -120,3 +120,6 @@ bytes, including trailing comments or whitespace.
 Columns count Unicode scalar values rather than bytes or terminal cells. See
 the [diagnostic reference](diagnostics.md) for caret interpretation and the
 [troubleshooting guide](../troubleshooting.md) for version/path problems.
+
+Development output statements can write to stdout or stderr; see the
+[output guide](../output.md). Successful `check` stays silent on both streams.

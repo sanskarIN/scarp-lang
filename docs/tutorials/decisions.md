@@ -16,7 +16,7 @@ if score >= 90 {
 } else {
     grade = "C";
 }
-println(grade);
+print(grade);
 ```
 
 Output:
@@ -41,9 +41,9 @@ simply continues after all false conditions. There is no semicolon after `}`.
 bind label = "outer";
 if true {
     bind label = "selected";
-    println(label);
+    print(label);
 }
-println(label);
+print(label);
 ```
 
 Output:
@@ -62,9 +62,9 @@ a local with the same name, as with `label`, creates a distinct binding.
 
 ```scarp
 if false {
-    println(1 / 0);
+    print(1 / 0);
 } else {
-    println("safe");
+    print("safe");
 }
 ```
 
