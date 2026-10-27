@@ -15,6 +15,7 @@ pub mod diagnostics;
 pub mod evaluator;
 pub mod interpreter;
 pub mod lexer;
+pub mod limits;
 pub mod parser;
 pub mod resolver;
 pub mod value;
@@ -23,6 +24,7 @@ use std::{fmt, io};
 
 use ast::Program;
 use diagnostics::Diagnostic;
+pub use limits::ExecutionLimits;
 pub use resolver::ResolvedProgram;
 
 /// Parse source without performing name resolution or arithmetic evaluation.
@@ -45,6 +47,11 @@ pub fn compile(source: &str) -> Result<ResolvedProgram, Diagnostic> {
 /// ```
 pub fn check(source: &str) -> Result<(), Diagnostic> {
     interpreter::validate(&compile(source)?)
+}
+
+/// Validate with caller-selected deterministic execution and print budgets.
+pub fn check_with_limits(source: &str, limits: ExecutionLimits) -> Result<(), Diagnostic> {
+    interpreter::validate_with_limits(&compile(source)?, limits)
 }
 
 /// A source/evaluation diagnostic or a failure writing program output.
@@ -76,4 +83,14 @@ impl std::error::Error for RunError {
 pub fn run(source: &str, output: &mut impl io::Write) -> Result<(), RunError> {
     let program = compile(source).map_err(RunError::Diagnostic)?;
     interpreter::execute(&program, output)
+}
+
+/// Execute with caller-selected budgets; budget failures never write output.
+pub fn run_with_limits(
+    source: &str,
+    output: &mut impl io::Write,
+    limits: ExecutionLimits,
+) -> Result<(), RunError> {
+    let program = compile(source).map_err(RunError::Diagnostic)?;
+    interpreter::execute_with_limits(&program, output, limits)
 }

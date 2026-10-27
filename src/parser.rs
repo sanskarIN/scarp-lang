@@ -93,6 +93,30 @@ impl Parser<'_> {
                 TokenKind::Identifier(name) if name == "if" => {
                     statements.push(self.conditional(depth)?);
                 }
+                TokenKind::Identifier(name) if name == "while" => {
+                    let start = token.span.start;
+                    self.cursor += 1;
+                    let mut nodes = Vec::new();
+                    let root = self.logical_or(&mut nodes, 0)?;
+                    let (body, span) = self.block(depth)?;
+                    statements.push(Statement::While {
+                        condition: Expression { nodes, root },
+                        statements: body,
+                        span: Span::new(start, span.end),
+                    });
+                }
+                TokenKind::Identifier(name) if name == "break" || name == "continue" => {
+                    let start = token.span.start;
+                    let is_break = name == "break";
+                    self.cursor += 1;
+                    let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                    let span = Span::new(start, end);
+                    statements.push(if is_break {
+                        Statement::Break { span }
+                    } else {
+                        Statement::Continue { span }
+                    });
+                }
                 TokenKind::Identifier(name) if name == "println" => {
                     let start = token.span.start;
                     self.cursor += 1;

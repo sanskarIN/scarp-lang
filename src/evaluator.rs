@@ -3,6 +3,7 @@
 use crate::{
     ast::{BinaryOperator, Expression, ExpressionKind, LogicalOperator},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
+    limits::Budget,
     resolver::{self, ResolvedExpression},
     value::{type_mismatch, Value},
 };
@@ -15,7 +16,11 @@ pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
 
 /// Evaluate a standalone primitive expression without a variable environment.
 pub fn evaluate_value(expression: &Expression) -> Result<Value, Diagnostic> {
-    Workspace::default().evaluate(&resolver::resolve_standalone(expression)?, &[])
+    Workspace::default().evaluate(
+        &resolver::resolve_standalone(expression)?,
+        &[],
+        &mut Budget::new(u64::MAX),
+    )
 }
 
 /// Scratch storage belongs to one execution, never to the immutable program.
@@ -39,12 +44,22 @@ impl Workspace {
         &mut self,
         expression: &ResolvedExpression,
         environment: &[Value],
+        budget: &mut Budget,
     ) -> Result<Value, Diagnostic> {
         self.values.clear();
         self.tasks.clear();
         self.tasks.push(Task::Visit(expression.syntax.root()));
         let Self { values, tasks } = self;
         while let Some(task) = tasks.pop() {
+            let span = match &task {
+                Task::Visit(index) => expression.syntax.nodes()[*index].span,
+                Task::Negate(span)
+                | Task::Not(span)
+                | Task::Boolean(span)
+                | Task::Binary(_, span)
+                | Task::Logical(_, _, span) => *span,
+            };
+            budget.charge(1, span)?;
             match task {
                 Task::Visit(index) => {
                     let node = &expression.syntax.nodes()[index];

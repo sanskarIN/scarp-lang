@@ -92,6 +92,9 @@ pub enum DiagnosticKind {
     ImmutableAssignment,
     BlockNesting,
     TypeMismatch,
+    LoopControl,
+    ExecutionLimit,
+    OutputLimit,
 }
 
 impl DiagnosticKind {
@@ -112,6 +115,9 @@ impl DiagnosticKind {
             Self::ImmutableAssignment => "E0013",
             Self::BlockNesting => "E0014",
             Self::TypeMismatch => "E0015",
+            Self::LoopControl => "E0016",
+            Self::ExecutionLimit => "E0017",
+            Self::OutputLimit => "E0018",
         }
     }
 }

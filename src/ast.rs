@@ -9,6 +9,17 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
+    While {
+        condition: Expression,
+        statements: Vec<Statement>,
+        span: Span,
+    },
+    Break {
+        span: Span,
+    },
+    Continue {
+        span: Span,
+    },
     If {
         branches: Vec<ConditionalBranch>,
         otherwise: Vec<Statement>,
@@ -37,6 +48,21 @@ pub enum Statement {
         value: Expression,
         span: Span,
     },
+}
+
+impl Statement {
+    pub fn span(&self) -> Span {
+        match self {
+            Self::While { span, .. }
+            | Self::Break { span }
+            | Self::Continue { span }
+            | Self::If { span, .. }
+            | Self::Block { span, .. }
+            | Self::Println { span, .. }
+            | Self::Let { span, .. }
+            | Self::Assign { span, .. } => *span,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
