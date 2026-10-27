@@ -9,6 +9,13 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
+    Repeat {
+        count: Expression,
+        index: String,
+        index_span: Span,
+        statements: Vec<Statement>,
+        span: Span,
+    },
     While {
         condition: Expression,
         statements: Vec<Statement>,
@@ -53,7 +60,8 @@ pub enum Statement {
 impl Statement {
     pub fn span(&self) -> Span {
         match self {
-            Self::While { span, .. }
+            Self::Repeat { span, .. }
+            | Self::While { span, .. }
             | Self::Break { span }
             | Self::Continue { span }
             | Self::If { span, .. }

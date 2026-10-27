@@ -102,3 +102,9 @@ the documentation work itself performs none of those release actions.
 
 Unreleased iteration work adds while/break/continue and execution budgets after
 the v0.0.2 baseline. See [the loop design](proposals/0006-bounded-loops.md).
+
+Counted `repeat expression as index` adds `Statement::Repeat` to the public AST
+and `DiagnosticKind::RepeatCount` (E0019). Update exhaustive Rust enum matches.
+No function signatures or ExecutionLimits fields change. Compiled binding
+metadata includes a saved count and immutable index slot per repeat, even when
+the body does not run. Existing identifier spellings repeat/as remain legal.

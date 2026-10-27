@@ -93,6 +93,45 @@ impl Parser<'_> {
                 TokenKind::Identifier(name) if name == "if" => {
                     statements.push(self.conditional(depth)?);
                 }
+                TokenKind::Identifier(name)
+                    if name == "repeat"
+                        && !self
+                            .tokens
+                            .get(self.cursor + 1)
+                            .is_some_and(|token| assignment_operator(&token.kind).is_some()) =>
+                {
+                    let start = token.span.start;
+                    self.cursor += 1;
+                    let mut nodes = Vec::new();
+                    let root = self.logical_or(&mut nodes, 0)?;
+                    if !self.keyword("as") {
+                        return Err(self
+                            .expected("as followed by an index name")
+                            .with_help("use repeat count as index { statements }"));
+                    }
+                    self.cursor += 1;
+                    let (index, index_span) = match self.current() {
+                        Some(Token {
+                            kind: TokenKind::Identifier(name),
+                            span,
+                        }) => (name.clone(), *span),
+                        _ => {
+                            return Err(self
+                                .expected("an immutable repeat index name")
+                                .with_help("use repeat count as index { statements }"))
+                        }
+                    };
+                    self.cursor += 1;
+                    let (body, body_span) = self.block(depth).map_err(|error|
+                        error.with_help("enclose the repeat body in braces: repeat count as index { statements }"))?;
+                    statements.push(Statement::Repeat {
+                        count: Expression { nodes, root },
+                        index,
+                        index_span,
+                        statements: body,
+                        span: Span::new(start, body_span.end),
+                    });
+                }
                 TokenKind::Identifier(name) if name == "while" => {
                     let start = token.span.start;
                     self.cursor += 1;

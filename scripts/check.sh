@@ -37,3 +37,5 @@ cargo run --locked -- run examples/decisions.srp
 cargo run --locked -- check examples/decisions.srp
 cargo run --locked -- run examples/loops.srp
 cargo run --locked -- check examples/loops.srp
+cargo run --locked -- run examples/repeat.srp
+cargo run --locked -- check examples/repeat.srp

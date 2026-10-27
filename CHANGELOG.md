@@ -2,6 +2,8 @@
 
 ## Unreleased — v0.0.3 iteration
 
+- Counted `repeat count as index` with a one-time count snapshot, immutable
+  zero-based index, fixed storage, and nearest-loop control shared with while.
 - Scoped while loops, nearest-loop break/continue, per-call work/print budgets,
   and CLI/embedding controls with atomic budget diagnostics.
 

@@ -95,6 +95,7 @@ pub enum DiagnosticKind {
     LoopControl,
     ExecutionLimit,
     OutputLimit,
+    RepeatCount,
 }
 
 impl DiagnosticKind {
@@ -118,6 +119,7 @@ impl DiagnosticKind {
             Self::LoopControl => "E0016",
             Self::ExecutionLimit => "E0017",
             Self::OutputLimit => "E0018",
+            Self::RepeatCount => "E0019",
         }
     }
 }
