@@ -53,7 +53,7 @@ The following grammar applies after trivia has been removed:
 ```ebnf
 program         = { statement }, EOF ;
 statement       = print_statement | declaration | assignment | block | conditional | loop | loop_control ;
-loop            = "while", expression, block ;
+loop            = "while", expression, block | "repeat", expression, "as", IDENTIFIER, block ;
 loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
                   { "elif", expression, block }, [ "else", block ] ;
@@ -214,3 +214,13 @@ recorded in [the expression design](proposals/0001-integer-expressions.md).
 Unreleased iteration development adds scoped `while`, `break`, and `continue`
 after v0.0.2, with per-call deterministic work and print budgets. The published
 v0.0.2 packages do not contain loops. See [the loop design](proposals/0006-bounded-loops.md).
+
+`repeat count as index { ... }` evaluates an integer count once in the enclosing
+scope, rejects negative counts with E0019, and iterates from zero through count
+minus one. The index is immutable and scoped to the body. Continue advances it;
+break exits the nearest loop, including mixed while/repeat nesting. A zero count
+still checks the body statically. The runtime uses two fixed slots per repeat
+and the same work/print budgets as while; it does not allocate an index array.
+`repeat` and `as` are contextual identifiers: existing bindings keep working,
+including assignment to a variable named repeat. Same-scope index redeclaration
+is E0011; explicit inner scopes may shadow it. See [the repeat design](proposals/0007-counted-repeat.md).

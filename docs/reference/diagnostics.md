@@ -26,6 +26,7 @@ codes belong to the development variable stack.
 | `E0016` | Loop control outside a loop | Place break/continue in a while body |
 | `E0017` | Execution work budget exhausted | Check loop progress or raise the explicit budget |
 | `E0018` | Selected print count exhausted | Reduce prints or raise the explicit print budget |
+| `E0019` | Negative repeat count | Supply zero to skip the loop or a positive integer count |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid
