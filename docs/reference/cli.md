@@ -19,6 +19,10 @@ Development `tokens` and `check` commands also accept `--help` and `-h` after th
 command name. Only one source path is accepted. There is no stdin input mode,
 watch mode, import path, or `scarp build` command.
 
+v0.0.3 keeps these spellings and adds contextual guidance for run/check/tokens.
+Run/check help shows budget placement, defaults, and iteration examples. Check
+still evaluates selected loops and arithmetic; tokens does not execute code.
+
 From a source checkout, place Cargo's separator before the Scarp arguments:
 
 ```sh
@@ -53,6 +57,9 @@ before the path. Defaults are 1,000,000 work steps and 100,000 selected prints.
 Each option can occur once; unsigned decimal zero is allowed. Budget failures use
 status 1 and leave output empty; malformed options use status 2. See
 [loops and budgets](../proposals/0006-bounded-loops.md) for exact accounting.
+
+The [budget guide](../budgets.md) provides copy-paste invocations and explains
+zero limits, E0017/E0018, and embedding APIs.
 
 Relative paths are resolved from the process working directory. Quote paths
 containing spaces:

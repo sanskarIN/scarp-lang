@@ -118,6 +118,18 @@ try {
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
     }
     $invalidSource = Join-Path $stagingRoot 'invalid.srp'
+    $budgetSource = Join-Path $stagingRoot 'budget.srp'
+    [System.IO.File]::WriteAllText($budgetSource, 'println("hidden"); repeat 9223372036854775807 as i { continue; }')
+    foreach ($verb in @('run', 'check')) {
+        $limited = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, '--max-steps', '20', $budgetSource)
+        if ($limited.ExitCode -ne 1 -or $limited.Stdout.Length -ne 0 -or [System.Text.Encoding]::UTF8.GetString($limited.Stderr) -notmatch 'E0017') {
+            throw 'Packaged counted-loop budget or atomicity check failed'
+        }
+        $guidance = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, '--help')
+        if ($guidance.ExitCode -ne 0 -or $guidance.Stderr.Length -ne 0 -or [System.Text.Encoding]::UTF8.GetString($guidance.Stdout) -notmatch '--max-steps') {
+            throw 'Packaged budget help failed'
+        }
+    }
     $errorLog = Join-Path $stagingRoot 'invalid.stderr'
     [System.IO.File]::WriteAllText($invalidSource, 'println("first"); println(1 / 0);')
     $invalidOutput = & $executable run $invalidSource 2> $errorLog

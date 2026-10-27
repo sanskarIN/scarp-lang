@@ -481,6 +481,78 @@ fn each_file_command_exposes_help_before_requiring_a_path() {
 }
 
 #[test]
+fn iteration_help_explains_evaluation_and_budget_placement() {
+    for subcommand in ["run", "check"] {
+        let result = command().args([subcommand, "--help"]).output().unwrap();
+        assert!(result.status.success() && result.stderr.is_empty());
+        let help = String::from_utf8(result.stdout).unwrap();
+        assert!(
+            help.contains("--max-steps")
+                && help.contains("--max-prints")
+                && help.contains("Options precede the path")
+        );
+    }
+    let result = command().args(["check", "--help"]).output().unwrap();
+    assert!(String::from_utf8(result.stdout)
+        .unwrap()
+        .contains("Loops and arithmetic execute"));
+    let result = command().args(["run", "--help"]).output().unwrap();
+    assert!(String::from_utf8(result.stdout)
+        .unwrap()
+        .contains("repeat count as index"));
+}
+
+#[test]
+fn counted_loop_cli_has_atomic_budgets_and_tokens_still_only_lexes() {
+    let fixture = Fixture::new();
+    let path = fixture.file(
+        "iteration café.srp",
+        "println(\"hidden\"); repeat 9223372036854775807 as i { continue; }",
+    );
+    for subcommand in ["run", "check"] {
+        let result = command()
+            .args([subcommand, "--max-steps", "20"])
+            .arg(&path)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        let stderr = String::from_utf8(result.stderr).unwrap();
+        assert!(
+            stderr.contains("E0017")
+                && stderr.contains("limit of 20")
+                && stderr.contains("--max-steps")
+        );
+    }
+    let result = command().arg("tokens").arg(&path).output().unwrap();
+    assert!(result.status.success() && result.stderr.is_empty());
+    assert!(String::from_utf8(result.stdout)
+        .unwrap()
+        .contains("identifier(repeat)"));
+}
+
+#[test]
+fn iteration_milestone_keeps_later_commands_and_syntax_out() {
+    for subcommand in ["exec", "verify", "inspect", "compile"] {
+        let result = command()
+            .args([subcommand, "missing.srp"])
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(2));
+    }
+    for source in [
+        "bind x=1;",
+        "var x=1;",
+        "print(1);",
+        "funcra f() -> unit {}",
+        "println(1.25);",
+        "println([1,2]);",
+    ] {
+        assert!(scarp::compile(source).is_err(), "{source}");
+    }
+}
+
+#[test]
 fn string_variables_run_and_type_errors_are_checked_before_output() {
     let fixture = Fixture::new();
     let path = fixture.file(

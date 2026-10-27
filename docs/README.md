@@ -3,7 +3,8 @@
 Choose a guide by the task you want to complete. These pages document the
 v0.0.1 snapshot and the v0.0.2 variable milestone, including string bindings,
 booleans, and conditionals. References to development APIs describe v0.0.2;
-later unmerged feature branches are outside this documentation snapshot.
+v0.0.3 iteration work adds bounded while/repeat loops and tab/CR escapes.
+The later numerical, function, native, and syntax redesign stacks remain separate.
 
 ## Guides and what each adds
 
@@ -15,6 +16,8 @@ later unmerged feature branches are outside this documentation snapshot.
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
 | [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |
 | [Loops and budgets](proposals/0006-bounded-loops.md) | Repeat computations with scoped state, loop control, and per-call bounds |
+| [Iteration](iteration.md) | Choose while/repeat, understand count snapshots, immutable indices, and nested control |
+| [Execution budgets](budgets.md) | Set work/print limits, interpret failures, and embed bounded execution |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |

@@ -4,8 +4,9 @@
 
 Scarp v0.0.2 introduces variables, mutation, lexical scopes, strings, booleans,
 and conditional statements. These features are integrated into `main`.
-Unreleased iteration development adds scoped while/break/continue and deterministic
-work/print budgets; published v0.0.2 packages retain their original language.
+The v0.0.3 iteration milestone adds counted repeat, scoped while/break/continue,
+work/print budgets, and tab/CR escapes. See the [iteration guide](docs/iteration.md)
+and [budget guide](docs/budgets.md). Published v0.0.2 packages retain their language.
 
 Scarp is an experimental programming language implemented in Rust. This repository
 contains **v0.0.2**, an experimental interpreter prerelease with a lexer, parser,

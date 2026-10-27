@@ -24,6 +24,37 @@ Usage:
 Use -- before a filename that begins with a dash.
 run/check options before the path: --max-steps <count>, --max-prints <count>.
 Defaults: 1000000 execution steps, 100000 selected prints.
+Iteration: while condition { ... }, repeat count as index { ... }.
+Use scarp run --help or scarp check --help for budget examples.
+";
+
+const RUN_HELP: &str =
+    "Usage: scarp run [--max-steps <count>] [--max-prints <count>] [--] <file.srp>
+
+Execute checked source, preparing every selected println before writing output.
+while guards are boolean; repeat count as index saves one nonnegative integer count.
+break; exits the nearest loop; continue; rechecks while or advances repeat.
+Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
+Counts are unsigned decimal digits, zero is valid, and each option may occur once.
+Example: scarp run --max-steps 2000000 --max-prints 10 examples/repeat.srp
+Use scarp check with the same options to evaluate without printing.
+";
+
+const CHECK_HELP: &str =
+    "Usage: scarp check [--max-steps <count>] [--max-prints <count>] [--] <file.srp>
+
+Check syntax, names, and types, then evaluate the selected path without printing.
+Loops and arithmetic execute with fresh storage and the same limits as run.
+This evaluates code; it is not a static-only check. All bodies are type-checked.
+Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
+Example: scarp check --max-steps 2000000 examples/repeat.srp
+Use tokens for lexing without executing a program. No execution-limit flags on tokens.
+";
+
+const TOKENS_HELP: &str = "Usage: scarp tokens [--] <file.srp>
+
+List tokens and UTF-8 byte/source locations without parsing or executing loops.
+No execution-limit options are accepted. Use scarp check to evaluate source.
 ";
 
 fn main() -> ExitCode {
@@ -44,7 +75,12 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             return write_output(output.write_all(HELP.as_bytes()), errors);
         }
         [command, flag] if file_command(command) && (flag == "--help" || flag == "-h") => {
-            return write_output(output.write_all(HELP.as_bytes()), errors);
+            let help = match command.to_str() {
+                Some("run") => RUN_HELP,
+                Some("check") => CHECK_HELP,
+                _ => TOKENS_HELP,
+            };
+            return write_output(output.write_all(help.as_bytes()), errors);
         }
         [flag] if flag == "--version" || flag == "-V" => {
             return write_output(

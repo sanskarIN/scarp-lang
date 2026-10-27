@@ -100,6 +100,13 @@ reproductions when a generated case fails.
 
 ## Check documentation and packages
 
+Iteration tests cover fixed-slot while/repeat execution, count snapshots, mixed
+control targets, and parallel reuse. The iteration diagnostic fixtures compare
+exact library and run/check errors, including Unicode/CRLF source, guard/count
+types, index writes, missing punctuation, and both budgets. The escape example's
+stdout is binary so Git preserves its tab/CR bytes. Package checks capture raw
+streams and compare every fixture without normalizing line endings.
+
 `cargo doc` checks Rustdoc; it does not automatically compile code fences in
 Markdown guides. Run new Scarp examples with the intended version, check their
 expected output, and compile complete Rust embedding examples against the
