@@ -114,7 +114,7 @@ fn output_names_are_reserved_case_sensitive_and_not_expression_functions() {
         "Print", "PRINTLN", "Write", "Eprint", "prnt", "echo", "say", "out", "puts", "cout",
     ] {
         let error = scarp::compile(&format!("{name}(1);")).unwrap_err();
-        assert_eq!(error.kind, DiagnosticKind::UnknownStatement);
+        assert_eq!(error.kind, DiagnosticKind::UnknownFunction);
         assert!(error.help.unwrap().contains("print"));
     }
     assert_eq!(

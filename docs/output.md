@@ -1,6 +1,6 @@
 # Output in the development language
 
-This guide describes the unreleased output feature on `scarp/output-statements`,
+This guide describes the unreleased output feature in the development stack,
 based on the `bind`/`var` development stack. Published v0.0.2 supports only
 single-argument `println`; its packages and language contract are unchanged.
 
@@ -81,6 +81,13 @@ and every selected argument evaluates left to right. Captured values preserve
 snapshots across later mutations. A later reachable source, arithmetic, or budget
 failure prevents writes to both program streams. A writer or flush failure
 during replay can leave earlier output and is propagated.
+
+Function calls may produce nested output. All arguments of the caller's output
+statement finish before that statement's own events are appended, so nested
+output precedes the caller's line. Failed contracts discard both streams too.
+The interpreter applies a default 16 MiB logical snapshot-storage cap, including
+pending arguments; runtime validation enforces it without retaining output.
+See [function budgets](functions.md#frames-budgets-and-output) for accounting.
 
 Stream switches flush the previous destination. The host's handling of separate
 streams can still alter how their text is presented together. Cross-stream

@@ -1,0 +1,20 @@
+// Recursive frames have independent parameters and locals.
+pure funcra fib(n: integer) -> integer
+    needs n >= 0;
+{
+    if n <= 1 { return n; }
+    return fib(n - 1) + fib(n - 2);
+}
+
+pure funcra even(n: integer) -> boolean {
+    if n == 0 { return true; }
+    return odd(n - 1);
+}
+
+pure funcra odd(n: integer) -> boolean {
+    if n == 0 { return false; }
+    return even(n - 1);
+}
+
+print(fib(10));
+print(even(8), odd(8));

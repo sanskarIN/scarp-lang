@@ -2,6 +2,19 @@
 
 ## Unreleased — v0.0.3 development
 
+- Default parameter type errors highlight their initializer and link to the
+  parameter. Distinct call-depth, total-call, and live-slot diagnostics show the
+  configured limit and relevant execution option. Local variable repair help
+  describes declarations and assignments directly. Grammar and limits are unchanged.
+
+- Typed file-level `funcra` functions, forward/mutual recursion, explicit returns,
+  unit statement calls, named/default arguments, and isolated heap call frames.
+- Verified `pure` declarations, executable `needs`/`ensures` contracts, bounded
+  call diagnostics, and immutable function signatures/call-graph metadata.
+- Additive `ExecutionOptions` APIs with call-depth/count, live-slot, and output
+  snapshot limits. Existing `ExecutionLimits` struct literals remain valid.
+- Explicit native-function and higher-order/closure rejection before emission.
+  New AST, token, diagnostic, and unit enum variants affect exhaustive Rust matches.
 - Preferred `print`, permanent `println`, raw `write`, zero/multiple arguments,
   exact single-space separators, and optional trailing commas.
 - Explicit `eprint`/`ewrite`, dual-writer Rust and native-host APIs, ordered

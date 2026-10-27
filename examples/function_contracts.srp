@@ -1,0 +1,20 @@
+// Optional arguments and executable contracts; no implicit numeric conversions.
+pure funcra clipped(x: integer, lo: integer = 0, hi: integer = 10) -> integer
+    needs lo <= hi;
+    ensures result >= lo and result <= hi;
+{
+    if x < lo { return lo; }
+    if x > hi { return hi; }
+    return x;
+}
+
+pure funcra interval_end(start: integer, length: integer = 5) -> integer
+    needs length >= 0;
+    ensures result >= start;
+{
+    return start + length;
+}
+
+print(clipped(x: 15));
+print(clipped(4, hi: 3, lo: 1));
+print(interval_end(7), interval_end(length: 2, start: 10));

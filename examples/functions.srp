@@ -1,0 +1,29 @@
+// Typed calls, forward declarations, all primitive parameter types, and unit.
+print(add(10, square(5)));
+
+funcra add(a: integer, b: integer) -> integer {
+    return a + b;
+}
+
+funcra square(value: integer) -> integer {
+    return value * value;
+}
+
+funcra identity(text: string) -> string {
+    return text;
+}
+
+funcra greet(name: string) -> unit {
+    print("Hello", name);
+    return;
+}
+
+pure funcra scaled(values: vector, factor: float, enabled: boolean) -> vector {
+    if enabled {
+        return scale(values, factor);
+    }
+    return values;
+}
+
+greet(identity("Scarp"));
+print(scaled([1.0, 2.0], 2.0, true));

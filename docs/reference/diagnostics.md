@@ -31,10 +31,19 @@ codes belong to the development variable stack.
 | `E0021` | Invalid vector length or mismatched shapes | Stay within the size limit and match binary input lengths |
 | `E0022` | Invalid vector index | Use an integer from zero up to length minus one |
 | `E0023` | Invalid kernel domain | Supply nonempty required input and ordered clamp bounds |
-| `E0024` | Unknown built-in call | Use a supported numerical function name |
+| `E0024` | Unknown function or noncallable binding | Declare a funcra or use a supported numerical function |
 | `E0025` | Wrong argument count | Follow the kernel's fixed signature |
 | `E0026` | Shift count outside 0..63 | Use a valid fixed-width shift count |
 | `E0027` | Unsupported C backend feature or size | Stay within the documented freestanding subset and limits |
+| `E0028` | Invalid/duplicate function signature or namespace collision | Use unique names, primitive parameter types, and trailing defaults |
+| `E0029` | Invalid return or unit value use | Match the result type; use unit calls only as statements |
+| `E0030` | Missing return on a possible path | Cover branches and return after loops |
+| `E0031` | Invalid user argument mapping | Supply required labels once; put positional arguments first |
+| `E0032` | Impure operation in a pure context | Remove output/impure calls or remove an inappropriate pure declaration |
+| `E0033` | Failed needs/ensures clause | Check the source clause and bounded call locations |
+| `E0034` | Call depth/count or live-slot limit | Check recursion/frame size or raise the intended option |
+| `E0035` | Unsupported function form or native function compilation | Use named interpreter calls; closures and native lowering remain future work |
+| `E0036` | Output snapshot storage limit | Reduce captured output or raise the snapshot budget |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

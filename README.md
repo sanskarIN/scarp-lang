@@ -28,6 +28,10 @@ guides. Start there for a reading path matched to your task.
 Use `print` for line output; `println` is a permanent equivalent spelling.
 `write("Loading"); print("... done");` inserts no separator between statements.
 The [output guide](docs/output.md) covers arguments, bytes, and explicit stderr.
+The [function guide](docs/functions.md) covers typed `funcra` declarations,
+recursion, named/default arguments, verified `pure` functions, and executable
+`needs`/`ensures` contracts. These run in the interpreter; native function
+compilation and closures remain unsupported.
 
 ## Build and run
 
@@ -45,7 +49,7 @@ C++ build tools if the Rust installer requests them.
 ```sh
 git clone https://github.com/sanskarIN/scarp-lang.git
 cd scarp-lang
-git switch scarp/output-statements
+git switch scarp/funcra-function-system
 cargo build --locked
 cargo run -- exec examples/hello.srp
 cargo run -- exec examples/arithmetic.srp
@@ -74,6 +78,8 @@ the CLI does not reject other filename extensions.
 
 ## What works now
 
+- Typed `funcra` functions, explicit returns/unit, forward calls, and bounded recursion.
+- Named/default arguments, checked purity/contracts, isolated frames, and static function metadata.
 - `print`, permanent `println`, and raw `write`, with zero/multiple arguments and trailing commas.
 - Explicit `eprint` / `ewrite` stderr and dual-writer embedding APIs.
 - Multiple statements, empty strings, and empty or comment-only files.
@@ -231,8 +237,8 @@ measured execution improvements. General native compilation and C/C++/Rust
 performance comparisons remain future work.
 
 This is a small interpreter. It reads a complete file into memory
-and reports the first error. It has no user-defined functions,
-type annotations, user-defined types, imports, general standard library,
+and reports the first error. It has no first-class functions or closures,
+user-defined types, imports, general standard library,
 package manager, a general native backend, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
 
@@ -244,7 +250,7 @@ test suite.
 Future work is **planned**, in this order:
 
 1. Review syntax and the safe project-manifest model.
-2. User-defined functions with typed calls and return values.
+2. Native function lowering, then first-class functions and immutable closures.
 3. Modules, user-defined types, and richer numerical data structures.
 4. Extend the experimental native backend beyond its current subset.
 5. Formatter, editor tooling, and project test runner.

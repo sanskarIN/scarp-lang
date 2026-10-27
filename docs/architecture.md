@@ -44,6 +44,21 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `lib` | Public convenience functions and combined error type |
 | `main` | Native arguments, file loading, streams, and process status |
 
+Named functions add a signature-collection pass before body/file resolution.
+Each function has an independent flat instruction plan and local slot count.
+Resolved calls carry stable function IDs and source-ordered parameter mappings;
+defaults/contracts use separate resolved expressions. The resolver checks purity
+at each call/output and performs conservative return-flow analysis. An iterative
+strongly connected component pass records possible recursive call cycles.
+
+The expression workspace can suspend at a user call and later accept its result.
+`interpreter::machine` owns an explicit vector of frames: parameters/local slots,
+program counter, expression continuation, pending output arguments, and stages
+for defaults, preconditions, body, and postconditions. No interpreted call recurses
+through Rust. Return switches only the current frame to postconditions. Popping
+that frame resumes its caller's suspended expression. Both streams remain
+buffered until all selected computation succeeds. See [function semantics](functions.md).
+
 The lexer cursor always advances by UTF-8 character boundaries. The parser uses
 an index into tokens and does not recursively process the top-level statement
 list. Syntax errors refer to the unexpected token, or an empty EOF span when

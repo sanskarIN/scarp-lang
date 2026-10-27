@@ -1,0 +1,8 @@
+funcra checked(n: integer) -> integer
+    needs n > 0;
+{
+    eprint("this output stays hidden");
+    return n;
+}
+print("this output also stays hidden");
+checked(0);

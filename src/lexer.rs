@@ -44,6 +44,8 @@ pub enum TokenKind {
     LeftBracket,
     RightBracket,
     Comma,
+    Colon,
+    Arrow,
     RightParen,
     LeftBrace,
     RightBrace,
@@ -92,6 +94,8 @@ impl fmt::Display for TokenKind {
             Self::LeftBracket => f.write_str("["),
             Self::RightBracket => f.write_str("]"),
             Self::Comma => f.write_str(","),
+            Self::Colon => f.write_str(":"),
+            Self::Arrow => f.write_str("->"),
             Self::RightParen => f.write_str(")"),
             Self::LeftBrace => f.write_str("{"),
             Self::RightBrace => f.write_str("}"),
@@ -146,6 +150,15 @@ impl Lexer<'_> {
                 continue;
             }
             let kind = match character {
+                ':' => {
+                    self.bump();
+                    TokenKind::Colon
+                }
+                '-' if self.source[self.cursor..].starts_with("->") => {
+                    self.bump();
+                    self.bump();
+                    TokenKind::Arrow
+                }
                 '<' | '>'
                     if self.source[self.cursor..].starts_with(if character == '<' {
                         "<<"

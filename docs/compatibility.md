@@ -44,8 +44,25 @@ package metadata and has no v0.0.3 tag.
 | Freestanding C emission for the integer/boolean subset | No | No | Experimental |
 | Native executable/object build commands for that subset | No | No | Experimental |
 | `exec`, static `verify`, contextual `guide`, and token/AST inspection | No | No | Yes |
-| User functions, imports | No | No | No |
+| Typed named funcra, recursion, defaults, contracts, purity | No | No | Interpreter |
+| Function values, closures, imports | No | No | No |
 | Whole-language native compilation and kernel boot | No | No | No |
+
+The function increment adds public `Statement::Function`, `Statement::Return`,
+`Statement::Call`, `ExpressionKind::UserCall`, `TokenKind::Colon/Arrow`, and
+`ValueType::Unit` / `Value::Unit` variants and function AST structs. Exhaustive
+Rust matches must account for them. Existing built-in `ExpressionKind::Call`
+and single-argument `Statement::Println` shapes remain. Old parse/compile/run/check
+signatures and `ExecutionLimits` struct literals remain source compatible.
+`ExecutionOptions` and function metadata are additive APIs. Slot metadata still
+describes the file frame, not the sum of all function frames.
+
+Function keywords are now reserved binding names. Explicit named functions
+override numerical built-in names throughout their file; output names cannot be
+overridden. Unknown statement calls now report E0024, and unknown calls can be
+represented by `parse` before name resolution rejects them. The interpreter's
+additional default call/storage limits apply through old APIs too. Native
+function compilation returns E0035 before emission. See [functions](functions.md).
 
 Integer range, precedence, division truncation, mandatory semicolons, and
 no-output-on-invalid-source behavior remain consistent. Development adds

@@ -21,6 +21,20 @@ pub enum Builtin {
 }
 
 impl Builtin {
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Length => "len",
+            Self::Sum => "sum",
+            Self::Mean => "mean",
+            Self::Dot => "dot",
+            Self::Add => "add",
+            Self::Scale => "scale",
+            Self::Clamp => "clamp",
+            Self::Fill => "fill",
+            Self::Softmax => "softmax",
+            Self::Mse => "mse",
+        }
+    }
     pub fn from_name(name: &str) -> Option<Self> {
         Some(match name {
             "len" => Self::Length,

@@ -32,6 +32,7 @@ pub(crate) struct Workspace {
 }
 
 enum Task {
+    UserCall(usize, usize, Span),
     BitNot(Span),
     Vector(usize, Span),
     Index(Span),
@@ -44,6 +45,15 @@ enum Task {
     Logical(LogicalOperator, usize, Span),
 }
 
+pub(crate) enum Evaluation {
+    Complete(Value),
+    Call {
+        node: usize,
+        arguments: Vec<Value>,
+        span: Span,
+    },
+}
+
 impl Workspace {
     pub(crate) fn evaluate(
         &mut self,
@@ -51,9 +61,33 @@ impl Workspace {
         environment: &[Value],
         budget: &mut Budget,
     ) -> Result<Value, Diagnostic> {
+        self.start(expression);
+        match self.resume(expression, environment, budget)? {
+            Evaluation::Complete(value) => Ok(value),
+            Evaluation::Call { span, .. } => Err(Diagnostic::new(
+                DiagnosticKind::FunctionUnsupported,
+                span,
+                "user calls require a program execution frame",
+            )),
+        }
+    }
+
+    pub(crate) fn start(&mut self, expression: &ResolvedExpression) {
         self.values.clear();
         self.tasks.clear();
         self.tasks.push(Task::Visit(expression.syntax.root()));
+    }
+
+    pub(crate) fn accept(&mut self, value: Value) {
+        self.values.push(value);
+    }
+
+    pub(crate) fn resume(
+        &mut self,
+        expression: &ResolvedExpression,
+        environment: &[Value],
+        budget: &mut Budget,
+    ) -> Result<Evaluation, Diagnostic> {
         let Self { values, tasks } = self;
         while let Some(task) = tasks.pop() {
             let span = match &task {
@@ -62,6 +96,7 @@ impl Workspace {
                 | Task::Vector(_, span)
                 | Task::Index(span)
                 | Task::Call(_, _, span)
+                | Task::UserCall(_, _, span)
                 | Task::Negate(span)
                 | Task::Not(span)
                 | Task::Boolean(span)
@@ -73,6 +108,12 @@ impl Workspace {
                 Task::Visit(index) => {
                     let node = &expression.syntax.nodes()[index];
                     match &node.kind {
+                        ExpressionKind::UserCall { arguments, .. } => {
+                            tasks.push(Task::UserCall(index, arguments.len(), node.span));
+                            for argument in arguments.iter().rev() {
+                                tasks.push(Task::Visit(argument.expression));
+                            }
+                        }
                         ExpressionKind::Vector { elements } => {
                             tasks.push(Task::Vector(elements.len(), node.span));
                             for element in elements.iter().rev() {
@@ -154,6 +195,14 @@ impl Workspace {
                         }
                     }
                 }
+                Task::UserCall(node, count, span) => {
+                    let arguments = values.split_off(values.len() - count);
+                    return Ok(Evaluation::Call {
+                        node,
+                        arguments,
+                        span,
+                    });
+                }
                 Task::Vector(count, span) => {
                     budget.charge(count as u64, span)?;
                     let start = values.len() - count;
@@ -231,9 +280,11 @@ impl Workspace {
                 }
             }
         }
-        Ok(values
-            .pop()
-            .expect("a resolved expression produces one value"))
+        Ok(Evaluation::Complete(
+            values
+                .pop()
+                .expect("a resolved expression produces one value"),
+        ))
     }
 }
 

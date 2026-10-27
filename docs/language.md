@@ -1,7 +1,7 @@
 # Scarp prototype language reference
 
 This reference describes the unreleased v0.0.3-dev language on
-`scarp/output-statements`, following published v0.0.2. It is an
+`scarp/funcra-function-system`, following published v0.0.2. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
 
@@ -22,7 +22,8 @@ Legacy declarations produce E0005 with migration help, while malformed
 `variable` remain valid; strings and comments are unaffected. See the
 [declaration migration table](compatibility.md#declaration-syntax-migration).
 
-Punctuation tokens are `(`, `)`, `[`, `]`, `,`, `{`, `}`, `;`, and `=`. Compound assignment tokens use
+Punctuation tokens are `(`, `)`, `[`, `]`, `,`, `:`, `->`, `{`, `}`, `;`, and `=`.
+The arrow requires adjacent `-` and `>` characters. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`,
 and `>>>=`. Arithmetic tokens are `+`, `-`, `*`, `/`, and `%`. Integer bit tokens
 are `&`, `|`, `^`, `~`, `<<`, `>>`, and `>>>`. Comparisons use longest match:
@@ -59,8 +60,20 @@ Trivia means whitespace and line comments. Trivia can appear between tokens.
 The following grammar applies after trivia has been removed:
 
 ```ebnf
-program         = { statement }, EOF ;
-statement       = output_statement | declaration | assignment | block | conditional | loop | loop_control ;
+program         = { function_decl | statement }, EOF ;
+statement       = output_statement | declaration | assignment | block | conditional | loop | loop_control
+                  | return_stmt | call_stmt ;
+function_decl   = [ "pure" ], "funcra", IDENTIFIER, "(", [ params ], ")", "->", result_type,
+                  { ("needs" | "ensures"), expression, ";" }, block ;
+params          = param, { ",", param }, [ "," ] ;
+param           = IDENTIFIER, ":", value_type, [ "=", expression ] ;
+value_type      = "integer" | "float" | "boolean" | "string" | "vector" ;
+result_type     = value_type | "unit" ;
+return_stmt     = "return", [ expression ], ";" ;
+call_stmt       = call, ";" ;
+call            = IDENTIFIER, "(", [ call_args ], ")" ;
+call_args       = call_arg, { ",", call_arg }, [ "," ] ;
+call_arg        = [ IDENTIFIER, ":" ], expression ;
 loop            = "while", expression, block ;
 loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
@@ -87,9 +100,8 @@ product         = unary, { ("*" | "/" | "%"), unary } ;
 unary           = [ "-" | "~" ], postfix ;
 postfix         = primary, { "[", expression, "]" } ;
 primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER
-                  | "(", expression, ")" | vector | builtin_call ;
+                  | "(", expression, ")" | vector | call ;
 vector          = "[", [ expression, { ",", expression }, [ "," ] ], "]" ;
-builtin_call    = BUILTIN, "(", [ expression, { ",", expression }, [ "," ] ], ")" ;
 ```
 
 `"println"` denotes an identifier with that exact value, not a substring of a
@@ -257,13 +269,20 @@ stderr, alongside explicit program stderr. Exit codes are `0` for success, `1` f
 
 ## Scope
 
+The [function reference](functions.md) defines file-level typed `funcra`, unit,
+return flow, call order, named/default arguments, purity, contracts, and budgets.
+All signatures and bodies are checked before execution. Functions cannot capture
+file-level variables. The five new function keywords are reserved binding names;
+type names remain contextual. See the guide for built-in name precedence.
+
 While loops, nearest-loop control, and per-call deterministic work/print budgets
 are implemented on the loop branch. See [the loop design](proposals/0006-bounded-loops.md).
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on development branches and described
 in [the variable reference](variables.md). An experimental
 [freestanding C backend](proposals/0010-freestanding-c.md) supports integer/boolean
-computation units with caller-owned storage and output. Functions, user-defined
-types, modules, raw memory/device access, kernel startup, and a package manager
+computation units with caller-owned storage and output. Native function lowering,
+function values/closures, user-defined types, modules, raw memory/device access,
+kernel startup, and a package manager
 remain future work. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).

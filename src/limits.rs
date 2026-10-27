@@ -19,6 +19,39 @@ impl Default for ExecutionLimits {
     }
 }
 
+/// Additive interpreter options. Existing two-field ExecutionLimits literals
+/// remain valid and old APIs use these defaults for the additional safeguards.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExecutionOptions {
+    pub limits: ExecutionLimits,
+    pub max_call_depth: usize,
+    pub max_calls: u64,
+    pub max_live_slots: usize,
+    /// Conservative cumulative storage of output snapshots, including overhead.
+    pub max_capture_bytes: usize,
+}
+
+impl Default for ExecutionOptions {
+    fn default() -> Self {
+        Self {
+            limits: ExecutionLimits::default(),
+            max_call_depth: 256,
+            max_calls: 100_000,
+            max_live_slots: 1_000_000,
+            max_capture_bytes: 16 * 1024 * 1024,
+        }
+    }
+}
+
+impl From<ExecutionLimits> for ExecutionOptions {
+    fn from(limits: ExecutionLimits) -> Self {
+        Self {
+            limits,
+            ..Self::default()
+        }
+    }
+}
+
 pub(crate) struct Budget {
     remaining: u64,
 }
