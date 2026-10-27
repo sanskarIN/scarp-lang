@@ -122,6 +122,17 @@ Calls inside defaults and contracts obey the ordinary global budgets.
 
 ## Frames, budgets, and output
 
+Call-limit diagnostics identify the exhausted resource and configured value:
+`max_call_depth` bounds active function frames, `max_calls` bounds cumulative
+user calls, and `max_live_slots` bounds live variable storage. Their repair help
+names the corresponding `ExecutionOptions` field. The limits and boundary
+behavior are unchanged; a failure still discards both pending output streams.
+
+When a default value has the wrong type, the primary location is the default
+expression and a related location identifies its parameter declaration. Unused
+functions receive the same static checks. Incomplete local bind/var statements
+and assignments also receive statement-specific repair help.
+
 The interpreter suspends expression tasks and uses an explicit heap frame stack.
 Calls do not recurse through Rust. Each invocation has independent slots and a
 program counter. Reusing a compiled program creates fresh execution storage.

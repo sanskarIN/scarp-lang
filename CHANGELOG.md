@@ -2,6 +2,11 @@
 
 ## Unreleased — v0.0.3 development
 
+- Default parameter type errors highlight their initializer and link to the
+  parameter. Distinct call-depth, total-call, and live-slot diagnostics show the
+  configured limit and relevant execution option. Local variable repair help
+  describes declarations and assignments directly. Grammar and limits are unchanged.
+
 - Typed file-level `funcra` functions, forward/mutual recursion, explicit returns,
   unit statement calls, named/default arguments, and isolated heap call frames.
 - Verified `pure` declarations, executable `needs`/`ensures` contracts, bounded
