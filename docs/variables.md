@@ -14,8 +14,9 @@ print(area); // 42
 ```
 
 Declarations require `bind` or `var`, an ASCII identifier, `=`, a value expression, and
-`;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, legacy `let`/`mut`, `print`,
-`true`, `false`, `and`, `or`, `not`, `if`, `elif`, and `else` are reserved binding names. A binding
+`;`. Names are case-sensitive. `_` is an ordinary name. `bind`, `var`, legacy `let`/`mut`,
+`print`, `println`, `write`, `eprint`, `ewrite`, `true`, `false`, `and`, `or`,
+`not`, `if`, `elif`, `else`, `while`, `break`, and `continue` are reserved binding names. A binding
 infers `integer`, `string`, or `boolean` from its initializer. Parenthesized values and names are value
 expressions; arithmetic remains integer-only.
 

@@ -85,7 +85,7 @@ the CLI does not reject other filename extensions.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
-- Escapes `\\` (backslash), `\"` (double quote), and `\n` (line break).
+- Escapes `\\` (backslash), `\"` (double quote), `\n` (LF), `\t` (tab), and `\r` (CR).
 - `run`, `check`, `tokens`, `--help`/`-h`, and `--version`/`-V` commands.
 - Syntax errors with a code, filename, line, column, source excerpt, and help.
 
@@ -94,7 +94,7 @@ Both accept zero or more comma-separated values. `eprint` and `ewrite` use stder
 See the [output guide](docs/output.md) for exact bytes and embedding APIs. Physical line breaks inside a string are rejected;
 use `\n` instead. Identifiers use ASCII letters, digits, and underscores, cannot
 start with a digit, and are case-sensitive. Statements include declarations,
-assignments, blocks, `if`/`elif`/`else` decisions, and `print` calls. Escapes other than the three listed
+assignments, blocks, `if`/`elif`/`else` decisions, and `print` calls. Escapes other than the five listed
 above are rejected.
 
 The entire file is lexed, parsed, resolved, checked for primitive type consistency,
