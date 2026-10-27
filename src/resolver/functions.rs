@@ -30,7 +30,10 @@ pub(super) fn resolve_function(
         let default = if let Some(expression) = parameter.default {
             optional = true;
             let expression = resolver.expression(expression)?;
-            require_type(expression.kind, parameter.kind, parameter.span)?;
+            let initializer_span = expression.syntax.nodes()[expression.syntax.root()].span;
+            require_type(expression.kind, parameter.kind, initializer_span).map_err(|error| {
+                error.with_related(parameter.span, "the parameter's type is declared here")
+            })?;
             Some(expression)
         } else {
             if optional {

@@ -176,40 +176,7 @@ impl Parser<'_> {
                     )));
                 }
                 TokenKind::Identifier(name) if name == "bind" || name == "var" => {
-                    let start = token.span.start;
-                    let mutable = name == "var";
-                    self.cursor += 1;
-                    if self.keyword("mut")
-                        && matches!(
-                            self.tokens.get(self.cursor + 1).map(|token| &token.kind),
-                            Some(TokenKind::Identifier(_))
-                        )
-                    {
-                        return Err(self.expected("a binding name followed by '='").with_help(
-                            "use var name = expression; for a mutable variable; remove mut",
-                        ));
-                    }
-                    let (name, name_span) = match self.current() {
-                        Some(Token {
-                            kind: TokenKind::Identifier(name),
-                            span,
-                        }) => (name.clone(), *span),
-                        _ => return Err(self.expected("a binding name")),
-                    };
-                    self.cursor += 1;
-                    self.punctuation(TokenKind::Equal, "'='").map_err(|error| {
-                        error.with_help("declarations require an initializer: bind name = expression; or var name = expression;")
-                    })?;
-                    let mut nodes = Vec::new();
-                    let root = self.logical_or(&mut nodes, 0)?;
-                    let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
-                    statements.push(Statement::Declaration {
-                        name,
-                        name_span,
-                        mutable,
-                        initializer: Expression { nodes, root },
-                        span: Span::new(start, end),
-                    });
+                    statements.push(self.declaration()?);
                 }
                 TokenKind::Identifier(name) => {
                     if self
@@ -237,21 +204,7 @@ impl Parser<'_> {
                         .get(self.cursor + 1)
                         .and_then(|token| assignment_operator(&token.kind))
                     {
-                        let name = name.clone();
-                        let name_span = token.span;
-                        let operator_span = self.tokens[self.cursor + 1].span;
-                        self.cursor += 2;
-                        let mut nodes = Vec::new();
-                        let root = self.logical_or(&mut nodes, 0)?;
-                        let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
-                        statements.push(Statement::Assign {
-                            name,
-                            name_span,
-                            operator,
-                            operator_span,
-                            value: Expression { nodes, root },
-                            span: Span::new(name_span.start, end),
-                        });
+                        statements.push(self.assignment(operator)?);
                         continue;
                     }
                     return Err(Diagnostic::new(
@@ -272,6 +225,95 @@ impl Parser<'_> {
                 .with_help("close the statement block with '}'"));
         }
         Ok(statements)
+    }
+
+    // Keep declaration temporaries out of recursive statement-list frames.
+    fn declaration(&mut self) -> Result<Statement, Diagnostic> {
+        let token = self.current().expect("declaration keyword is present");
+        let TokenKind::Identifier(name) = &token.kind else {
+            unreachable!()
+        };
+        let start = token.span.start;
+        let mutable = name == "var";
+        let keyword = if mutable { "var" } else { "bind" };
+        self.cursor += 1;
+        if self.keyword("mut")
+            && matches!(
+                self.tokens.get(self.cursor + 1).map(|token| &token.kind),
+                Some(TokenKind::Identifier(_))
+            )
+        {
+            return Err(self
+                .expected("a binding name followed by '='")
+                .with_help("use var name = expression; for a mutable variable; remove mut"));
+        }
+        let (name, name_span) = match self.current() {
+            Some(Token {
+                kind: TokenKind::Identifier(name),
+                span,
+            }) => (name.clone(), *span),
+            _ => {
+                return Err(self
+                    .expected("a binding name")
+                    .with_help(format!("use {keyword} name = expression;")))
+            }
+        };
+        self.cursor += 1;
+        self.punctuation(TokenKind::Equal, "'='").map_err(|error| {
+            error.with_help("declarations require an initializer: bind name = expression; or var name = expression;")
+        })?;
+        let mut nodes = Vec::new();
+        let root = self.logical_or(&mut nodes, 0).map_err(|error| {
+            if error.kind == DiagnosticKind::UnexpectedToken {
+                error.with_help(format!(
+                    "provide an initializer after '=': {keyword} name = expression;"
+                ))
+            } else {
+                error
+            }
+        })?;
+        let end = self
+            .punctuation(TokenKind::Semicolon, "';'")
+            .map_err(|error| error.with_help(format!("end the {keyword} declaration with ';'")))?
+            .end;
+        Ok(Statement::Declaration {
+            name,
+            name_span,
+            mutable,
+            initializer: Expression { nodes, root },
+            span: Span::new(start, end),
+        })
+    }
+
+    fn assignment(&mut self, operator: AssignmentOperator) -> Result<Statement, Diagnostic> {
+        let token = self.current().expect("assignment name is present");
+        let TokenKind::Identifier(name) = &token.kind else {
+            unreachable!()
+        };
+        let name = name.clone();
+        let name_span = token.span;
+        let operator_span = self.tokens[self.cursor + 1].span;
+        self.cursor += 2;
+        let mut nodes = Vec::new();
+        let root = self.logical_or(&mut nodes, 0).map_err(|error| {
+            if error.kind == DiagnosticKind::UnexpectedToken {
+                error.with_help("provide a value expression after the assignment operator")
+            } else {
+                error
+            }
+        })?;
+        let end = self
+            .punctuation(TokenKind::Semicolon, "';'")
+            .map_err(|error| error.with_help("end the assignment with ';'"))?
+            .end;
+        Ok(Statement::Assign {
+            name,
+            name_span,
+            operator,
+            operator_span,
+            value: Expression { nodes, root },
+            span: Span::new(name_span.start, end),
+        })
     }
 
     fn keyword(&self, expected: &str) -> bool {
