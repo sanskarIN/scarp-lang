@@ -1,0 +1,6 @@
+error[E0015]: expected integer, found boolean
+ --> count.srp:1:8
+  |
+1 | repeat true as i {}
+  |        ^^^^
+ = help: repeat needs an integer count: repeat 5 as index { statements }

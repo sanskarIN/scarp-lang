@@ -1,0 +1,6 @@
+error[E0017]: execution step limit of 5 exceeded
+ --> steps.srp:1:50
+  |
+1 | println("hidden"); repeat 9223372036854775807 as i { continue; }
+  |                                                  ^
+ = help: check loop progress or raise --max-steps / ExecutionLimits.max_steps

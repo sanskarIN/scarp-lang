@@ -2,6 +2,8 @@
 
 ## Unreleased — v0.0.3 iteration
 
+- Actionable loop/count/index diagnostics, configured limits in budget errors,
+  contextual run/check/tokens help, and iteration/budget guides.
 - Tab `\t` and carriage-return `\r` string escapes, with exact-byte fixture checks.
 - Counted `repeat count as index` with a one-time count snapshot, immutable
   zero-based index, fixed storage, and nearest-loop control shared with while.

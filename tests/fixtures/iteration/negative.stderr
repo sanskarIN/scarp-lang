@@ -1,0 +1,6 @@
+error[E0019]: repeat count must be nonnegative
+ --> negative.srp:1:8
+  |
+1 | repeat (-2) as i {}
+  |        ^^^^
+ = help: use zero to skip the loop or a positive integer count

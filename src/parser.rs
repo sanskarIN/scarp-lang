@@ -122,8 +122,10 @@ impl Parser<'_> {
                         }
                     };
                     self.cursor += 1;
-                    let (body, body_span) = self.block(depth).map_err(|error|
-                        error.with_help("enclose the repeat body in braces: repeat count as index { statements }"))?;
+                    if !matches!(self.current().map(|t| &t.kind), Some(TokenKind::LeftBrace)) {
+                        return Err(self.expected("'{'").with_help("enclose the repeat body in braces: repeat count as index { statements }"));
+                    }
+                    let (body, body_span) = self.block(depth)?;
                     statements.push(Statement::Repeat {
                         count: Expression { nodes, root },
                         index,
@@ -136,7 +138,18 @@ impl Parser<'_> {
                     let start = token.span.start;
                     self.cursor += 1;
                     let mut nodes = Vec::new();
-                    let root = self.logical_or(&mut nodes, 0)?;
+                    let root = self.logical_or(&mut nodes, 0).map_err(|error| {
+                        if error.kind == DiagnosticKind::UnexpectedToken {
+                            error.with_help("use while boolean_condition { statements }")
+                        } else {
+                            error
+                        }
+                    })?;
+                    if !matches!(self.current().map(|t| &t.kind), Some(TokenKind::LeftBrace)) {
+                        return Err(self.expected("'{'").with_help(
+                            "enclose the while body in braces: while condition { statements }",
+                        ));
+                    }
                     let (body, span) = self.block(depth)?;
                     statements.push(Statement::While {
                         condition: Expression { nodes, root },
