@@ -21,11 +21,15 @@ impl Default for ExecutionLimits {
 
 pub(crate) struct Budget {
     remaining: u64,
+    limit: u64,
 }
 
 impl Budget {
     pub fn new(steps: u64) -> Self {
-        Self { remaining: steps }
+        Self {
+            remaining: steps,
+            limit: steps,
+        }
     }
 
     pub fn charge(&mut self, amount: u64, span: Span) -> Result<(), Diagnostic> {
@@ -33,9 +37,9 @@ impl Budget {
             return Err(Diagnostic::new(
                 DiagnosticKind::ExecutionLimit,
                 span,
-                "execution step limit exceeded",
+                format!("execution step limit of {} exceeded", self.limit),
             )
-            .with_help("check loop progress or select a larger execution budget"));
+            .with_help("check loop progress or raise --max-steps / ExecutionLimits.max_steps"));
         }
         self.remaining -= amount;
         Ok(())

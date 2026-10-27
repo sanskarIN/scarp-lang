@@ -101,6 +101,7 @@ struct Binding {
     declaration: Span,
     mutable: bool,
     kind: ValueType,
+    repeat_index: bool,
 }
 type Scope = HashMap<String, Binding>;
 
@@ -152,7 +153,11 @@ impl Resolver {
                 } => {
                     let count = resolve_expression(count, &self.scopes)?;
                     let count_span = count.syntax.nodes()[count.syntax.root()].span;
-                    require_type(count.kind, ValueType::Integer, count_span)?;
+                    require_type(count.kind, ValueType::Integer, count_span).map_err(|error| {
+                        error.with_help(
+                            "repeat needs an integer count: repeat 5 as index { statements }",
+                        )
+                    })?;
                     check_name(&index, index_span)?;
                     let count_slot = self.slot_types.len();
                     let index_slot = count_slot + 1;
@@ -186,6 +191,7 @@ impl Resolver {
                             declaration: index_span,
                             mutable: false,
                             kind: ValueType::Integer,
+                            repeat_index: true,
                         },
                     );
                     self.statement_list(statements)?;
@@ -208,7 +214,8 @@ impl Resolver {
                 } => {
                     let condition = resolve_expression(condition, &self.scopes)?;
                     let condition_span = condition.syntax.nodes()[condition.syntax.root()].span;
-                    require_type(condition.kind, ValueType::Boolean, condition_span)?;
+                    require_type(condition.kind, ValueType::Boolean, condition_span).map_err(|error|
+                        error.with_help("while needs a boolean guard; compare values, for example while index < count { statements }"))?;
                     let start = self.emit(
                         ResolvedStatement::JumpIfFalse {
                             condition,
@@ -323,6 +330,7 @@ impl Resolver {
                                 declaration: name_span,
                                 mutable,
                                 kind,
+                                repeat_index: false,
                             },
                         );
                     self.emit(ResolvedStatement::Store { slot, value }, span);
@@ -372,7 +380,9 @@ impl Resolver {
                             binding.declaration,
                             "the immutable binding is declared here",
                         )
-                        .with_help("declare this binding with let mut to allow assignment"));
+                        .with_help(if binding.repeat_index {
+                            "repeat indices are read-only; copy the index into a separate let mut variable to change a local value"
+                        } else { "declare this binding with let mut to allow assignment" }));
                     }
                     let slot = binding.slot;
                     let expected_type = binding.kind;
@@ -610,7 +620,7 @@ fn loop_control(span: Span) -> Diagnostic {
     Diagnostic::new(
         DiagnosticKind::LoopControl,
         span,
-        "loop control used outside a while body",
+        "loop control used outside a while or repeat body",
     )
-    .with_help("put break or continue inside the loop it should control")
+    .with_help("put break; or continue; inside the while or repeat loop it should control")
 }

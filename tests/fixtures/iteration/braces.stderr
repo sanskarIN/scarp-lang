@@ -1,0 +1,6 @@
+error[E0004]: expected '{', found <eof>
+ --> braces.srp:2:1
+  |
+2 | 
+  | ^
+ = help: enclose the while body in braces: while condition { statements }

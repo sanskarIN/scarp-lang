@@ -1,0 +1,6 @@
+error[E0016]: loop control used outside a while or repeat body
+ --> outside.srp:2:2
+  |
+2 |     break;
+  |     ^^^^^^
+ = help: put break; or continue; inside the while or repeat loop it should control

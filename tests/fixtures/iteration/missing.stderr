@@ -1,0 +1,6 @@
+error[E0004]: expected as followed by an index name, found identifier(i)
+ --> missing.srp:1:10
+  |
+1 | repeat 2 i {}
+  |          ^
+ = help: use repeat count as index { statements }

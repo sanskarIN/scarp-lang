@@ -105,9 +105,11 @@ fn prepare(
                     return Err(Diagnostic::new(
                         DiagnosticKind::OutputLimit,
                         operation.span,
-                        "print count limit exceeded",
+                        format!("print count limit of {} exceeded", limits.max_prints),
                     )
-                    .with_help("reduce printed results or select a larger print budget"));
+                    .with_help(
+                        "reduce println calls or raise --max-prints / ExecutionLimits.max_prints",
+                    ));
                 }
                 prints += 1;
                 match argument {

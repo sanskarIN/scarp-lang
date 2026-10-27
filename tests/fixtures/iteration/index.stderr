@@ -1,0 +1,11 @@
+error[E0013]: cannot assign to immutable binding "i"
+ --> index.srp:1:17
+  |
+1 | repeat 1 as i { i=2; }
+  |                 ^
+ = note: the immutable binding is declared here
+ --> index.srp:1:13
+  |
+1 | repeat 1 as i { i=2; }
+  |             ^
+ = help: repeat indices are read-only; copy the index into a separate let mut variable to change a local value
