@@ -2,6 +2,7 @@
 
 ## Unreleased — v0.0.3 iteration
 
+- Tab `\t` and carriage-return `\r` string escapes, with exact-byte fixture checks.
 - Counted `repeat count as index` with a one-time count snapshot, immutable
   zero-based index, fixed storage, and nearest-loop control shared with while.
 - Scoped while loops, nearest-loop break/continue, per-call work/print budgets,

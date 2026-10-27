@@ -10,7 +10,7 @@ bindings and string-valued expressions require the development stack.
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
 | Boolean | `true`, `false` | Development only; explicit booleans without truthiness |
-| String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text with three supported escapes |
+| String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text; v0.0.3 adds tab/CR to the three older escapes |
 
 Development bindings infer their kind from the initializer. Mutable assignment
 must preserve that kind. Strings do not automatically convert to integers, and
@@ -112,7 +112,7 @@ inside the right-hand expression identify that expression's operator instead.
 
 ## Strings, copies, and output
 
-Strings support `\\`, `\"`, and `\n`. Other escapes are errors. A physical CR or LF
+Strings support `\\`, `\"`, `\n`, `\t`, and `\r` in v0.0.3. Other escapes are errors. A physical CR or LF
 inside a string is invalid. Parenthesized strings are supported in development.
 
 Arithmetic and compound assignment remain integer-only. There is no string

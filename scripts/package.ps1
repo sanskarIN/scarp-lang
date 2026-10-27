@@ -7,6 +7,31 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
+function Invoke-ScarpProcess {
+    param([string]$Executable, [string[]]$Arguments)
+    $start = [System.Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = $Executable
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    foreach ($argument in $Arguments) { $start.ArgumentList.Add($argument) }
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $start
+    $stdout = [System.IO.MemoryStream]::new()
+    $stderr = [System.IO.MemoryStream]::new()
+    try {
+        if (-not $process.Start()) { throw 'Could not start packaged executable' }
+        $readOut = $process.StandardOutput.BaseStream.CopyToAsync($stdout)
+        $readErr = $process.StandardError.BaseStream.CopyToAsync($stderr)
+        $process.WaitForExit()
+        $readOut.GetAwaiter().GetResult()
+        $readErr.GetAwaiter().GetResult()
+        return @{ ExitCode = $process.ExitCode; Stdout = $stdout.ToArray(); Stderr = $stderr.ToArray() }
+    }
+    finally { $process.Dispose(); $stdout.Dispose(); $stderr.Dispose() }
+}
+
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $projectRoot
 try {
@@ -83,13 +108,12 @@ try {
     if ($LASTEXITCODE -ne 0 -or $actualVersion -ne "scarp $version") {
         throw 'Packaged version check failed'
     }
-    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'repeat')) {
+    foreach ($example in @('hello', 'arithmetic', 'bindings', 'mutable', 'scopes', 'string_bindings', 'booleans', 'decisions', 'loops', 'repeat', 'escapes')) {
         $source = Join-Path $extractedPackage "examples/$example.srp"
-        $actual = & $executable run $source
-        if ($LASTEXITCODE -ne 0) { throw "Packaged $example example failed" }
-        $actualText = ($actual -join "`n") + "`n"
-        $expected = [System.IO.File]::ReadAllText((Join-Path $extractedPackage "examples/$example.stdout"))
-        if ($actualText -cne $expected) { throw "Packaged $example output differs" }
+        $actual = Invoke-ScarpProcess -Executable $executable -Arguments @('run', $source)
+        if ($actual.ExitCode -ne 0 -or $actual.Stderr.Length -ne 0) { throw "Packaged $example example failed" }
+        $expected = [System.IO.File]::ReadAllBytes((Join-Path $extractedPackage "examples/$example.stdout"))
+        if ([Convert]::ToBase64String($actual.Stdout) -cne [Convert]::ToBase64String($expected)) { throw "Packaged $example output differs" }
         $checkOutput = & $executable check $source
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
     }
