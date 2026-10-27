@@ -23,7 +23,7 @@ Usage:
 
 Use -- before a filename that begins with a dash.
 run/check options before the path: --max-steps <count>, --max-prints <count>.
-Defaults: 1000000 execution steps, 100000 selected prints.
+Defaults: 1000000 execution steps, 100000 selected output statements.
 Iteration: while condition { ... }, repeat count as index { ... }.
 Use scarp run --help or scarp check --help for budget examples.
 ";
@@ -31,7 +31,7 @@ Use scarp run --help or scarp check --help for budget examples.
 const RUN_HELP: &str =
     "Usage: scarp run [--max-steps <count>] [--max-prints <count>] [--] <file.srp>
 
-Execute checked source, preparing every selected println before writing output.
+Execute checked source, preparing every selected output statement before writing either stream.
 while guards are boolean; repeat count as index saves one nonnegative integer count.
 break; exits the nearest loop; continue; rechecks while or advances repeat.
 Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
@@ -64,6 +64,9 @@ fn main() -> ExitCode {
     let mut errors = stderr.lock();
     let status = dispatch(env::args_os().skip(1).collect(), &mut output, &mut errors);
     if let Err(error) = output.flush() {
+        return output_error(error, &mut errors);
+    }
+    if let Err(error) = errors.flush() {
         return output_error(error, &mut errors);
     }
     ExitCode::from(status)
@@ -148,7 +151,7 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else {
-        match scarp::run_with_limits(&source, output, limits) {
+        match scarp::run_with_io_and_limits(&source, output, errors, limits) {
             Ok(()) => 0,
             Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
             Err(RunError::Output(error)) => write_output(Err(error), errors),

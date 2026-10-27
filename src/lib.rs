@@ -5,7 +5,7 @@
 //!
 //! ```
 //! let mut output = Vec::new();
-//! scarp::run(r#"println("Hello from Scarp!");"#, &mut output)?;
+//! scarp::run(r#"print("Hello from Scarp!");"#, &mut output)?;
 //! assert_eq!(output, b"Hello from Scarp!\n");
 //! # Ok::<(), scarp::RunError>(())
 //! ```
@@ -41,7 +41,7 @@ pub fn compile(source: &str) -> Result<ResolvedProgram, Diagnostic> {
 /// The current language has no side effects other than printing.
 ///
 /// ```
-/// scarp::check("var count = 1; count += 2; println(count);")?;
+/// scarp::check("var count = 1; count += 2; print(count);")?;
 /// assert!(scarp::check("bind value = 1 / 0;").is_err());
 /// # Ok::<(), scarp::diagnostics::Diagnostic>(())
 /// ```
@@ -93,4 +93,32 @@ pub fn run_with_limits(
 ) -> Result<(), RunError> {
     let program = compile(source).map_err(RunError::Diagnostic)?;
     interpreter::execute_with_limits(&program, output, limits)
+}
+
+/// Execute with explicit stdout and stderr destinations; never uses global I/O.
+///
+/// ```
+/// let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+/// scarp::run_with_io("print(\"ready\", true); eprint(\"warning\");", &mut stdout, &mut stderr)?;
+/// assert_eq!(stdout, b"ready true\n");
+/// assert_eq!(stderr, b"warning\n");
+/// # Ok::<(), scarp::RunError>(())
+/// ```
+pub fn run_with_io(
+    source: &str,
+    stdout: &mut impl io::Write,
+    stderr: &mut impl io::Write,
+) -> Result<(), RunError> {
+    run_with_io_and_limits(source, stdout, stderr, ExecutionLimits::default())
+}
+
+/// Dual-destination execution with deterministic work and output-statement limits.
+pub fn run_with_io_and_limits(
+    source: &str,
+    stdout: &mut impl io::Write,
+    stderr: &mut impl io::Write,
+    limits: ExecutionLimits,
+) -> Result<(), RunError> {
+    let program = compile(source).map_err(RunError::Diagnostic)?;
+    interpreter::execute_with_io_and_limits(&program, stdout, stderr, limits)
 }

@@ -1,8 +1,9 @@
 //! Execute a resolved program with fresh variable storage for every call.
 
-use std::io::Write;
+use std::io::{self, Write};
 
 use crate::{
+    ast::OutputTarget,
     diagnostics::{Diagnostic, DiagnosticKind},
     evaluator,
     limits::{Budget, ExecutionLimits},
@@ -16,11 +17,43 @@ enum PrintValue<'a> {
     Value(Value),
 }
 
+struct OutputEvent<'a> {
+    target: OutputTarget,
+    value: PrintValue<'a>,
+    newline: bool,
+}
+
+impl OutputEvent<'_> {
+    fn has_text(&self) -> bool {
+        match &self.value {
+            PrintValue::String(value) => !value.is_empty(),
+            PrintValue::Value(value) => value.as_str().map_or(true, |text| !text.is_empty()),
+        }
+    }
+
+    fn has_bytes(&self) -> bool {
+        self.newline || self.has_text()
+    }
+
+    fn write_to(&self, output: &mut dyn Write) -> io::Result<()> {
+        if self.has_text() {
+            match &self.value {
+                PrintValue::String(value) => output.write_all(value.as_bytes())?,
+                PrintValue::Value(value) => write!(output, "{value}")?,
+            }
+        }
+        if self.newline {
+            output.write_all(b"\n")?;
+        }
+        Ok(())
+    }
+}
+
 fn prepare(
     program: &ResolvedProgram,
     capture: bool,
     limits: ExecutionLimits,
-) -> Result<Vec<PrintValue<'_>>, Diagnostic> {
+) -> Result<Vec<OutputEvent<'_>>, Diagnostic> {
     let mut environment = vec![Value::Integer(0); program.binding_count()];
     let mut workspace = evaluator::Workspace::default();
     let mut output = Vec::new();
@@ -100,7 +133,11 @@ fn prepare(
             ResolvedStatement::Store { slot, value } => {
                 environment[*slot] = workspace.evaluate(value, &environment, &mut budget)?;
             }
-            ResolvedStatement::Println(argument) => {
+            ResolvedStatement::Output {
+                arguments,
+                target,
+                newline,
+            } => {
                 if prints >= limits.max_prints {
                     return Err(Diagnostic::new(
                         DiagnosticKind::OutputLimit,
@@ -108,22 +145,43 @@ fn prepare(
                         format!("print count limit of {} exceeded", limits.max_prints),
                     )
                     .with_help(
-                        "reduce println calls or raise --max-prints / ExecutionLimits.max_prints",
+                        "reduce output calls or raise --max-prints / ExecutionLimits.max_prints",
                     ));
                 }
                 prints += 1;
-                match argument {
-                    ResolvedArgument::String(value) => {
+                for (index, argument) in arguments.iter().enumerate() {
+                    if index > 0 {
+                        budget.charge(1, operation.span)?;
                         if capture {
-                            output.push(PrintValue::String(value));
+                            output.push(OutputEvent {
+                                target: *target,
+                                value: PrintValue::String(" "),
+                                newline: false,
+                            });
                         }
                     }
-                    ResolvedArgument::Expression(expression) => {
-                        let value = workspace.evaluate(expression, &environment, &mut budget)?;
-                        if capture {
-                            output.push(PrintValue::Value(value));
+                    let value = match argument {
+                        ResolvedArgument::String(value) => PrintValue::String(value),
+                        ResolvedArgument::Expression(expression) => {
+                            let value =
+                                workspace.evaluate(expression, &environment, &mut budget)?;
+                            PrintValue::Value(value)
                         }
+                    };
+                    if capture {
+                        output.push(OutputEvent {
+                            target: *target,
+                            value,
+                            newline: *newline && index + 1 == arguments.len(),
+                        });
                     }
+                }
+                if capture && *newline && arguments.is_empty() {
+                    output.push(OutputEvent {
+                        target: *target,
+                        value: PrintValue::String(""),
+                        newline: true,
+                    });
                 }
             }
         }
@@ -143,13 +201,54 @@ pub fn execute_with_limits(
     output: &mut impl Write,
     limits: ExecutionLimits,
 ) -> Result<(), RunError> {
-    let values = prepare(program, true, limits).map_err(RunError::Diagnostic)?;
-    for value in values {
-        match value {
-            PrintValue::String(value) => writeln!(output, "{value}"),
-            PrintValue::Value(value) => writeln!(output, "{value}"),
+    let events = prepare(program, true, limits).map_err(RunError::Diagnostic)?;
+    if events
+        .iter()
+        .any(|event| event.target == OutputTarget::Stderr && event.has_bytes())
+    {
+        return Err(RunError::Output(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "program requires a stderr destination; use execute_with_io or run_with_io",
+        )));
+    }
+    for event in events {
+        event.write_to(output).map_err(RunError::Output)?;
+    }
+    Ok(())
+}
+
+/// Execute with two explicit destinations. Source/evaluation errors write neither.
+/// Stream switches flush the previous writer; callers own final flushing.
+pub fn execute_with_io(
+    program: &ResolvedProgram,
+    stdout: &mut impl Write,
+    stderr: &mut impl Write,
+) -> Result<(), RunError> {
+    execute_with_io_and_limits(program, stdout, stderr, ExecutionLimits::default())
+}
+
+pub fn execute_with_io_and_limits(
+    program: &ResolvedProgram,
+    stdout: &mut impl Write,
+    stderr: &mut impl Write,
+    limits: ExecutionLimits,
+) -> Result<(), RunError> {
+    let events = prepare(program, true, limits).map_err(RunError::Diagnostic)?;
+    let mut previous = None;
+    for event in events.iter().filter(|event| event.has_bytes()) {
+        if let Some(previous) = previous.filter(|previous| *previous != event.target) {
+            match previous {
+                OutputTarget::Stdout => stdout.flush(),
+                OutputTarget::Stderr => stderr.flush(),
+            }
+            .map_err(RunError::Output)?;
         }
-        .map_err(RunError::Output)?;
+        let writer: &mut dyn Write = match event.target {
+            OutputTarget::Stdout => stdout,
+            OutputTarget::Stderr => stderr,
+        };
+        event.write_to(writer).map_err(RunError::Output)?;
+        previous = Some(event.target);
     }
     Ok(())
 }

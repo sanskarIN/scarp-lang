@@ -29,6 +29,7 @@ pub enum TokenKind {
     LeftBrace,
     RightBrace,
     Semicolon,
+    Comma,
     Eof,
 }
 
@@ -57,6 +58,7 @@ impl fmt::Display for TokenKind {
             Self::RightParen => f.write_str(")"),
             Self::LeftBrace => f.write_str("{"),
             Self::RightBrace => f.write_str("}"),
+            Self::Comma => f.write_str(","),
             Self::Semicolon => f.write_str(";"),
             Self::Eof => f.write_str("<eof>"),
         }
@@ -143,6 +145,10 @@ impl Lexer<'_> {
                 ')' => {
                     self.bump();
                     TokenKind::RightParen
+                }
+                ',' => {
+                    self.bump();
+                    TokenKind::Comma
                 }
                 ';' => {
                     self.bump();

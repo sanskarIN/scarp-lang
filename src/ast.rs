@@ -40,6 +40,14 @@ pub enum Statement {
         argument: PrintArgument,
         span: Span,
     },
+    /// Zero/multiple arguments, a raw write, or explicit stderr output.
+    /// Single-argument stdout line forms retain `Println` for compatibility.
+    Output {
+        arguments: Vec<PrintArgument>,
+        target: OutputTarget,
+        newline: bool,
+        span: Span,
+    },
     /// An immutable bind or mutable var declaration.
     Declaration {
         name: String,
@@ -68,6 +76,7 @@ impl Statement {
             | Self::If { span, .. }
             | Self::Block { span, .. }
             | Self::Println { span, .. }
+            | Self::Output { span, .. }
             | Self::Declaration { span, .. }
             | Self::Assign { span, .. } => *span,
         }
@@ -92,6 +101,13 @@ pub enum AssignmentOperator {
 pub enum PrintArgument {
     String(String),
     Expression(Expression),
+}
+
+/// The explicit destination of program output, distinct from diagnostics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputTarget {
+    Stdout,
+    Stderr,
 }
 
 /// A flat, postorder syntax tree. Children always precede their parent.
