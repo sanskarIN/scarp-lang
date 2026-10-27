@@ -67,3 +67,21 @@ fn invalid_variable_statements_discard_both_pending_streams() {
         assert!(stdout.is_empty() && stderr.is_empty());
     }
 }
+
+#[test]
+fn variable_forms_keep_combined_block_and_expression_nesting_boundaries() {
+    let grouped = format!("{}1{}", "(".repeat(64), ")".repeat(64));
+    for statement in [
+        format!("bind value={grouped}; print(value);"),
+        format!("var value=0; value+={grouped}; print(value);"),
+    ] {
+        let source = format!("{}{statement}{}", "{".repeat(64), "}".repeat(64));
+        let mut output = Vec::new();
+        scarp::run(&source, &mut output).unwrap();
+        assert_eq!(output, b"1\n");
+        assert_eq!(
+            scarp::compile(&format!("{{{source}}}")).unwrap_err().kind,
+            DiagnosticKind::BlockNesting
+        );
+    }
+}
