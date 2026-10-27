@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.0.3-beta.2.dev
 
+- Contextual repairs for incomplete bind/var declarations and assignments,
+  preserving precise expression errors and output atomicity.
+
 - Canonical `print`, raw `write`, and explicit stderr `eprint`/`ewrite`, with
   zero/multiple arguments and optional trailing commas. `println` remains an
   exact alias. Output events preserve snapshots, budgets, and atomic diagnostics.

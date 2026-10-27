@@ -6,6 +6,13 @@ This document describes implemented variable behavior on development main. The p
 
 ## Immutable bindings
 
+Incomplete variable statements report help for the form being written. A missing
+name shows the selected `bind` or `var` declaration; a missing initializer asks
+for an expression after `=`; a missing terminator asks for `;`. Assignment errors
+likewise identify the missing value or terminator. More specific expression
+errors, such as an out-of-range integer or excessive nesting, keep their own
+diagnostics. Errors leave both program output streams empty.
+
 ```scarp
 bind width = 6;
 bind height = 7;

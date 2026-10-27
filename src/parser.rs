@@ -202,6 +202,8 @@ impl Parser<'_> {
                 TokenKind::Identifier(name) if name == "bind" || name == "var" => {
                     let start = token.span.start;
                     let mutable = name == "var";
+                    let keyword = if mutable { "var" } else { "bind" };
+                    let declaration_help = format!("use {keyword} name = expression;");
                     self.cursor += 1;
                     if self.keyword("mut")
                         && matches!(
@@ -218,14 +220,29 @@ impl Parser<'_> {
                             kind: TokenKind::Identifier(name),
                             span,
                         }) => (name.clone(), *span),
-                        _ => return Err(self.expected("a binding name")),
+                        _ => {
+                            return Err(self.expected("a binding name").with_help(declaration_help))
+                        }
                     };
                     self.cursor += 1;
                     self.punctuation(TokenKind::Equal, "'='").map_err(|error|
                         error.with_help("declarations require an initializer: bind name = expression; or var name = expression;"))?;
                     let mut nodes = Vec::new();
-                    let root = self.logical_or(&mut nodes, 0)?;
-                    let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                    let root = self.logical_or(&mut nodes, 0).map_err(|error| {
+                        if error.kind == DiagnosticKind::UnexpectedToken {
+                            error.with_help(format!(
+                                "provide an initializer after '=': {keyword} name = expression;"
+                            ))
+                        } else {
+                            error
+                        }
+                    })?;
+                    let end = self
+                        .punctuation(TokenKind::Semicolon, "';'")
+                        .map_err(|error| {
+                            error.with_help(format!("end the {keyword} declaration with ';'"))
+                        })?
+                        .end;
                     statements.push(Statement::Declaration {
                         name,
                         name_span,
@@ -245,8 +262,19 @@ impl Parser<'_> {
                         let operator_span = self.tokens[self.cursor + 1].span;
                         self.cursor += 2;
                         let mut nodes = Vec::new();
-                        let root = self.logical_or(&mut nodes, 0)?;
-                        let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+                        let root = self.logical_or(&mut nodes, 0).map_err(|error| {
+                            if error.kind == DiagnosticKind::UnexpectedToken {
+                                error.with_help(
+                                    "provide a value expression after the assignment operator",
+                                )
+                            } else {
+                                error
+                            }
+                        })?;
+                        let end = self
+                            .punctuation(TokenKind::Semicolon, "';'")
+                            .map_err(|error| error.with_help("end the assignment with ';'"))?
+                            .end;
                         statements.push(Statement::Assign {
                             name,
                             name_span,
