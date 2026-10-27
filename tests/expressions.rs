@@ -188,7 +188,6 @@ fn handles_long_binary_chains_and_destroys_the_ast_without_recursion() {
 #[test]
 fn rejects_malformed_expressions_and_deferred_syntax() {
     for argument in [
-        "",
         "()",
         "1 +",
         "1 ** 2",
@@ -201,7 +200,7 @@ fn rejects_malformed_expressions_and_deferred_syntax() {
         "1.0",
         "0xff",
         "1_000",
-        "1, 2",
+        "(1, 2)",
         "1 % 2",
         "\"a\" + \"b\"",
         "1 + \"text\"",

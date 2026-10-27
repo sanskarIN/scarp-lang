@@ -120,6 +120,16 @@ try {
         $checkOutput = & $executable check $source
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
     }
+    $streamSource = Join-Path $stagingRoot 'streams.srp'
+    [System.IO.File]::WriteAllText($streamSource, 'bind word="ready"; write(word, true,); eprint("warning", 2); ewrite("tail");')
+    $streams = Invoke-ScarpProcess -Executable $executable -Arguments @('run', $streamSource)
+    if ($streams.ExitCode -ne 0 -or [System.Text.Encoding]::UTF8.GetString($streams.Stdout) -cne 'ready true' -or [System.Text.Encoding]::UTF8.GetString($streams.Stderr) -cne "warning 2`ntail") {
+        throw 'Packaged explicit output stream check failed'
+    }
+    $silent = Invoke-ScarpProcess -Executable $executable -Arguments @('check', $streamSource)
+    if ($silent.ExitCode -ne 0 -or $silent.Stdout.Length -ne 0 -or $silent.Stderr.Length -ne 0) {
+        throw 'Packaged dual-stream validation must be silent'
+    }
     $invalidSource = Join-Path $stagingRoot 'invalid.srp'
     $budgetSource = Join-Path $stagingRoot 'budget.srp'
     [System.IO.File]::WriteAllText($budgetSource, 'println("hidden"); repeat 9223372036854775807 as i { continue; }')

@@ -540,13 +540,44 @@ fn current_main_keeps_unintegrated_commands_and_syntax_out() {
             .unwrap();
         assert_eq!(result.status.code(), Some(2));
     }
-    for source in [
-        "print(1);",
-        "funcra f() -> unit {}",
-        "println(1.25);",
-        "println([1,2]);",
-    ] {
+    for source in ["funcra f() -> unit {}", "println(1.25);", "println([1,2]);"] {
         assert!(scarp::compile(source).is_err(), "{source}");
+    }
+}
+
+#[test]
+fn output_forms_route_exact_streams_and_check_remains_silent() {
+    let fixture = Fixture::new();
+    let path = fixture.file("output.srp", "bind name=\"Scarp\"; write(\"ready\"); print(name, true,); ewrite(\"warning\"); eprint(2); print();");
+    let output = command().arg("run").arg(&path).output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stdout, b"readyScarp true\n\n");
+    assert_eq!(output.stderr, b"warning2\n");
+    let output = command().arg("check").arg(&path).output().unwrap();
+    assert!(output.status.success());
+    assert!(output.stdout.is_empty() && output.stderr.is_empty());
+    let output = command().arg("tokens").arg(&path).output().unwrap();
+    assert!(output.status.success() && output.stderr.is_empty());
+    assert!(String::from_utf8(output.stdout).unwrap().contains("  ,  ["));
+}
+
+#[test]
+fn output_failures_do_not_leak_program_stderr_before_diagnostics() {
+    let fixture = Fixture::new();
+    for tail in ["print(1/0);", "bind x=missing;", "let x=1;"] {
+        let path = fixture.file(
+            "invalid-output.srp",
+            format!("write(\"hidden-out\"); eprint(\"hidden-err\"); {tail}"),
+        );
+        for mode in ["run", "check"] {
+            let output = command().arg(mode).arg(&path).output().unwrap();
+            assert_eq!(output.status.code(), Some(1));
+            assert!(output.stdout.is_empty());
+            let error = stderr(&output);
+            assert!(error.starts_with("error[E"));
+            // The source excerpt may contain these strings; no replayed bytes precede the diagnostic.
+            assert!(!error.starts_with("hidden-err"));
+        }
     }
 }
 
