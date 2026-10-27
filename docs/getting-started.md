@@ -8,12 +8,13 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Try variables and the current guides | The v0.0.2 prerelease or `main` | Variables, scopes, strings, booleans, and decisions |
+| Try iteration and the current guides | v0.0.3-beta.1 or `main` | Variables, while/repeat, budgets, and five string escapes |
+| Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-The package version is `0.0.2`. This is an experimental prerelease, with
-syntax and APIs subject to change. Later feature PRs are outside this version.
+The package version is `0.0.3-beta.1`. This is an experimental prerelease, with
+syntax and APIs subject to change. Numerical, function, backend, project, and syntax redesign PRs are outside this version.
 
 ## Build the development checkout
 

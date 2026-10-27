@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v0.0.3 iteration
+## 0.0.3-beta.1 — 2026-10-27 — prerelease
 
 - Actionable loop/count/index diagnostics, configured limits in budget errors,
   contextual run/check/tokens help, and iteration/budget guides.

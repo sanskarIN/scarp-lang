@@ -1,8 +1,8 @@
 # Version and API compatibility
 
 Use this guide before copying an example into a different Scarp executable or
-updating a Rust embedding host. It compares the published v0.0.1 snapshot with
-the `0.0.2` variable milestone documented here.
+updating a Rust embedding host. It compares the published v0.0.1/v0.0.2 snapshots with
+the `0.0.3-beta.1` iteration milestone documented here.
 
 ## Identify the code you are running
 
@@ -17,23 +17,25 @@ the `v0.0.1` tag; the variable prerelease uses version `0.0.2` and tag `v0.0.2`.
 
 ## Language and command matrix
 
-| Capability | v0.0.1 | v0.0.2 |
-| --- | --- | --- |
-| UTF-8 source, comments, three string escapes | Yes | Yes |
-| String literal print statements | Yes | Yes |
-| Checked signed 64-bit arithmetic | Yes | Yes |
-| Integer declarations and variable references | No | Yes |
-| Explicit mutability and compound assignment | No | Yes |
-| Block scopes and shadowing | No | Yes |
-| String variables and grouped string values | No | Yes |
-| Primitive type consistency checks | No variable types | Yes |
-| `run`, `tokens`, global help/version | Yes | Yes |
-| `check` and per-command help | No | Yes |
-| Boolean values, comparisons, short-circuit logic | No | Yes |
-| `if`/`elif`/`else` statements with scoped bodies | No | Yes |
-| While loops and deterministic execution budgets | No | No |
-| User functions, imports | No | No |
-| Native compilation of Scarp programs | No | No |
+| Capability | v0.0.1 | v0.0.2 | v0.0.3-beta.1 |
+| --- | --- | --- | --- |
+| UTF-8 source, comments, three string escapes | Yes | Yes | Yes |
+| String literal print statements | Yes | Yes | Yes |
+| Checked signed 64-bit arithmetic | Yes | Yes | Yes |
+| Integer declarations and variable references | No | Yes | Yes |
+| Explicit mutability and compound assignment | No | Yes | Yes |
+| Block scopes and shadowing | No | Yes | Yes |
+| String variables and grouped string values | No | Yes | Yes |
+| Primitive type consistency checks | No variable types | Yes | Yes |
+| `run`, `tokens`, global help/version | Yes | Yes | Yes |
+| `check` and per-command help | No | Yes | Yes |
+| Boolean values, comparisons, short-circuit logic | No | Yes | Yes |
+| `if`/`elif`/`else` statements with scoped bodies | No | Yes | Yes |
+| While loops and deterministic execution budgets | No | No | Yes |
+| User functions, imports | No | No | No |
+| Native compilation of Scarp programs | No | No | No |
+| Counted repeat with an immutable index | No | No | Yes |
+| Tab/carriage-return string escapes | No | No | Yes |
 
 Integer range, precedence, division truncation, mandatory semicolons, and
 no-output-on-invalid-source behavior remain consistent. Development adds
@@ -100,7 +102,7 @@ Documentation review does not integrate implementation into main. Follow the
 maintainer's explicit instructions for integration, tagging, and publication;
 the documentation work itself performs none of those release actions.
 
-Unreleased iteration work adds while/break/continue and execution budgets after
+The v0.0.3-beta.1 iteration milestone adds while/break/continue and execution budgets after
 the v0.0.2 baseline. See [the loop design](proposals/0006-bounded-loops.md).
 
 Counted `repeat expression as index` adds `Statement::Repeat` to the public AST
