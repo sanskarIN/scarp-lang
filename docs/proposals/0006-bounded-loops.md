@@ -1,7 +1,8 @@
 # While loops and deterministic execution budgets
 
 Status: implemented on `scarp/bounded-loops`, dependent on the expression,
-conditional, and execution-workspace branches. Unreleased.
+conditional, and execution-workspace branches. Integrated through PR #28 for
+v0.0.3-beta.1; published v0.0.2 remains unchanged.
 
 ## Iteration and local state
 

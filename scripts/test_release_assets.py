@@ -35,23 +35,29 @@ class ReleaseAssets(unittest.TestCase):
         self.directory = Path(self.scratch.name)
         self.build()
 
-    def build(self, *, omit=None, executable=True):
+    def build(self, *, omit=None, executable=True, version="0.0.2", working_tree="clean", record_version=None):
         for target, suffix in (
             ("x86_64-pc-windows-msvc", ".zip"),
             ("x86_64-unknown-linux-gnu", ".tar.gz"),
             ("aarch64-apple-darwin", ".tar.gz"),
         ):
-            root = f"scarp-0.0.2-{target}"
+            root = f"scarp-{version}-{target}"
             archive = self.directory / (root + suffix)
             files = {name: b"fixture" for name in (
                 "scarp.exe" if suffix == ".zip" else "scarp", "LICENSE",
                 "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
-                "docs/releases/v0.0.2.md", "examples/bindings.srp",
+                f"docs/releases/v{version}.md", "examples/bindings.srp",
                 "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             ) if name != omit}
+            if version.startswith("0.0.3-"):
+                for name in ("loops", "repeat", "control_escapes"):
+                    for extension in ("srp", "stdout"):
+                        member = f"examples/{name}.{extension}"
+                        if member != omit:
+                            files[member] = b"fixture"
             files["BUILD-INFO.txt"] = (
-                f"version=0.0.2\ntarget={target}\ncommit={COMMIT}\n"
-                "working_tree=clean\ncompiler=rustc fixture\n"
+                f"version={record_version or version}\ntarget={target}\ncommit={COMMIT}\n"
+                f"working_tree={working_tree}\ncompiler=rustc fixture\n"
             ).encode()
             if suffix == ".zip":
                 with zipfile.ZipFile(archive, "w") as package:
@@ -91,6 +97,25 @@ class ReleaseAssets(unittest.TestCase):
     def test_unix_executable_permissions_are_required(self):
         self.build(executable=False)
         with self.assertRaisesRegex(ValueError, "executable permission"):
+            verifier.verify(self.directory, "0.0.2", COMMIT)
+
+    def test_beta_packages_include_iteration_and_control_byte_fixtures(self):
+        self.build(version="0.0.3-beta.1")
+        self.assertEqual(len(verifier.verify(self.directory, "0.0.3-beta.1", COMMIT).splitlines()), 3)
+
+    def test_beta_packages_cannot_omit_the_repeat_example(self):
+        self.build(version="0.0.3-beta.1", omit="examples/repeat.srp")
+        with self.assertRaisesRegex(ValueError, "missing examples/repeat"):
+            verifier.verify(self.directory, "0.0.3-beta.1", COMMIT)
+
+    def test_beta_packages_reject_old_version_records(self):
+        self.build(version="0.0.3-beta.1", record_version="0.0.2")
+        with self.assertRaisesRegex(ValueError, "unexpected version"):
+            verifier.verify(self.directory, "0.0.3-beta.1", COMMIT)
+
+    def test_modified_source_records_are_not_release_assets(self):
+        self.build(working_tree="modified")
+        with self.assertRaisesRegex(ValueError, "unexpected working_tree"):
             verifier.verify(self.directory, "0.0.2", COMMIT)
 
 

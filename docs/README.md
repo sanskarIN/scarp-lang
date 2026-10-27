@@ -2,8 +2,7 @@
 
 Choose a guide by the task you want to complete. These pages document the
 v0.0.1 snapshot and the v0.0.2 variable milestone, including string bindings,
-booleans, and conditionals. References to development APIs describe v0.0.2;
-v0.0.3 iteration work adds bounded while/repeat loops and tab/CR escapes.
+booleans, and conditionals. v0.0.3-beta.1 adds bounded while/repeat loops and tab/CR escapes.
 The later numerical, function, native, and syntax redesign stacks remain separate.
 
 ## Guides and what each adds

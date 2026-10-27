@@ -1,6 +1,6 @@
 # Scarp prototype language reference
 
-This reference describes the development language following v0.0.1. It is an
+This reference describes v0.0.3-beta.1, following the v0.0.2 variable milestone. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
 
@@ -213,7 +213,7 @@ in [the variable reference](variables.md). Functions, user-defined types, module
 compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
 
-Unreleased iteration development adds scoped `while`, `break`, and `continue`
+The v0.0.3-beta.1 iteration milestone adds scoped `while`, `break`, and `continue`
 after v0.0.2, with per-call deterministic work and print budgets. The published
 v0.0.2 packages do not contain loops. See [the loop design](proposals/0006-bounded-loops.md).
 

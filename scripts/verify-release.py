@@ -53,10 +53,16 @@ def verify(directory, version, commit):
         if not fields.get("compiler", "").startswith("rustc "):
             raise ValueError(f"missing compiler record: {name}")
         executable = "scarp.exe" if extension == ".zip" else "scarp"
+        iteration_examples = (
+            "examples/loops.srp", "examples/loops.stdout",
+            "examples/repeat.srp", "examples/repeat.stdout",
+            "examples/control_escapes.srp", "examples/control_escapes.stdout",
+        ) if version.startswith("0.0.3-") else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",
             "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
+            *iteration_examples,
         ):
             if root + "/" + member not in paths:
                 raise ValueError(f"{name}: missing {member}")

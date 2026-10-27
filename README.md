@@ -9,7 +9,7 @@ work/print budgets, and tab/CR escapes. See the [iteration guide](docs/iteration
 and [budget guide](docs/budgets.md). Published v0.0.2 packages retain their language.
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains **v0.0.2**, an experimental interpreter prerelease with a lexer, parser,
+contains **v0.0.3-beta.1**, the Iteration & Safe Execution beta with a lexer, parser,
 name resolver, and command-line interface. Syntax and library APIs may change.
 
 ```scarp
@@ -29,7 +29,7 @@ guides. Start there for a reading path matched to your task.
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[v0.0.2 notes](docs/releases/v0.0.2.md) for platform support, verification, and
+[v0.0.3-beta.1 notes](docs/releases/v0.0.3-beta.1.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:
@@ -223,7 +223,7 @@ These capabilities are excluded from this prerelease. Integer expressions are im
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Integer, string, and boolean bindings are implemented on main. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [v0.0.2 notes](docs/releases/v0.0.2.md) describe the integrated variable
+The [v0.0.3-beta.1 notes](docs/releases/v0.0.3-beta.1.md) describe the integrated variable
 milestone, downloads, and limitations. Later features remain separate PRs and
 require an explicit integration decision.
 

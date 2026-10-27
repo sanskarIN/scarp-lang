@@ -9,7 +9,7 @@ bindings and string-valued expressions require the development stack.
 | Kind | Examples | Rules |
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
-| Boolean | `true`, `false` | Development only; explicit booleans without truthiness |
+| Boolean | `true`, `false` | v0.0.2 and later; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text; v0.0.3 adds tab/CR to the three older escapes |
 
 Development bindings infer their kind from the initializer. Mutable assignment
