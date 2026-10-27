@@ -52,7 +52,9 @@ The following grammar applies after trivia has been removed:
 
 ```ebnf
 program         = { statement }, EOF ;
-statement       = print_statement | declaration | assignment | block | conditional ;
+statement       = print_statement | declaration | assignment | block | conditional | loop | loop_control ;
+loop            = "while", expression, block ;
+loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
                   { "elif", expression, block }, [ "else", block ] ;
 block           = "{", { statement }, "}" ;

@@ -48,6 +48,82 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
+fn loop_budgets_are_available_to_run_and_check_without_partial_output() {
+    let fixture = Fixture::new();
+    let infinite = fixture.file("infinite.srp", "println(\"before\"); while true {}");
+    let prints = fixture.file("prints.srp", "while true { println(1); }");
+    let valid = fixture.file(
+        "valid.srp",
+        "let mut x = 0; while x < 3 { x += 1; } println(x);",
+    );
+    for mode in ["run", "check"] {
+        let result = command()
+            .args([mode, "--max-steps", "100", "--max-prints", "1"])
+            .arg(&valid)
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "{}", stderr(&result));
+        assert_eq!(
+            result.stdout,
+            if mode == "run" {
+                b"3\n".as_slice()
+            } else {
+                b"".as_slice()
+            }
+        );
+        let result = command()
+            .args([mode, "--max-steps", "9"])
+            .arg(&infinite)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(stderr(&result).contains("E0017"));
+        let result = command()
+            .args([mode, "--max-prints", "2"])
+            .arg(&prints)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(stderr(&result).contains("E0018"));
+    }
+}
+
+#[test]
+fn malformed_execution_budget_options_are_usage_errors() {
+    let fixture = Fixture::new();
+    let file = fixture.file("valid.srp", "println(1);");
+    for args in [
+        vec!["run", "--max-steps", "-1"],
+        vec!["run", "--max-steps", "+1"],
+        vec!["run", "--max-steps", "1.0"],
+        vec!["run", "--max-steps", "18446744073709551616"],
+        vec!["run", "--max-steps", "1", "--max-steps", "2"],
+        vec!["tokens", "--max-steps", "1"],
+        vec!["check", "--max-prints", "x"],
+    ] {
+        let result = command().args(&args).arg(&file).output().unwrap();
+        assert_eq!(
+            result.status.code(),
+            Some(2),
+            "{args:?}: {}",
+            stderr(&result)
+        );
+        assert!(result.stdout.is_empty());
+    }
+    let dash = fixture.file("-program.srp", "println(1);");
+    let result = command()
+        .args(["run", "--max-steps", "2", "--", "-program.srp"])
+        .current_dir(&fixture.directory)
+        .output()
+        .unwrap();
+    assert!(dash.exists());
+    assert!(result.status.success(), "{}", stderr(&result));
+    assert_eq!(result.stdout, b"1\n");
+}
+
+#[test]
 fn conditional_programs_run_and_skipped_static_errors_reach_stderr() {
     let fixture = Fixture::new();
     let valid = fixture.file(

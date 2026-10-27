@@ -31,7 +31,8 @@ the `v0.0.1` tag; the variable prerelease uses version `0.0.2` and tag `v0.0.2`.
 | `check` and per-command help | No | Yes |
 | Boolean values, comparisons, short-circuit logic | No | Yes |
 | `if`/`elif`/`else` statements with scoped bodies | No | Yes |
-| User functions, imports, loops | No | No |
+| While loops and deterministic execution budgets | No | No |
+| User functions, imports | No | No |
 | Native compilation of Scarp programs | No | No |
 
 Integer range, precedence, division truncation, mandatory semicolons, and
@@ -98,3 +99,6 @@ The feature stack and this documentation are reviewed through separate PRs.
 Documentation review does not integrate implementation into main. Follow the
 maintainer's explicit instructions for integration, tagging, and publication;
 the documentation work itself performs none of those release actions.
+
+Unreleased iteration work adds while/break/continue and execution budgets after
+the v0.0.2 baseline. See [the loop design](proposals/0006-bounded-loops.md).

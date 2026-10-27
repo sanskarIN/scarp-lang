@@ -14,6 +14,7 @@ later unmerged feature branches are outside this documentation snapshot.
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
 | [Decisions](tutorials/decisions.md) | Select an if/elif/else body and distinguish static checks from executed work |
+| [Loops and budgets](proposals/0006-bounded-loops.md) | Repeat computations with scoped state, loop control, and per-call bounds |
 | [Command-line reference](reference/cli.md) | Look up commands, version availability, paths, streams, and exit codes |
 | [Diagnostic reference](reference/diagnostics.md) | Interpret all error codes and repair common failures |
 | [Values and operators](reference/values.md) | Check precedence, numeric boundaries, assignment rules, and string limits |

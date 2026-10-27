@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — v0.0.3 iteration
+
+- Scoped while loops, nearest-loop break/continue, per-call work/print budgets,
+  and CLI/embedding controls with atomic budget diagnostics.
+
+
 ## 0.0.2 — 2026-10-26 — prerelease
 
 - Execution-local expression work buffers, immediate disposal of validation print
