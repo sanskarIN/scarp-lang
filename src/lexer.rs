@@ -224,6 +224,8 @@ impl Lexer<'_> {
                         Some('\\') => '\\',
                         Some('"') => '"',
                         Some('n') => '\n',
+                        Some('t') => '\t',
+                        Some('r') => '\r',
                         Some('\n' | '\r') | None => break,
                         Some(ch) => {
                             return Err(Diagnostic::new(
@@ -231,7 +233,7 @@ impl Lexer<'_> {
                                 Span::new(escape_start, self.cursor + ch.len_utf8()),
                                 format!("unsupported escape {:?}", format!("\\{ch}")),
                             )
-                            .with_help(r#"supported escapes are \\, \" and \n"#));
+                            .with_help(r#"supported escapes are \\, \", \n, \t and \r"#));
                         }
                     };
                     self.bump();

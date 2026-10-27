@@ -28,16 +28,18 @@ division operator. There are no block comments.
 ## Strings
 
 Strings begin and end with `"`. Contents preserve Unicode text without
-normalization. The lexer decodes exactly three escape sequences:
+normalization. The lexer decodes exactly five escape sequences in v0.0.3:
 
 | Source spelling | Decoded character |
 | --- | --- |
 | `\\` | Backslash |
 | `\"` | Double quote |
 | `\n` | LF line break |
+| `\t` | Tab |
+| `\r` | Carriage return |
 
 A physical CR or LF, or end of input before a closing quote, produces `E0002`.
-Other escapes, including `\t`, `\r`, numeric escapes, and Unicode escapes, produce
+Other escapes, including numeric escapes and Unicode escapes, produce
 `E0003`. Unicode text can be written directly in UTF-8 instead. A final backslash
 without another character produces `E0002`.
 

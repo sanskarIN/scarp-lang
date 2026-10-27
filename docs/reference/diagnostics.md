@@ -10,7 +10,7 @@ codes belong to the development variable stack.
 | --- | --- | --- |
 | `E0001` | Invalid source character | Remove unsupported punctuation or a character outside a valid token |
 | `E0002` | Unterminated string | Close the quote; use `\n` instead of a physical line break |
-| `E0003` | Unsupported escape | Use only `\\`, `\"`, and `\n` |
+| `E0003` | Unsupported escape | Use `\\`, `\"`, `\n`, `\t`, or `\r` in v0.0.3 |
 | `E0004` | Unexpected token or missing syntax | Add the named punctuation or correct the statement form |
 | `E0005` | Unknown statement | Use a supported declaration, assignment, block, or `println` call |
 | `E0006` | Integer literal outside the range | Use a representable signed 64-bit value |
