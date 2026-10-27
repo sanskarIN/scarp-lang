@@ -57,6 +57,13 @@ class ReleaseAssets(unittest.TestCase):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
+            if version == "0.0.3-beta.3.dev":
+                for member in (
+                    "examples/output.srp", "examples/output.stdout",
+                    "docs/output.md", "docs/syntax-migration.md",
+                ):
+                    if member != omit:
+                        files[member] = b"fixture"
             files["BUILD-INFO.txt"] = (
                 f"version={record_version or version}\ntarget={target}\ncommit={COMMIT}\n"
                 f"working_tree={working_tree}\ncompiler=rustc fixture\n"
@@ -119,6 +126,26 @@ class ReleaseAssets(unittest.TestCase):
         self.build(working_tree="modified")
         with self.assertRaisesRegex(ValueError, "unexpected working_tree"):
             verifier.verify(self.directory, "0.0.2", COMMIT)
+
+    def test_syntax_release_requires_migration_guides(self):
+        for member in ("docs/output.md", "docs/syntax-migration.md"):
+            with self.subTest(member=member):
+                self.build(version="0.0.3-beta.3.dev", omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, "0.0.3-beta.3.dev", COMMIT)
+
+    def test_syntax_release_requires_raw_output_example_and_snapshot(self):
+        for member in ("examples/output.srp", "examples/output.stdout"):
+            with self.subTest(member=member):
+                self.build(version="0.0.3-beta.3.dev", omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, "0.0.3-beta.3.dev", COMMIT)
+
+    def test_complete_syntax_release_keeps_sorted_checksums(self):
+        self.build(version="0.0.3-beta.3.dev")
+        entries = verifier.verify(self.directory, "0.0.3-beta.3.dev", COMMIT).splitlines()
+        self.assertEqual(len(entries), 3)
+        self.assertEqual(entries, sorted(entries))
 
 
 if __name__ == "__main__":

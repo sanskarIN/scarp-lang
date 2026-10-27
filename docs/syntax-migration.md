@@ -35,7 +35,7 @@ The old example sources and expected bytes are preserved under
 `tests/fixtures/releases/v0.0.2/`. Tests check their published hashes and run a
 token-based declaration migration against their original output snapshots.
 Current `examples/` files intentionally use the new syntax. Existing tags and
-published packages remain immutable. This development change creates no release.
+published packages remain immutable. This syntax ships in v0.0.3-beta.3.dev.
 
 Development output uses `print`/`write` with `println` retained as a permanent
 alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See

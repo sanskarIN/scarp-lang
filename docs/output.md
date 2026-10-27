@@ -3,7 +3,7 @@
 Development main uses `print` for ordinary output and `write` when the next
 statement should continue on the same line. Published v0.0.3-beta.1 and earlier
 executables use the original single-argument `println` syntax. Check the version
-of the executable you are using; this change does not publish a release.
+of the executable you are using; these forms ship in v0.0.3-beta.3.dev.
 
 | Statement | Destination | Adds LF |
 | --- | --- | --- |

@@ -8,14 +8,14 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the current guides | `main` | bind/var, print/write, explicit stderr, while/repeat, and budgets |
+| Follow the current guides | v0.0.3-beta.3.dev or `main` | bind/var, print/write, explicit stderr, while/repeat, and budgets |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
 | Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-Development main identifies as `0.0.3-beta.2.dev`. It is unreleased; syntax and
-APIs remain experimental. Published beta packages retain their original syntax.
+Development main identifies as `0.0.3-beta.3.dev`. It is an experimental prerelease; syntax and
+APIs remain subject to change. Published beta packages retain their original syntax.
 Numerical, function, backend, project, and CLI redesign PRs remain separate.
 
 ## Build the development checkout
@@ -36,7 +36,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.3-beta.2.dev
+scarp 0.0.3-beta.3.dev
 ```
 
 Run commands from the repository root so relative example paths resolve:
