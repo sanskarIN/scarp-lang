@@ -207,6 +207,10 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 ## Scope
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on main and described
-in [the variable reference](variables.md). Functions, types, modules, loops, a
+in [the variable reference](variables.md). Functions, user-defined types, modules, a
 compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
+
+Unreleased iteration development adds scoped `while`, `break`, and `continue`
+after v0.0.2, with per-call deterministic work and print budgets. The published
+v0.0.2 packages do not contain loops. See [the loop design](proposals/0006-bounded-loops.md).
