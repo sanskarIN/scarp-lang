@@ -1,4 +1,3 @@
-// Tabs and carriage returns are bytes, not a new formatting system.
-println("column\tvalue");
-println("line\rstart");
-println("\\t \\r");
+println("line one\nline two");
+println("a quote: \"Scarp\"");
+println("a backslash: \\");

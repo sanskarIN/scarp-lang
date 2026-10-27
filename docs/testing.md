@@ -103,7 +103,7 @@ reproductions when a generated case fails.
 Iteration tests cover fixed-slot while/repeat execution, count snapshots, mixed
 control targets, and parallel reuse. The iteration diagnostic fixtures compare
 exact library and run/check errors, including Unicode/CRLF source, guard/count
-types, index writes, missing punctuation, and both budgets. The escape example's
+types, index writes, missing punctuation, and both budgets. The control_escapes example's
 stdout is binary so Git preserves its tab/CR bytes. Package checks capture raw
 streams and compare every fixture without normalizing line endings.
 
@@ -120,3 +120,7 @@ An uploaded development artifact is not a published prerelease. See
 For execution changes, use `cargo bench --locked --offline --bench runtime` and
 follow the [performance guide](performance.md). The quick workload smoke run is
 checked on CI, including minimum Rust. Timing thresholds are not correctness tests.
+
+The v0.0.2 example manifest locks all 22 original source/output files to their
+published bytes. The Python release-verifier suite checks those digests; Cargo
+and package discovery execute every example, including comments/unicode samples.
