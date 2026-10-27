@@ -11,7 +11,7 @@ results when values change. The precise rules are in the
 bind columns = 8;
 bind rows = 5;
 bind cells = columns * rows;
-println(cells);
+print(cells);
 ```
 
 Output:
@@ -34,8 +34,8 @@ var remaining = 10;
 bind starting = remaining;
 remaining -= 3;
 remaining = remaining * 2;
-println(starting);
-println(remaining);
+print(starting);
+print(remaining);
 ```
 
 Output:
@@ -67,10 +67,10 @@ The string extension infers a binding's primitive type from its initializer:
 ```scarp
 var label = "Draft";
 bind original = label;
-println(label);
+print(label);
 label = "Ready for review";
-println(original);
-println(label);
+print(original);
+print(label);
 ```
 
 Output:
@@ -91,7 +91,7 @@ are also unsupported.
 This forward reference fails with `E0010`:
 
 ```scarp-invalid
-println(answer);
+print(answer);
 bind answer = 42;
 ```
 

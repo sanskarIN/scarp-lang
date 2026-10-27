@@ -8,13 +8,15 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Try iteration and the current guides | v0.0.3-beta.1 or `main` | Variables, while/repeat, budgets, and five string escapes |
+| Follow the current guides | `main` | bind/var, print/write, explicit stderr, while/repeat, and budgets |
+| Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
 | Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-The package version is `0.0.3-beta.1`. This is an experimental prerelease, with
-syntax and APIs subject to change. Numerical, function, backend, project, and syntax redesign PRs are outside this version.
+Development main identifies as `0.0.3-beta.2.dev`. It is unreleased; syntax and
+APIs remain experimental. Published beta packages retain their original syntax.
+Numerical, function, backend, project, and CLI redesign PRs remain separate.
 
 ## Build the development checkout
 
@@ -34,7 +36,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.2
+scarp 0.0.3-beta.2.dev
 ```
 
 Run commands from the repository root so relative example paths resolve:
@@ -54,8 +56,8 @@ program output. See the [CLI reference](reference/cli.md) for exit codes and pat
 Save this as a UTF-8 file named `demo.srp`:
 
 ```scarp
-println("Hello from Scarp!");
-println(1 + 2 * 3);
+print("Hello from Scarp!");
+print(1 + 2 * 3);
 ```
 
 Output:
@@ -81,4 +83,5 @@ Rust for running programs. Their platform and checksum instructions are in the
 [v0.0.1 release notes](releases/v0.0.1.md).
 
 Next, follow [your first program](tutorials/first-program.md), then the
-[variable tutorial](tutorials/variables.md) on main or in the v0.0.2 package.
+[variable tutorial](tutorials/variables.md) on main. Older packages use the
+original syntax described in their release notes.

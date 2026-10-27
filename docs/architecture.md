@@ -129,3 +129,14 @@ and smoke commands in debug and release modes. CI repeats validation on three op
 the declared minimum Rust version. A separate package workflow builds archives,
 extracts them, and smoke-tests the delivered executables. Release publication
 remains a separate maintainer action.
+
+## Output replay
+
+General output forms lower to an argument list, destination, and newline flag.
+Single-argument stdout lines retain a compact operation and avoid argument-list
+allocations during parsing and resolution. Both paths share value evaluation,
+limit checks, and event replay. Preparation captures values in source order.
+Replay uses supplied writers and explicit LF bytes; stream changes flush the
+previous writer. Validation discards values immediately and creates no replay
+events. Single-writer hosts reject required stderr before replay. See the
+[output guide](output.md) for the additive APIs and AST compatibility rules.

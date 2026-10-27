@@ -15,7 +15,7 @@ var count = 0;
 repeat size as index {
     count += index;
 }
-println(count);
+print(count);
 ```
 
 Both forms require an initializer and a semicolon. Scope, shadowing, checked
@@ -36,3 +36,7 @@ The old example sources and expected bytes are preserved under
 token-based declaration migration against their original output snapshots.
 Current `examples/` files intentionally use the new syntax. Existing tags and
 published packages remain immutable. This development change creates no release.
+
+Development output uses `print`/`write` with `println` retained as a permanent
+alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
+[output and dual-writer migration](output.md) for semantics and new AST variants.

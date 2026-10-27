@@ -3,13 +3,13 @@
 use crate::{
     ast::{
         AssignmentOperator, BinaryOperator, ConditionalBranch, Expression, ExpressionKind,
-        ExpressionNode, LogicalOperator, PrintArgument, Program, Statement,
+        ExpressionNode, LogicalOperator, OutputTarget, PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
 };
 
-/// Maximum nested expression parentheses, excluding the println call itself.
+/// Maximum nested expression parentheses, excluding the output call itself.
 pub const MAX_EXPRESSION_DEPTH: usize = 64;
 
 /// Maximum nested statement blocks, independent of expression parentheses.
@@ -43,7 +43,7 @@ impl Parser<'_> {
             span,
             format!("expected {expected}, found {found}"),
         )
-        .with_help("use println(\"text\"); or println(1 + 2);")
+        .with_help("use print(\"text\"); or print(1 + 2);")
     }
 
     fn punctuation(&mut self, kind: TokenKind, label: &str) -> Result<Span, Diagnostic> {
@@ -169,45 +169,13 @@ impl Parser<'_> {
                         Statement::Continue { span }
                     });
                 }
-                TokenKind::Identifier(name) if name == "println" => {
-                    let start = token.span.start;
-                    self.cursor += 1;
-                    self.punctuation(TokenKind::LeftParen, "'('")?;
-                    let direct_string = self
-                        .tokens
-                        .get(self.cursor + 1)
-                        .is_some_and(|token| token.kind == TokenKind::RightParen);
-                    let argument = if let Some(Token {
-                        kind: TokenKind::String(value),
-                        ..
-                    }) = self.current().filter(|_| direct_string)
-                    {
-                        let argument = PrintArgument::String(value.clone());
-                        self.cursor += 1;
-                        argument
-                    } else {
-                        if !matches!(
-                            self.current().map(|token| &token.kind),
-                            Some(
-                                TokenKind::Integer(_)
-                                    | TokenKind::String(_)
-                                    | TokenKind::Identifier(_)
-                                    | TokenKind::Minus
-                                    | TokenKind::LeftParen
-                            )
-                        ) {
-                            return Err(self.expected("a string literal or value expression"));
-                        }
-                        let mut nodes = Vec::new();
-                        let root = self.logical_or(&mut nodes, 0)?;
-                        PrintArgument::Expression(Expression { nodes, root })
-                    };
-                    self.punctuation(TokenKind::RightParen, "')'")?;
-                    let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
-                    statements.push(Statement::Println {
-                        argument,
-                        span: Span::new(start, end),
-                    });
+                TokenKind::Identifier(name)
+                    if matches!(
+                        name.as_str(),
+                        "print" | "println" | "write" | "eprint" | "ewrite"
+                    ) =>
+                {
+                    statements.push(self.output_statement()?);
                 }
                 TokenKind::Identifier(name) if name == "let" => {
                     let modifier = self.tokens.get(self.cursor + 1).filter(
@@ -295,10 +263,10 @@ impl Parser<'_> {
                         format!("unknown statement {name:?}"),
                     )
                     .with_help(
-                        "use bind, var, println, or an assignment to a declared mutable variable",
+                        "use bind, var, print, write, or an assignment to a declared mutable variable",
                     ));
                 }
-                _ => return Err(self.expected("a println statement or binding declaration")),
+                _ => return Err(self.expected("an output statement or binding declaration")),
             }
         }
         if in_block && self.current().is_none() {
@@ -311,6 +279,98 @@ impl Parser<'_> {
 
     fn keyword(&self, expected: &str) -> bool {
         matches!(self.current().map(|token| &token.kind), Some(TokenKind::Identifier(name)) if name == expected)
+    }
+
+    fn output_statement(&mut self) -> Result<Statement, Diagnostic> {
+        let token = self.current().expect("output keyword is present");
+        let TokenKind::Identifier(name) = &token.kind else {
+            unreachable!()
+        };
+        let start = token.span.start;
+        let target = if name.starts_with('e') {
+            OutputTarget::Stderr
+        } else {
+            OutputTarget::Stdout
+        };
+        let newline = name != "write" && name != "ewrite";
+        self.cursor += 1;
+        self.punctuation(TokenKind::LeftParen, "'('")?;
+        let mut arguments = Vec::new();
+        // Keep ordinary one-argument line output free of list allocations.
+        let mut first_argument = None;
+        if !matches!(
+            self.current().map(|token| &token.kind),
+            Some(TokenKind::RightParen)
+        ) {
+            loop {
+                let direct_string = self.tokens.get(self.cursor + 1).is_some_and(|next| {
+                    matches!(next.kind, TokenKind::Comma | TokenKind::RightParen)
+                });
+                let argument = if let Some(Token {
+                    kind: TokenKind::String(value),
+                    ..
+                }) = self.current().filter(|_| direct_string)
+                {
+                    let argument = PrintArgument::String(value.clone());
+                    self.cursor += 1;
+                    argument
+                } else {
+                    if !matches!(
+                        self.current().map(|token| &token.kind),
+                        Some(
+                            TokenKind::Integer(_)
+                                | TokenKind::String(_)
+                                | TokenKind::Identifier(_)
+                                | TokenKind::Minus
+                                | TokenKind::LeftParen
+                        )
+                    ) {
+                        return Err(self.expected("a string literal or value expression"));
+                    }
+                    let mut nodes = Vec::new();
+                    let root = self.logical_or(&mut nodes, 0)?;
+                    PrintArgument::Expression(Expression { nodes, root })
+                };
+                if arguments.is_empty() && first_argument.is_none() {
+                    first_argument = Some(argument);
+                } else {
+                    if let Some(first) = first_argument.take() {
+                        arguments.push(first);
+                    }
+                    arguments.push(argument);
+                }
+                if !matches!(
+                    self.current().map(|token| &token.kind),
+                    Some(TokenKind::Comma)
+                ) {
+                    break;
+                }
+                self.cursor += 1;
+                if matches!(
+                    self.current().map(|token| &token.kind),
+                    Some(TokenKind::RightParen)
+                ) {
+                    break;
+                }
+            }
+        }
+        self.punctuation(TokenKind::RightParen, "')'")?;
+        let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+        let span = Span::new(start, end);
+        if target == OutputTarget::Stdout && newline && arguments.is_empty() {
+            if let Some(argument) = first_argument.take() {
+                return Ok(Statement::Println { argument, span });
+            }
+        }
+        if let Some(argument) = first_argument {
+            arguments.push(argument);
+        }
+        Ok(Statement::Output {
+            arguments,
+            target,
+            newline,
+            span,
+        })
     }
 
     fn block(&mut self, depth: usize) -> Result<(Vec<Statement>, Span), Diagnostic> {

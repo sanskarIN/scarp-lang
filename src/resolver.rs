@@ -4,8 +4,8 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, PrintArgument, Program,
-        Statement,
+        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, OutputTarget,
+        PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     parser::MAX_BLOCK_DEPTH,
@@ -81,6 +81,11 @@ pub(crate) enum ResolvedStatement {
         operator_span: Span,
     },
     Println(ResolvedArgument),
+    Output {
+        arguments: Vec<ResolvedArgument>,
+        target: OutputTarget,
+        newline: bool,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -344,6 +349,14 @@ impl Resolver {
                     };
                     self.emit(ResolvedStatement::Println(argument), span);
                 }
+                Statement::Output {
+                    arguments,
+                    target,
+                    newline,
+                    ..
+                } => {
+                    self.output(arguments, target, newline, span)?;
+                }
                 Statement::Assign {
                     name,
                     name_span,
@@ -462,6 +475,33 @@ impl Resolver {
                 }
             }
         }
+    }
+
+    fn output(
+        &mut self,
+        arguments: Vec<PrintArgument>,
+        target: OutputTarget,
+        newline: bool,
+        span: Span,
+    ) -> Result<(), Diagnostic> {
+        let arguments = arguments
+            .into_iter()
+            .map(|argument| match argument {
+                PrintArgument::String(value) => Ok(ResolvedArgument::String(value)),
+                PrintArgument::Expression(expression) => {
+                    resolve_expression(expression, &self.scopes).map(ResolvedArgument::Expression)
+                }
+            })
+            .collect::<Result<_, _>>()?;
+        self.emit(
+            ResolvedStatement::Output {
+                arguments,
+                target,
+                newline,
+            },
+            span,
+        );
+        Ok(())
     }
 
     fn emit(&mut self, kind: ResolvedStatement, span: Span) -> usize {
@@ -584,6 +624,10 @@ fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
             | "var"
             | "mut"
             | "println"
+            | "print"
+            | "write"
+            | "eprint"
+            | "ewrite"
             | "true"
             | "false"
             | "and"

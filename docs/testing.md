@@ -62,8 +62,8 @@ expected output from the intended semantics rather than copying an unchecked
 implementation result. For example:
 
 ```scarp
-println("tested");
-println(2 + 2);
+print("tested");
+print(2 + 2);
 ```
 
 Output:

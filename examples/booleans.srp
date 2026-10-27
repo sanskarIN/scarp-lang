@@ -2,7 +2,7 @@
 var ready = false;
 bind score = 42;
 ready = score >= 40 and score < 100;
-println(ready);
-println(not ready);
-println("Scarp" == "Scarp");
-println(false and 1 / 0 == 0);
+print(ready);
+print(not ready);
+print("Scarp" == "Scarp");
+print(false and 1 / 0 == 0);

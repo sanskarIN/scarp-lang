@@ -12,7 +12,7 @@ codes belong to the development variable stack.
 | `E0002` | Unterminated string | Close the quote; use `\n` instead of a physical line break |
 | `E0003` | Unsupported escape | Use `\\`, `\"`, `\n`, `\t`, or `\r` in v0.0.3 |
 | `E0004` | Unexpected token or missing syntax | Add the named punctuation or correct the statement form |
-| `E0005` | Unknown statement | Use a supported declaration, assignment, block, or `println` call |
+| `E0005` | Unknown statement | Use a supported declaration, assignment, block, or `print` call |
 | `E0006` | Integer literal outside the range | Use a representable signed 64-bit value |
 | `E0007` | Arithmetic overflow | Keep every intermediate integer result within range |
 | `E0008` | Division by zero | Make the divisor evaluate to a nonzero integer |
@@ -53,7 +53,7 @@ the declaration determines which variable, mutability, or type the later use has
 ### Unknown name: E0010
 
 ```scarp-invalid
-println(answer);
+print(answer);
 bind answer = 42;
 ```
 
@@ -97,7 +97,7 @@ There are no implicit conversions.
 
 ```scarp-invalid
 bind label = "Scarp";
-println(label + 1);
+print(label + 1);
 ```
 
 Print the label and number in separate statements. String concatenation and
@@ -110,8 +110,8 @@ resolution, then checked evaluation. The first failure in a phase prevents later
 phases. This example reports `E0010` rather than first evaluating the division:
 
 ```scarp-invalid
-println(1 / 0);
-println(missing);
+print(1 / 0);
+print(missing);
 ```
 
 After correcting the name, the division error can become the next diagnostic.

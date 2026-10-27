@@ -3,4 +3,4 @@ error[E0018]: print count limit of 1 exceeded
   |
 1 | repeat 2 as i { println(i); }
   |                 ^^^^^^^^^^^
- = help: reduce println calls or raise --max-prints / ExecutionLimits.max_prints
+ = help: reduce output calls or raise --max-prints / ExecutionLimits.max_prints

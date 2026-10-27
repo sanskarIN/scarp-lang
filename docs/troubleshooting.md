@@ -76,7 +76,7 @@ changing value or a nested block for a deliberately separate local.
 ## Strings do not format or combine as expected
 
 Placeholders inside a string are literal text. There is no interpolation,
-concatenation, `print` function, or multiple-argument `println`. Print labels and
+concatenation, `print` function, or multiple-argument `print`. Print labels and
 values with separate statements. `+=` is integer arithmetic, not string append.
 
 Use only `\\`, `\"`, and `\n` escapes. To represent a line break inside a string,

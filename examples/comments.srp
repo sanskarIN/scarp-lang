@@ -4,5 +4,5 @@ println // statement name
     "// inside a string is text"
 )
 ;
-println(""); // An empty string still writes a newline.
-println("done");
+print(""); // An empty string still writes a newline.
+print("done");

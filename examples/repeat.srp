@@ -6,5 +6,5 @@ repeat count as index {
     if index == 2 { continue; }
     total += index;
 }
-println(total);
-println(count);
+print(total);
+print(count);

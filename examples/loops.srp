@@ -7,4 +7,4 @@ while index < 10 {
     if index > 5 { break; }
     total += index;
 }
-println(total);
+print(total);

@@ -6,7 +6,7 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 pub struct ExecutionLimits {
     /// Program instructions and expression tasks, including backward jumps.
     pub max_steps: u64,
-    /// Number of selected println statements, also enforced during validation.
+    /// Number of selected output statements (including empty writes), also enforced during validation.
     pub max_prints: usize,
 }
 

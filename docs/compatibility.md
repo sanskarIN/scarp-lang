@@ -112,3 +112,7 @@ and `DiagnosticKind::RepeatCount` (E0019). Update exhaustive Rust enum matches.
 No function signatures or ExecutionLimits fields change. Compiled binding
 metadata includes a saved count and immutable index slot per repeat, even when
 the body does not run. Existing identifier spellings repeat/as remain legal.
+
+Development output uses `print`/`write` with `println` retained as a permanent
+alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
+[output and dual-writer migration](output.md) for semantics and new AST variants.

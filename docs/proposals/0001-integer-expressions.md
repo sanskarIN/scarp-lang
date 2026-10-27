@@ -1,5 +1,8 @@
 # Proposal 0001: integer expressions
 
+Historical design record: current declaration and output spellings are documented
+in the [syntax migration](../syntax-migration.md) and [output guide](../output.md).
+
 **Status: implemented for the v0.0.1 prototype.** This document records the
 accepted expression design following the initial print-only slice. Its examples
 and acceptance cases are covered by the test suite.

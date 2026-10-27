@@ -1,9 +1,9 @@
 var count = 2;
 bind original = count;
 count += 5;
-println(count);
+print(count);
 count *= 3;
 count -= 1;
 count /= 4;
-println(count);
-println(original);
+print(count);
+print(original);

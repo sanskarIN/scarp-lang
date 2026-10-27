@@ -1,13 +1,13 @@
 var total = 1;
 {
     bind total = total + 10;
-    println(total);
+    print(total);
     {
         var total = total * 2;
         total += 1;
-        println(total);
+        print(total);
     }
-    println(total);
+    print(total);
 }
 total += 2;
-println(total);
+print(total);
