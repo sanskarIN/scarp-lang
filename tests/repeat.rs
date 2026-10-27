@@ -24,17 +24,17 @@ fn error(source: &str, limits: ExecutionLimits) -> Diagnostic {
 
 #[test]
 fn zero_one_and_multiple_counts_use_exclusive_zero_based_indices() {
-    assert_eq!(output("repeat 0 as i { println(1/0); } repeat 1 as i { println(i); } let mut total=0; repeat 5 as index { total+=index; } println(total);"),"0\n10\n");
+    assert_eq!(output("repeat 0 as i { println(1/0); } repeat 1 as i { println(i); } var total=0; repeat 5 as index { total+=index; } println(total);"),"0\n10\n");
 }
 
 #[test]
 fn count_is_a_snapshot_evaluated_once_before_index_binding() {
     assert_eq!(
-        output("let mut n=4; repeat n+1 as index { n=0; println(index); } println(n);"),
+        output("var n=4; repeat n+1 as index { n=0; println(index); } println(n);"),
         "0\n1\n2\n3\n4\n0\n"
     );
     assert_eq!(
-        output("let n=3; repeat n as n { println(n); } println(n);"),
+        output("bind n=3; repeat n as n { println(n); } println(n);"),
         "0\n1\n2\n3\n"
     );
     assert_eq!(
@@ -54,8 +54,8 @@ fn break_and_continue_advance_only_the_nearest_repeat() {
 
 #[test]
 fn mixed_while_repeat_control_targets_the_correct_loop() {
-    assert_eq!(output("let mut x=0; while x<3 { x+=1; repeat 4 as i { if i==1 {continue;} if i==3 {break;} println(x*10+i); } }"),"10\n12\n20\n22\n30\n32\n");
-    assert_eq!(output("repeat 3 as i { let mut j=0; while true { j+=1; if j==1 {continue;} if j==3 {break;} println(i*10+j); } }"),"2\n12\n22\n");
+    assert_eq!(output("var x=0; while x<3 { x+=1; repeat 4 as i { if i==1 {continue;} if i==3 {break;} println(x*10+i); } }"),"10\n12\n20\n22\n30\n32\n");
+    assert_eq!(output("repeat 3 as i { var j=0; while true { j+=1; if j==1 {continue;} if j==3 {break;} println(i*10+j); } }"),"2\n12\n22\n");
     assert_eq!(
         output("repeat 4 as i { if i==1 {continue;} elif i==3 {break;} else {println(i);} }"),
         "0\n2\n"
@@ -64,19 +64,19 @@ fn mixed_while_repeat_control_targets_the_correct_loop() {
 
 #[test]
 fn index_and_per_iteration_locals_follow_existing_scope_rules() {
-    assert_eq!(output("let index=99; repeat 3 as index { let mut copy=index; copy+=10; println(copy); { let index=8; println(index); } } println(index);"),"10\n8\n11\n8\n12\n8\n99\n");
+    assert_eq!(output("bind index=99; repeat 3 as index { var copy=index; copy+=10; println(copy); { bind index=8; println(index); } } println(index);"),"10\n8\n11\n8\n12\n8\n99\n");
     for source in ["repeat 1 as i { i=2; }", "repeat 0 as i { i+=1; }"] {
         let error = error(source, ExecutionLimits::default());
         assert_eq!(error.kind, Kind::ImmutableAssignment);
         assert_eq!(error.related.len(), 1);
     }
     assert_eq!(
-        error("repeat 0 as i { let i=1; }", ExecutionLimits::default()).kind,
+        error("repeat 0 as i { bind i=1; }", ExecutionLimits::default()).kind,
         Kind::DuplicateBinding
     );
     for source in [
         "repeat 1 as i {} println(i);",
-        "repeat 0 as i { let local=1; } println(local);",
+        "repeat 0 as i { bind local=1; } println(local);",
     ] {
         assert_eq!(
             error(source, ExecutionLimits::default()).kind,
@@ -87,10 +87,13 @@ fn index_and_per_iteration_locals_follow_existing_scope_rules() {
 
 #[test]
 fn contextual_words_preserve_ordinary_bindings_and_assignments() {
-    assert_eq!(output("let mut repeat=2; repeat+=1; let as=repeat; repeat as as repeat { println(repeat); } println(as); println(repeat);"),"0\n1\n2\n3\n3\n");
-    assert_eq!(output("let as=2; repeat as as as {println(as);}"), "0\n1\n");
+    assert_eq!(output("var repeat=2; repeat+=1; bind as=repeat; repeat as as repeat { println(repeat); } println(as); println(repeat);"),"0\n1\n2\n3\n3\n");
     assert_eq!(
-        output("let Repeat=1; let repeatable=2; println(Repeat+repeatable);"),
+        output("bind as=2; repeat as as as {println(as);}"),
+        "0\n1\n"
+    );
+    assert_eq!(
+        output("bind Repeat=1; bind repeatable=2; println(Repeat+repeatable);"),
         "3\n"
     );
     assert_eq!(
@@ -221,7 +224,7 @@ fn exact_step_and_print_budgets_agree_between_execution_and_validation() {
 #[test]
 fn loops_have_fixed_storage_and_reusable_parallel_execution() {
     let program = scarp::compile(
-        "let mut total=0; repeat 100000 as i { let value=i+1; total+=value; } println(total);",
+        "var total=0; repeat 100000 as i { bind value=i+1; total+=value; } println(total);",
     )
     .unwrap();
     assert_eq!(program.binding_count(), 4);
@@ -304,7 +307,7 @@ fn original_unicode_crlf_spans_cover_count_index_and_statement() {
 #[test]
 fn deterministic_counted_programs_match_an_independent_reference() {
     for n in 0..100 {
-        let source=format!("let mut total=0; repeat {n} as i {{ if i==3 {{continue;}} if i==9 {{break;}} total+=i; }} println(total);");
+        let source=format!("var total=0; repeat {n} as i {{ if i==3 {{continue;}} if i==9 {{break;}} total+=i; }} println(total);");
         let want: i64 = (0..n).take_while(|i| *i != 9).filter(|i| *i != 3).sum();
         assert_eq!(output(&source), format!("{want}\n"));
     }

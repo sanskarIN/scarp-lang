@@ -1,0 +1,6 @@
+// Bindings are visible after their declaration.
+let width = 6;
+let height = 7;
+let area = width * height;
+println("Area:");
+println(area);

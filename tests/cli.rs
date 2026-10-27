@@ -54,7 +54,7 @@ fn loop_budgets_are_available_to_run_and_check_without_partial_output() {
     let prints = fixture.file("prints.srp", "while true { println(1); }");
     let valid = fixture.file(
         "valid.srp",
-        "let mut x = 0; while x < 3 { x += 1; } println(x);",
+        "var x = 0; while x < 3 { x += 1; } println(x);",
     );
     for mode in ["run", "check"] {
         let result = command()
@@ -128,7 +128,7 @@ fn conditional_programs_run_and_skipped_static_errors_reach_stderr() {
     let fixture = Fixture::new();
     let valid = fixture.file(
         "decisions.srp",
-        "let mut x = 1; if x < 2 and not false { x += 2; } else { println(1 / 0); } println(x);",
+        "var x = 1; if x < 2 and not false { x += 2; } else { println(1 / 0); } println(x);",
     );
     let invalid = fixture.file(
         "invalid.srp",
@@ -362,14 +362,14 @@ fn token_inspection_does_not_evaluate_or_range_check_integers() {
 #[test]
 fn runs_bindings_and_reports_semantic_errors_on_stderr() {
     let fixture = Fixture::new();
-    let valid = fixture.file("bindings.srp", "let value = 6 * 7; println(value);");
+    let valid = fixture.file("bindings.srp", "bind value = 6 * 7; println(value);");
     let output = command().arg("run").arg(valid).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"42\n");
     for (source, code) in [
         ("println(\"first\"); println(missing);", "E0010"),
-        ("let x = 1; let x = 2;", "E0011"),
-        ("let println = 1;", "E0012"),
+        ("bind x = 1; bind x = 2;", "E0011"),
+        ("bind println = 1;", "E0012"),
     ] {
         let invalid = fixture.file("names.srp", source);
         let output = command().arg("run").arg(invalid).output().unwrap();
@@ -382,14 +382,14 @@ fn runs_bindings_and_reports_semantic_errors_on_stderr() {
 #[test]
 fn runs_mutable_bindings_and_diagnoses_immutable_writes() {
     let fixture = Fixture::new();
-    let path = fixture.file(
-        "mutable.srp",
-        "let mut value = 1; value += 41; println(value);",
-    );
+    let path = fixture.file("mutable.srp", "var value = 1; value += 41; println(value);");
     let output = command().arg("run").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"42\n");
-    let path = fixture.file("immutable.srp", "let value = 1; println(value); value = 2;");
+    let path = fixture.file(
+        "immutable.srp",
+        "bind value = 1; println(value); value = 2;",
+    );
     let output = command().arg("run").arg(path).output().unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
@@ -402,12 +402,12 @@ fn runs_scoped_variables_and_reports_names_that_leave_scope() {
     let fixture = Fixture::new();
     let path = fixture.file(
         "scopes.srp",
-        "let x = 1; { let x = x + 1; println(x); } println(x);",
+        "bind x = 1; { bind x = x + 1; println(x); } println(x);",
     );
     let output = command().arg("run").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"2\n1\n");
-    let path = fixture.file("leak.srp", "{ let x = 1; } println(x);");
+    let path = fixture.file("leak.srp", "{ bind x = 1; } println(x);");
     let output = command().arg("run").arg(path).output().unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
@@ -417,15 +417,15 @@ fn runs_scoped_variables_and_reports_names_that_leave_scope() {
 #[test]
 fn check_is_silent_on_success_and_validates_arithmetic() {
     let fixture = Fixture::new();
-    let path = fixture.file("check.srp", "let mut x = 1; x += 2; println(x);");
+    let path = fixture.file("check.srp", "var x = 1; x += 2; println(x);");
     let output = command().arg("check").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert!(output.stdout.is_empty() && output.stderr.is_empty());
     for (source, code) in [
         ("println(1); println(missing);", "E0010"),
-        ("let x = 1; x = 2;", "E0013"),
-        ("println(1); let mut x = 1; x /= 0;", "E0008"),
-        ("let x = 9223372036854775807 + 1;", "E0007"),
+        ("bind x = 1; x = 2;", "E0013"),
+        ("println(1); var x = 1; x /= 0;", "E0008"),
+        ("bind x = 9223372036854775807 + 1;", "E0007"),
     ] {
         let path = fixture.file("check-error.srp", source);
         let output = command().arg("check").arg(path).output().unwrap();
@@ -451,7 +451,7 @@ fn check_supports_unicode_paths_and_an_explicit_separator() {
 #[test]
 fn large_single_line_token_dumps_retain_exact_eof_locations() {
     let fixture = Fixture::new();
-    let source = "let v = 1;".repeat(5_000);
+    let source = "bind v = 1;".repeat(5_000);
     let path = fixture.file("large.srp", &source);
     let output = command().arg("tokens").arg(path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
@@ -532,7 +532,7 @@ fn counted_loop_cli_has_atomic_budgets_and_tokens_still_only_lexes() {
 }
 
 #[test]
-fn iteration_milestone_keeps_later_commands_and_syntax_out() {
+fn current_main_keeps_unintegrated_commands_and_syntax_out() {
     for subcommand in ["exec", "verify", "inspect", "compile"] {
         let result = command()
             .args([subcommand, "missing.srp"])
@@ -541,8 +541,6 @@ fn iteration_milestone_keeps_later_commands_and_syntax_out() {
         assert_eq!(result.status.code(), Some(2));
     }
     for source in [
-        "bind x=1;",
-        "var x=1;",
         "print(1);",
         "funcra f() -> unit {}",
         "println(1.25);",
@@ -557,15 +555,12 @@ fn string_variables_run_and_type_errors_are_checked_before_output() {
     let fixture = Fixture::new();
     let path = fixture.file(
         "strings.srp",
-        "let mut text = \"first\"; println(text); text = \"second\"; println(text);",
+        "var text = \"first\"; println(text); text = \"second\"; println(text);",
     );
     let output = command().arg("run").arg(&path).output().unwrap();
     assert!(output.status.success(), "{}", stderr(&output));
     assert_eq!(output.stdout, b"first\nsecond\n");
-    fixture.file(
-        "strings.srp",
-        "println(1); let mut text = \"hello\"; text = 1;",
-    );
+    fixture.file("strings.srp", "println(1); var text = \"hello\"; text = 1;");
     for subcommand in ["run", "check"] {
         let output = command().arg(subcommand).arg(&path).output().unwrap();
         assert_eq!(output.status.code(), Some(1));

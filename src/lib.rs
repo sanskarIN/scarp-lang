@@ -41,8 +41,8 @@ pub fn compile(source: &str) -> Result<ResolvedProgram, Diagnostic> {
 /// The current language has no side effects other than printing.
 ///
 /// ```
-/// scarp::check("let mut count = 1; count += 2; println(count);")?;
-/// assert!(scarp::check("let value = 1 / 0;").is_err());
+/// scarp::check("var count = 1; count += 2; println(count);")?;
+/// assert!(scarp::check("bind value = 1 / 0;").is_err());
 /// # Ok::<(), scarp::diagnostics::Diagnostic>(())
 /// ```
 pub fn check(source: &str) -> Result<(), Diagnostic> {

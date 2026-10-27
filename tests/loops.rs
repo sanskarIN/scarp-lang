@@ -24,12 +24,12 @@ fn error(source: &str, limits: ExecutionLimits) -> Diagnostic {
 
 #[test]
 fn while_rechecks_current_state_and_skips_false_bodies() {
-    assert_eq!(output("let mut x = 0; while x < 4 { println(x); x += 1; } println(x); while false { println(1 / 0); }"), "0\n1\n2\n3\n4\n");
+    assert_eq!(output("var x = 0; while x < 4 { println(x); x += 1; } println(x); while false { println(1 / 0); }"), "0\n1\n2\n3\n4\n");
 }
 
 #[test]
 fn break_and_continue_control_the_nearest_loop() {
-    let source = "let mut outer = 0; let mut total = 0; while outer < 3 { outer += 1; let mut inner = 0; while true { inner += 1; if inner == 2 { continue; } if inner > 3 { break; } total += outer * 10 + inner; } } println(total);";
+    let source = "var outer = 0; var total = 0; while outer < 3 { outer += 1; var inner = 0; while true { inner += 1; if inner == 2 { continue; } if inner > 3 { break; } total += outer * 10 + inner; } } println(total);";
     assert_eq!(output(source), "132\n");
     assert_eq!(
         output("while true { { if true { break; } } println(1 / 0); } println(7);"),
@@ -39,11 +39,11 @@ fn break_and_continue_control_the_nearest_loop() {
 
 #[test]
 fn iteration_declarations_reinitialize_without_escaping_or_aliasing() {
-    assert_eq!(output("let local = 99; let mut x = 0; while x < 3 { let mut local = x; local += 10; println(local); x += 1; } println(local);"), "10\n11\n12\n99\n");
-    assert_eq!(output("let mut x = 0; let mut text = \"first\"; while x < 2 { let copy = text; println(copy); text = \"later\"; x += 1; }"), "first\nlater\n");
+    assert_eq!(output("bind local = 99; var x = 0; while x < 3 { var local = x; local += 10; println(local); x += 1; } println(local);"), "10\n11\n12\n99\n");
+    assert_eq!(output("var x = 0; var text = \"first\"; while x < 2 { bind copy = text; println(copy); text = \"later\"; x += 1; }"), "first\nlater\n");
     assert_eq!(
         error(
-            "while false { let hidden = 1; } println(hidden);",
+            "while false { bind hidden = 1; } println(hidden);",
             ExecutionLimits::default()
         )
         .kind,
@@ -59,7 +59,7 @@ fn unreachable_loop_bodies_are_statically_checked() {
             DiagnosticKind::UnknownName,
         ),
         (
-            "while false { let x = 1; x = 2; }",
+            "while false { bind x = 1; x = 2; }",
             DiagnosticKind::ImmutableAssignment,
         ),
         ("while 1 {}", DiagnosticKind::TypeMismatch),
@@ -88,7 +88,7 @@ fn loop_control_outside_a_loop_is_rejected_even_in_skipped_paths() {
     }
     for name in ["while", "break", "continue"] {
         assert_eq!(
-            error(&format!("let {name} = 1;"), ExecutionLimits::default()).kind,
+            error(&format!("bind {name} = 1;"), ExecutionLimits::default()).kind,
             DiagnosticKind::ReservedName
         );
     }
@@ -103,7 +103,7 @@ fn nonterminating_loops_stop_deterministically_without_output() {
     for source in [
         "println(\"before\"); while true {}",
         "while true { continue; }",
-        "let mut x = 1; while x > 0 { x = 1; }",
+        "var x = 1; while x > 0 { x = 1; }",
     ] {
         let diagnostic = error(source, limits);
         assert_eq!(diagnostic.kind, DiagnosticKind::ExecutionLimit);
@@ -195,7 +195,7 @@ fn selected_errors_and_budget_failures_keep_output_atomic() {
 
 #[test]
 fn compiled_loop_programs_have_fresh_state_and_budgets() {
-    let program = scarp::compile("let mut x = 0; while x < 20 { x += 1; } println(x);").unwrap();
+    let program = scarp::compile("var x = 0; while x < 20 { x += 1; } println(x);").unwrap();
     std::thread::scope(|scope| {
         for _ in 0..8 {
             let program = &program;
@@ -223,10 +223,9 @@ fn compiled_loop_programs_have_fresh_state_and_budgets() {
 
 #[test]
 fn large_iteration_counts_use_flat_jumps_and_fixed_storage() {
-    let program = scarp::compile(
-        "let mut x = 0; while x < 100000 { let next = x + 1; x = next; } println(x);",
-    )
-    .unwrap();
+    let program =
+        scarp::compile("var x = 0; while x < 100000 { bind next = x + 1; x = next; } println(x);")
+            .unwrap();
     assert_eq!(program.binding_count(), 2);
     let mut bytes = Vec::new();
     interpreter::execute_with_limits(
@@ -274,7 +273,7 @@ fn malformed_and_excessively_nested_loops_report_errors() {
 #[test]
 fn generated_loop_results_agree_with_a_reference_sum() {
     for limit in 0..100 {
-        let source=format!("let mut x = 0; let mut total = 0; while x < {limit} {{ x += 1; if x == 3 {{ continue; }} if x == 8 {{ break; }} total += x; }} println(total);");
+        let source=format!("var x = 0; var total = 0; while x < {limit} {{ x += 1; if x == 3 {{ continue; }} if x == 8 {{ break; }} total += x; }} println(total);");
         let expected: i64 = (1..=limit)
             .take_while(|x| *x != 8)
             .filter(|x| *x != 3)

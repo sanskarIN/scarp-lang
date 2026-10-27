@@ -20,7 +20,7 @@ codes belong to the development variable stack.
 | `E0010` | Unknown variable | Declare it before use in a visible scope |
 | `E0011` | Duplicate declaration in one scope | Rename it, or use a deliberate nested scope |
 | `E0012` | Reserved variable name | Avoid statement words, boolean literals, and logical operator words |
-| `E0013` | Assignment to an immutable binding | Declare the intended target with `let mut` |
+| `E0013` | Assignment to an immutable binding | Declare the intended target with `var` |
 | `E0014` | Block nesting exceeds 64 levels | Flatten unnecessary statement blocks |
 | `E0015` | Primitive type mismatch | Keep assignment types fixed; arithmetic/order use integers and logic uses booleans |
 | `E0016` | Loop control outside a loop | Place break/continue in a while body |
@@ -54,7 +54,7 @@ the declaration determines which variable, mutability, or type the later use has
 
 ```scarp-invalid
 println(answer);
-let answer = 42;
+bind answer = 42;
 ```
 
 Move the declaration before the use. A later declaration does not make a name
@@ -63,8 +63,8 @@ visible earlier. A declaration inside a completed block is also invisible outsid
 ### Duplicate declaration: E0011
 
 ```scarp-invalid
-let answer = 40;
-let answer = 42;
+bind answer = 40;
+bind answer = 42;
 ```
 
 If the value should change, declare one mutable binding and assign to it. If a
@@ -74,18 +74,18 @@ declaration without checking uses between the two locations.
 ### Immutable write: E0013
 
 ```scarp-invalid
-let answer = 40;
+bind answer = 40;
 answer += 2;
 ```
 
-For intended mutation, change the declaration to `let mut answer = 40;`. If an
+For intended mutation, change the declaration to `var answer = 40;`. If an
 inner declaration shadows an outer mutable binding, the inner declaration
 controls the write; resolution does not skip it.
 
 ### Assignment type mismatch: E0015
 
 ```scarp-invalid
-let mut label = "Scarp";
+var label = "Scarp";
 label = 42;
 ```
 
@@ -96,7 +96,7 @@ There are no implicit conversions.
 ### Arithmetic type mismatch: E0015
 
 ```scarp-invalid
-let label = "Scarp";
+bind label = "Scarp";
 println(label + 1);
 ```
 

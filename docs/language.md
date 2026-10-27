@@ -1,6 +1,7 @@
 # Scarp prototype language reference
 
-This reference describes v0.0.3-beta.1, following the v0.0.2 variable milestone. It is an
+This reference describes development main after v0.0.3-beta.1. See the
+[syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
 
@@ -12,7 +13,7 @@ Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
 Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms use
-`let`, `println`, and `if`, with exactly that spelling and case. `elif` and `else`
+`bind`, `var`, `println`, and `if`, with exactly that spelling and case. `elif` and `else`
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
@@ -60,7 +61,7 @@ loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
                   { "elif", expression, block }, [ "else", block ] ;
 block           = "{", { statement }, "}" ;
-declaration     = "let", [ "mut" ], IDENTIFIER, "=", expression, ";" ;
+declaration     = ("bind" | "var"), IDENTIFIER, "=", expression, ";" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
 print_statement = "println", "(", argument, ")", ";" ;

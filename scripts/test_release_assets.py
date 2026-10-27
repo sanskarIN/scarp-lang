@@ -25,7 +25,9 @@ class ReleasedExamples(unittest.TestCase):
         self.assertEqual(len(entries), 22)
         for entry in entries:
             expected, name = entry.split("  ", 1)
-            self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), expected, name)
+            self.assertEqual(hashlib.sha256((root / "tests/fixtures/releases/v0.0.2" / name).read_bytes()).hexdigest(), expected, name)
+            if name.endswith(".stdout"):
+                self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), expected, name)
 
 
 class ReleaseAssets(unittest.TestCase):

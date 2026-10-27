@@ -297,7 +297,7 @@ impl Resolver {
                 Statement::Block { statements, span } => {
                     self.scoped_statements(statements, span)?;
                 }
-                Statement::Let {
+                Statement::Declaration {
                     name,
                     name_span,
                     initializer,
@@ -381,8 +381,8 @@ impl Resolver {
                             "the immutable binding is declared here",
                         )
                         .with_help(if binding.repeat_index {
-                            "repeat indices are read-only; copy the index into a separate let mut variable to change a local value"
-                        } else { "declare this binding with let mut to allow assignment" }));
+                            "repeat indices are read-only; copy the index into a separate var variable to change a local value"
+                        } else { "declare this binding with var to allow assignment" }));
                     }
                     let slot = binding.slot;
                     let expected_type = binding.kind;
@@ -580,6 +580,8 @@ fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
     if matches!(
         name,
         "let"
+            | "bind"
+            | "var"
             | "mut"
             | "println"
             | "true"
@@ -613,7 +615,7 @@ pub(crate) fn unknown_name(name: &str, span: Span) -> Diagnostic {
         span,
         format!("unknown variable {name:?}"),
     )
-    .with_help("declare the variable with let before using it in this scope")
+    .with_help("declare the variable with bind or var before using it in this scope")
 }
 
 fn loop_control(span: Span) -> Diagnostic {

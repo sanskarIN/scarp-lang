@@ -1,6 +1,6 @@
 // The count is saved once; changing count does not shorten this loop.
-let mut count = 5;
-let mut total = 0;
+var count = 5;
+var total = 0;
 repeat count as index {
     count = 0;
     if index == 2 { continue; }

@@ -1,5 +1,7 @@
 # Version and API compatibility
 
+Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
+
 Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1/v0.0.2 snapshots with
 the `0.0.3-beta.1` iteration milestone documented here.
@@ -43,7 +45,7 @@ semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
 The variable milestone is available on main. Its implementation was reviewed in
-PRs #7–#15, covering bindings, mutation, scopes, validation, strings, documentation,
+PRs #7â€“#15, covering bindings, mutation, scopes, validation, strings, documentation,
 booleans, conditionals, and execution workspace improvements. Later feature
 branches intentionally remain outside this release.
 

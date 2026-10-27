@@ -32,7 +32,7 @@ fn if_and_else_execute_exactly_one_body() {
 
 #[test]
 fn elif_conditions_stop_after_the_first_selected_body() {
-    assert_eq!(output("let score = 73; if score >= 90 { println(\"A\"); } elif score >= 60 { println(\"B\"); } elif 1 / 0 == 0 { println(\"C\"); } else { println(\"D\"); }"), "B\n");
+    assert_eq!(output("bind score = 73; if score >= 90 { println(\"A\"); } elif score >= 60 { println(\"B\"); } elif 1 / 0 == 0 { println(\"C\"); } else { println(\"D\"); }"), "B\n");
     assert_eq!(
         output("if false { println(1); } elif false { println(2); } else { println(3); }"),
         "3\n"
@@ -45,11 +45,11 @@ fn elif_conditions_stop_after_the_first_selected_body() {
 
 #[test]
 fn each_body_has_a_separate_lexical_scope() {
-    assert_eq!(output("let x = 1; if true { let x = x + 1; println(x); } elif false { let x = \"other\"; println(x); } else { let x = false; println(x); } println(x);"), "2\n1\n");
+    assert_eq!(output("bind x = 1; if true { bind x = x + 1; println(x); } elif false { bind x = \"other\"; println(x); } else { bind x = false; println(x); } println(x);"), "2\n1\n");
     for source in [
-        "if true { let local = 1; } println(local);",
-        "if true { let local = 1; } else { println(local); }",
-        "if false { let local = 1; } elif local == 1 {}",
+        "if true { bind local = 1; } println(local);",
+        "if true { bind local = 1; } else { println(local); }",
+        "if false { bind local = 1; } elif local == 1 {}",
     ] {
         assert_eq!(error(source).kind, DiagnosticKind::UnknownName);
     }
@@ -57,16 +57,16 @@ fn each_body_has_a_separate_lexical_scope() {
 
 #[test]
 fn selected_outer_assignments_survive_scope_exit() {
-    assert_eq!(output("let mut value = 1; let mut text = \"before\"; if true { value += 2; text = \"after\"; } else { value = 99; } println(value); println(text);"), "3\nafter\n");
+    assert_eq!(output("var value = 1; var text = \"before\"; if true { value += 2; text = \"after\"; } else { value = 99; } println(value); println(text);"), "3\nafter\n");
     assert_eq!(
-        output("let mut x = 1; if true { let mut x = 10; x += 1; println(x); } println(x);"),
+        output("var x = 1; if true { var x = 10; x += 1; println(x); } println(x);"),
         "11\n1\n"
     );
 }
 
 #[test]
 fn conditions_observe_current_state_in_source_order() {
-    assert_eq!(output("let mut ready = false; if ready { println(1); } ready = true; if ready { println(2); ready = false; } if ready { println(3); } else { println(4); }"), "2\n4\n");
+    assert_eq!(output("var ready = false; if ready { println(1); } ready = true; if ready { println(2); ready = false; } if ready { println(3); } else { println(4); }"), "2\n4\n");
 }
 
 #[test]
@@ -95,19 +95,19 @@ fn unreachable_bodies_and_guards_still_check_names_types_and_mutability() {
         ),
         ("if true {} elif missing {}", DiagnosticKind::UnknownName),
         (
-            "if false { let x = true + 1; }",
+            "if false { bind x = true + 1; }",
             DiagnosticKind::TypeMismatch,
         ),
         (
-            "let x = 1; if false { x = 2; }",
+            "bind x = 1; if false { x = 2; }",
             DiagnosticKind::ImmutableAssignment,
         ),
         (
-            "let mut x = 1; if false { x = true; }",
+            "var x = 1; if false { x = true; }",
             DiagnosticKind::TypeMismatch,
         ),
         (
-            "if false { let x = 1; let x = 2; }",
+            "if false { bind x = 1; bind x = 2; }",
             DiagnosticKind::DuplicateBinding,
         ),
     ] {
@@ -117,7 +117,7 @@ fn unreachable_bodies_and_guards_still_check_names_types_and_mutability() {
 
 #[test]
 fn unselected_arithmetic_is_skipped_but_selected_errors_remain_atomic() {
-    assert_eq!(output("println(\"before\"); if false { let x = 1 / 0; } else { println(\"chosen\"); } if true {} else { println(9223372036854775807 + 1); }"), "before\nchosen\n");
+    assert_eq!(output("println(\"before\"); if false { bind x = 1 / 0; } else { println(\"chosen\"); } if true {} else { println(9223372036854775807 + 1); }"), "before\nchosen\n");
     assert_eq!(
         error("println(\"before\"); if true { println(1 / 0); }").kind,
         DiagnosticKind::DivisionByZero
@@ -151,7 +151,7 @@ fn malformed_branch_syntax_returns_diagnostics_without_panics() {
         "if true {} else if false {}",
         "if true {} elif {}",
         "if true {} else {} else {}",
-        "let x = if true {};",
+        "bind x = if true {};",
     ] {
         let diagnostic = error(source);
         assert!(
@@ -164,7 +164,7 @@ fn malformed_branch_syntax_returns_diagnostics_without_panics() {
     }
     for name in ["if", "elif", "else"] {
         assert_eq!(
-            error(&format!("let {name} = true;")).kind,
+            error(&format!("bind {name} = true;")).kind,
             DiagnosticKind::ReservedName
         );
     }
@@ -237,7 +237,7 @@ fn resolver_checks_public_conditional_structure_and_depth() {
 
 #[test]
 fn compiled_conditional_metadata_and_state_are_stable() {
-    let program = scarp::compile("let mut x = 1; if true { let local = 2; x += local; } else { let local = 4; x += local; } println(x);").unwrap();
+    let program = scarp::compile("var x = 1; if true { bind local = 2; x += local; } else { bind local = 4; x += local; } println(x);").unwrap();
     assert_eq!(program.binding_count(), 3);
     assert_eq!(program.statement_count(), 7);
     std::thread::scope(|scope| {
@@ -260,7 +260,7 @@ fn generated_branch_selection_matches_an_independent_model() {
     let mut source = String::new();
     let mut expected = String::new();
     for value in -100..=100 {
-        source.push_str(&format!("{{ let value = {value}; if value < -10 {{ println(1); }} elif value <= 10 {{ println(2); }} else {{ println(3); }} }}"));
+        source.push_str(&format!("{{ bind value = {value}; if value < -10 {{ println(1); }} elif value <= 10 {{ println(2); }} else {{ println(3); }} }}"));
         expected.push_str(if value < -10 {
             "1\n"
         } else if value <= 10 {

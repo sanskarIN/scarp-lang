@@ -44,7 +44,7 @@ evaluate only selected conditions and bodies.
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = r#"
-        let mut count = 1;
+        var count = 1;
         count += 2;
         println("Count:");
         println(count);
@@ -65,7 +65,7 @@ standard streams.
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let program = scarp::compile(
-        "let mut count = 1; count += 2; println(count);"
+        "var count = 1; count += 2; println(count);"
     )?;
     assert_eq!(program.binding_count(), 1);
     assert_eq!(program.binding_types(), &[scarp::value::ValueType::Integer]);
@@ -91,7 +91,7 @@ all scopes. `binding_types` follows declaration/slot order.
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let source = "let value = 1 / 0; println(value);";
+    let source = "bind value = 1 / 0; println(value);";
     let mut output = Vec::new();
     match scarp::run(source, &mut output) {
         Err(scarp::RunError::Diagnostic(error)) => {

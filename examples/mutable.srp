@@ -1,5 +1,5 @@
-let mut count = 2;
-let original = count;
+var count = 2;
+bind original = count;
 count += 5;
 println(count);
 count *= 3;
