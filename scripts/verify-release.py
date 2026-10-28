@@ -61,7 +61,7 @@ def verify(directory, version, commit):
         syntax_migration_files = (
             "examples/output.srp", "examples/output.stdout",
             "docs/output.md", "docs/syntax-migration.md",
-        ) if version == "0.0.3-beta.3.dev" else ()
+        ) if version == "0.0.3-beta.2" else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",

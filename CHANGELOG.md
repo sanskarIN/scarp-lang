@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.3-beta.3.dev — 2026-10-27 — prerelease
+## 0.0.3-beta.2 — 2026-10-28 — prerelease
 
 - Contextual repairs for incomplete bind/var declarations and assignments,
   preserving precise expression errors and output atomicity.

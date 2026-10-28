@@ -1,6 +1,6 @@
 # Scarp prototype language reference
 
-This reference describes v0.0.3-beta.3.dev. See the
+This reference describes v0.0.3-beta.2. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
