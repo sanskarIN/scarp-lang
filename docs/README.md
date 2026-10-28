@@ -2,11 +2,11 @@
 
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
-Choose a guide by the task you want to complete. Current tutorials target development main. Release notes describe the
-published snapshots. The language includes variables, string bindings, booleans,
-conditionals, bounded while/repeat loops, and five string escapes.
-Development main adds the declaration migration and [output statements](output.md). Numerical, function, native,
-and CLI redesign stacks remain separate.
+Choose a guide by the task you want to complete. Current tutorials target the
+published v0.0.3-beta.2 syntax and current main. They include variables, strings,
+booleans, conditionals, bounded while/repeat loops, five string escapes, and
+[output statements](output.md). Release notes describe fixed snapshots;
+numerical, function, native, and CLI redesign stacks remain separate.
 
 ## Guides and what each adds
 
@@ -57,13 +57,17 @@ Design records cover [integer expressions](proposals/0001-integer-expressions.md
 [variables](proposals/0002-variables.md), and
 [string values](proposals/0003-string-bindings.md). Read each record's status;
 a proposed capability is not implemented merely because it appears in a roadmap.
-The [boolean design](proposals/0004-boolean-expressions.md) records comparison,
-precedence, and short-circuit rules in the next dependent feature slice.
+The [boolean design](proposals/0004-boolean-expressions.md) records implemented
+comparison, precedence, and short-circuit rules.
 The [conditional design](proposals/0005-conditional-statements.md) explains scoped
 bodies, flat branch execution, and checks in unselected paths.
 
 Published behavior is recorded in the [v0.0.1 notes](releases/v0.0.1.md).
 The [v0.0.2 notes](releases/v0.0.2.md) describe the variable prerelease.
+The [v0.0.3-beta.1 notes](releases/v0.0.3-beta.1.md) describe the iteration release;
+the [v0.0.3-beta.2 notes](releases/v0.0.3-beta.2.md) cover declaration migration,
+output streams, and current downloads. Use [compatibility](compatibility.md)
+before running a current tutorial with an older installed executable.
 [Release preparation](releasing.md) describes the separate packaging and
 publication process. The root [changelog](../CHANGELOG.md) distinguishes released
 work from unmerged development changes.

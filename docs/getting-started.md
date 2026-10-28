@@ -67,7 +67,8 @@ Hello from Scarp!
 7
 ```
 
-Execute it with `cargo run -- run demo.srp`. The same program works in v0.0.1.
+Execute it with `cargo run -- run demo.srp`. For v0.0.1 through beta.1, use
+`println` instead of `print`; those releases do not recognize `print`.
 The `.srp` suffix is conventional; the CLI validates file contents rather than
 requiring a particular extension.
 
@@ -80,7 +81,13 @@ development, `cargo run -- ...` selects the current checkout explicitly.
 
 Downloaded release archives already contain an executable and do not require
 Rust for running programs. Their platform and checksum instructions are in the
-[v0.0.1 release notes](releases/v0.0.1.md).
+[v0.0.3-beta.2 release notes](releases/v0.0.3-beta.2.md). Select Windows x64 MSVC,
+Linux x64 GNU, or Apple Silicon macOS to match the host. Verify the archive's
+SHA-256 against its companion checksum before extracting, keep the supplied
+`examples/` and `docs/` directories, and run commands from the extracted root.
+Use `./scarp.exe` on Windows or `./scarp` on Unix when the directory is not on
+`PATH`. A source checkout includes the Rust sources and tests; a binary archive
+contains the runnable interpreter, documentation, and examples.
 
 Next, follow [your first program](tutorials/first-program.md), then the
 [variable tutorial](tutorials/variables.md) on main. Older packages use the

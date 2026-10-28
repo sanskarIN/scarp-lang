@@ -1,6 +1,8 @@
 # Scarp
 
-Development declarations use `bind` and `var`; see the [migration guide](docs/syntax-migration.md). Published tags retain their original syntax.
+The published v0.0.3-beta.2 prerelease and current main use `bind` and `var`;
+see the [migration guide](docs/syntax-migration.md). Earlier tags retain their
+original declaration syntax.
 
 **Build Beyond Boundaries.**
 
@@ -82,6 +84,8 @@ the CLI does not reject other filename extensions.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
 - Boolean comparisons and short-circuit `and`, `or`, and `not` expressions.
 - Scoped `if`/`elif`/`else` statements with explicit boolean conditions.
+- `while` and counted `repeat` loops, nearest-loop `break`/`continue`, and
+  deterministic work/output limits shared by `run` and `check`.
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -126,11 +130,12 @@ Conditional statements select the first true `if`/`elif` body, or the optional
 `else` body. Every condition and body undergoes static checks; arithmetic executes
 only on the selected path. Start with the [decisions tutorial](docs/tutorials/decisions.md).
 
-`check` validates syntax, names, mutability, scopes, primitive types, and arithmetic without writing
-program output. It returns zero and remains silent on success. In this pure
-value language it evaluates declarations and assignments in fresh local
-storage, so reachable unused arithmetic failures are still reported. `compile` alone does
-not evaluate arithmetic.
+`check` validates syntax, names, mutability, scopes, primitive types, and arithmetic
+without writing program output. It returns zero and remains silent on success.
+It evaluates selected loops, declarations, and assignments in fresh local
+storage, so reachable unused arithmetic failures are still reported. The Rust
+library's `scarp::compile` only parses and resolves; it does not evaluate arithmetic.
+There is no `scarp compile` CLI command in beta.2.
 
 `tokens` checks lexical validity without parsing or executing the file. It prints
 one token per line, including decoded string text, one-based line/column ranges,
@@ -230,6 +235,11 @@ Integer, string, and boolean bindings are implemented on main. Read the
 The [v0.0.3-beta.2 notes](docs/releases/v0.0.3-beta.2.md) describe the integrated variable
 milestone, downloads, and limitations. Later features remain separate PRs and
 require an explicit integration decision.
+
+The [main-based function candidate in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)
+is separate from beta.2. Its `0.0.4-dev` version and passing branch checks do not
+make functions available in published beta.2 binaries or integrate that PR into
+main. Release notes describe immutable snapshots; branch names can move.
 
 ## License
 

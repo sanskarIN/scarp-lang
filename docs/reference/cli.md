@@ -6,7 +6,7 @@ development stack; see [compatibility](../compatibility.md).
 
 ## Commands and availability
 
-| Invocation | Purpose | v0.0.1 | Development |
+| Invocation | Purpose | v0.0.1 | v0.0.2 through beta.2 |
 | --- | --- | --- | --- |
 | `scarp run <path>` | Read, validate, and execute a source file | Yes | Yes |
 | `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes |
@@ -15,9 +15,11 @@ development stack; see [compatibility](../compatibility.md).
 | `scarp --version` or `scarp -V` | Print the package version | Yes | Yes |
 | `scarp run --help` | Show usage before requiring a file | No | Yes |
 
-Development `tokens` and `check` commands also accept `--help` and `-h` after the
+The `tokens` and `check` commands also accept `--help` and `-h` after the
 command name. Only one source path is accepted. There is no stdin input mode,
 watch mode, import path, or `scarp build` command.
+`exec`, `verify`, `inspect`, and `compile` are not accepted commands in beta.2;
+proposed CLI designs do not change the shipped command contract.
 
 v0.0.3 keeps these spellings and adds contextual guidance for run/check/tokens.
 Run/check help shows budget placement, defaults, and iteration examples. Check
@@ -36,7 +38,7 @@ native executable.
 
 ## What each file command validates
 
-`run` validates the complete file before writing program output. Development
+`run` validates the complete file before writing program output. Beta.2
 validation includes names, scopes, mutability, and primitive types. Arithmetic
 is checked before any pending prints are written.
 
@@ -52,7 +54,7 @@ program. Use `check` rather than a token listing to validate development source.
 
 ## Paths and encoding
 
-Development `run` and `check` accept `--max-steps <count>` and `--max-prints <count>`
+Since beta.1, `run` and `check` accept `--max-steps <count>` and `--max-prints <count>`
 before the path. Defaults are 1,000,000 work steps and 100,000 selected prints.
 Each option can occur once; unsigned decimal zero is allowed. Budget failures use
 status 1 and leave output empty; malformed options use status 2. See
@@ -76,7 +78,7 @@ scarp tokens -- -hello.srp
 scarp check -- -hello.srp
 ```
 
-The last command requires development Scarp. The separator belongs after the
+The last command requires v0.0.2 or later. The separator belongs after the
 Scarp command; when using Cargo, that means `cargo run -- check -- -hello.srp`.
 
 Paths use the operating system's native encoding. Source contents must be UTF-8.
@@ -89,16 +91,22 @@ convention, not a file-extension check.
 
 | Result | stdout | stderr | Exit code |
 | --- | --- | --- | --- |
-| Successful run | Program output | Empty | `0` |
+| Successful run | Selected stdout output | Selected `eprint`/`ewrite` output | `0` |
 | Successful check | Empty | Empty | `0` |
 | Successful token listing | Tokens | Empty | `0` |
 | Help or version | Requested information | Empty | `0` |
-| Source, file, or output error | No program output for source errors | Diagnostic | `1` |
+| Source, evaluation, or budget error | Empty | Diagnostic, without user-program stderr | `1` |
+| File-read error | Empty | Read error | `1` |
+| Output I/O error | Earlier bytes may remain | Earlier user bytes and/or an error if writable | `1` except broken pipe |
 | Invalid command-line usage | Empty | Error and usage | `2` |
 
 Output I/O failures can occur after some bytes have been written. The CLI treats
 a broken output pipe as normal termination; library callers receive the output
 error. Source and semantic errors do not produce partial program output.
+An `eprint` message is user-program output, not automatically a failure:
+inspect the exit code to distinguish it from a diagnostic. Successful `check`
+suppresses both stdout and user-program stderr. Budget flags are rejected by
+`tokens`; it performs no execution to budget.
 
 In a POSIX shell, inspect the previous command's status with `echo $?`. In
 PowerShell, inspect `$LASTEXITCODE`. Read stderr as well as the status when

@@ -13,7 +13,7 @@ Unicode whitespace outside string literals and `//` comments through the next
 LF, CR, or end of file. It recognizes comments only outside strings.
 
 Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms use
-`bind`, `var`, `print`, and `if`, with exactly that spelling and case. `elif` and `else`
+`bind`, `var`, output names, `if`, `while`, and `repeat`, with exact spelling and case. `elif` and `else`
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
@@ -188,6 +188,10 @@ Carets cover the first affected line and remain visible for empty spans at EOF.
 | `E0013` | Assignment to an immutable binding |
 | `E0014` | Block nesting limit exceeded |
 | `E0015` | Primitive type mismatch |
+| `E0016` | Break or continue outside a loop body |
+| `E0017` | Execution work limit exceeded |
+| `E0018` | Selected output-statement limit exceeded |
+| `E0019` | Negative repeat count |
 
 Diagnostic wording and library types are experimental. Codes are intended to be
 more useful for tests than full platform-dependent file-error strings. Read
@@ -207,9 +211,13 @@ The `run`, `check`, and `tokens` commands accept an optional `--` before the pat
 one path is required, and stdin is not a source input. The `.srp` extension is a
 convention rather than a filename check. Native non-Unicode paths are accepted
 where supported by the operating system; the file contents must remain UTF-8.
+`run` and `check` accept `--max-steps` and `--max-prints` before the path;
+`tokens` accepts neither. `check` evaluates the selected path, including loops,
+and is not a static-only checker. See the [CLI reference](reference/cli.md).
 
-Program output, help, versions, and token listings use stdout. Diagnostics use
-stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
+Ordinary output, help, versions, and token listings use stdout. Explicit
+`eprint`/`ewrite` output and diagnostics use stderr. Exit codes are `0` for
+success, `1` for source/file/output failures, and
 `2` for invalid arguments. No commands install packages or publish releases.
 
 ## Scope
