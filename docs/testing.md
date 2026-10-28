@@ -49,6 +49,9 @@ cargo doc --locked --no-deps
 | Arguments, paths, streams, and exit codes | `tests/cli.rs` |
 | Generated programs and malformed input | `tests/conformance.rs` |
 | Shipped source/output pairs | `tests/examples.rs` |
+| Output destinations, spacing, snapshot/replay failures | `tests/output.rs` |
+| While/repeat control, count snapshots, and budgets | `tests/loops.rs`, `tests/repeat.rs` |
+| Incomplete declarations/assignments and nesting boundaries | `tests/variable_diagnostics.rs` |
 
 For example, `cargo test --test bindings` runs one integration test target.
 `cargo test --test bindings duplicate_declarations_include_the_original_location`
@@ -111,6 +114,17 @@ streams and compare every fixture without normalizing line endings.
 Markdown guides. Run new Scarp examples with the intended version, check their
 expected output, and compile complete Rust embedding examples against the
 documented checkout. Negative examples should produce their stated code.
+To validate Markdown changes, build the intended checkout first with
+`cargo build --locked --offline`; a stale `target/debug/libscarp.rlib` may belong
+to another branch. Check each complete `scarp` fence with that executable, run
+it to compare any stated stdout/stderr bytes, and confirm every `scarp-invalid`
+fence fails with the documented code. Compile and execute complete Rust host
+examples against the freshly built library. Resolve local links from the page's
+directory, including links in older release notes.
+
+Historical release-note examples use that release's syntax; do not migrate them
+to current syntax just to make a current-executable check pass. Validate them
+against the tagged source/binary or preserved compatibility fixtures instead.
 
 Package CI builds native archives, extracts them, and smoke-tests the delivered
 executables. That complements the language suite; it does not replace it.

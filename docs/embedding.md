@@ -1,6 +1,6 @@
 # Embed Scarp in a Rust application
 
-This guide targets the development API. It helps a host application choose
+This guide targets the published beta.2 API and current main. It helps a host application choose
 between parsing, compilation, validation, and execution while retaining control
 of output and diagnostics. See [compatibility](compatibility.md) for v0.0.1 API
 differences.
@@ -32,6 +32,8 @@ these instructions use a local dependency rather than a registry release.
 | `interpreter::validate` | Resolved program | Success or `Diagnostic` | Yes | No |
 | `interpreter::execute` | Resolved program and writer | Success or `RunError` | Yes | Yes |
 | `run` | Source text and writer | Success or `RunError` | Yes | Yes |
+| `run_with_io` | Source text and two writers | Success or `RunError` | Yes | Both streams |
+| `interpreter::execute_with_io` | Resolved program and two writers | Success or `RunError` | Yes | Both streams |
 
 Compilation resolves names, scopes, mutability, and primitive types. Arithmetic
 failures such as division by zero require validation or execution. Parsing alone
@@ -59,6 +61,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 The library does not select process stdout for you. Any suitable `std::io::Write`
 destination can be supplied. The CLI is the layer that reads files and chooses
 standard streams.
+
+## Capture both streams with explicit limits
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let source = "print(\"ready\"); eprint(\"warning\", 2);";
+    let limits = scarp::ExecutionLimits { max_steps: 100, max_prints: 2 };
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    scarp::run_with_io_and_limits(source, &mut stdout, &mut stderr, limits)?;
+    assert_eq!(stdout, b"ready\n");
+    assert_eq!(stderr, b"warning 2\n");
+    scarp::check_with_limits(source, limits)?;
+    Ok(())
+}
+```
+
+The selected-output limit counts both statements, including stderr statements
+and empty writes. `check_with_limits` evaluates without either writer and
+enforces the same work/output limits. Its success does not emit the warning.
+For a compiled program, use `execute_with_io_and_limits` or
+`validate_with_limits` in `interpreter`.
+
+Single-writer `run`/`execute` return `RunError::Output` with error kind
+`Unsupported` if a selected stderr event has bytes, before writing stdout.
+Both writers remain untouched for source/evaluation/budget diagnostics. During
+successful replay, stream changes flush the previous writer; callers own final
+flushing. An I/O failure can leave earlier bytes. The limits count logical work
+and output statements, not all parser memory or the size of a single string;
+they are not a general sandbox. See [output](output.md) and [budgets](budgets.md).
 
 ## Compile once and execute repeatedly
 
