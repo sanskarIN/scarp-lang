@@ -1,0 +1,10 @@
+error[E0026]: needs contract failed in funcra checked
+ --> contract.srp:2:5
+  |
+2 |     needs n > 0;
+  |     ^^^^^^^^^^^^
+ = note: called funcra checked here
+ --> contract.srp:8:1
+  |
+8 | checked(0);
+  | ^^^^^^^^^^

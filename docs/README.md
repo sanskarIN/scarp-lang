@@ -6,7 +6,8 @@ Choose a guide by the task you want to complete. Current tutorials target the
 published v0.0.3-beta.2 syntax and current main. They include variables, strings,
 booleans, conditionals, bounded while/repeat loops, five string escapes, and
 [output statements](output.md). Release notes describe fixed snapshots;
-numerical, function, native, and CLI redesign stacks remain separate.
+this unreleased checkout additionally contains [typed funcra functions](functions.md).
+Numerical, native, and CLI redesign stacks remain separate.
 
 ## Guides and what each adds
 
@@ -14,6 +15,7 @@ numerical, function, native, and CLI redesign stacks remain separate.
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
+| [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources in the unreleased checkout |
 | [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |

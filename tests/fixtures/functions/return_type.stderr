@@ -1,0 +1,5 @@
+error[E0021]: return must produce integer
+ --> return_type.srp:2:5
+  |
+2 |     return "text";
+  |     ^^^^^^^^^^^^^^

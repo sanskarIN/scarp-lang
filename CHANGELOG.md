@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.4-dev — unreleased
+
+- Adapt typed file-level `funcra` functions onto beta.2 main without importing
+  the experimental numeric, native, or CLI stacks. Forward calls, recursion,
+  named/default arguments, unit returns, purity, and needs/ensures contracts.
+- Heap call frames, additive resource options, bounded traces, immutable metadata,
+  and function-aware repeat counts preserve atomic stdout/stderr preparation.
+- New function codes E0020–E0029 preserve existing E0001–E0019. Unknown call names
+  now report E0023; unknown non-call statements retain E0005.
+- This is branch development, not a published release. See [functions](docs/functions.md).
+
 ## 0.0.3-beta.2 — 2026-10-28 — prerelease
 
 - Contextual repairs for incomplete bind/var declarations and assignments,

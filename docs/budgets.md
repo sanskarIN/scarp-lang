@@ -45,3 +45,12 @@ Each extra argument separator consumes one work step. A selected `write();` or
 `ewrite();` consumes one output-statement allowance even though it emits no bytes.
 Dual-stream hosts can use `run_with_io_and_limits` or
 `interpreter::execute_with_io_and_limits` with the same limits.
+
+## Function branch options (unreleased)
+
+On `scarp/funcra-main`, the additive `ExecutionOptions` selects call depth,
+cumulative calls, live binding slots, and cumulative output snapshot storage.
+Existing two-field ExecutionLimits literals remain valid; old entry points use
+default additional caps. These apply during run and check, including snapshot
+limits for programs without functions. CLI flags still select only steps/prints;
+use the embedding options API for other limits. See [functions](functions.md).

@@ -1,6 +1,7 @@
 # Scarp prototype language reference
 
-This reference describes v0.0.3-beta.2. See the
+This source reference describes unreleased 0.0.4-dev on `scarp/funcra-main`.
+Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
@@ -51,7 +52,10 @@ preserved; token dumps escape string values for readability.
 ## Grammar
 
 Trivia means whitespace and line comments. Trivia can appear between tokens.
-The following grammar applies after trivia has been removed:
+The following base grammar applies after trivia has been removed. This
+unreleased checkout extends it with typed function declarations, call
+expressions/statements, returns, and contracts; see [functions](functions.md).
+Those extensions additionally recognize `:` and `->` punctuation.
 
 ```ebnf
 program         = { statement }, EOF ;
@@ -96,7 +100,9 @@ print("two");
 ```
 
 Empty and comment-only files are valid programs. Extra semicolons, concatenated
-strings and nested calls are invalid. Multiple output arguments are valid. Binary operators
+strings are invalid. Output forms remain statements and cannot be nested as
+expressions; user-function calls can be nested. Multiple output arguments are
+valid. Binary operators
 associate left to right. Multiplication and division have higher precedence
 than addition and subtraction. One unary minus is allowed before a primary:
 `--1` is invalid, while `-(-1)` and `1--2` are valid. Unary plus is unsupported.
@@ -223,8 +229,9 @@ success, `1` for source/file/output failures, and
 ## Scope
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on main and described
-in [the variable reference](variables.md). Functions, user-defined types, modules, a
-compiler backend, and a package manager are not implemented. The implemented expression semantics are also
+in [the variable reference](variables.md). The function branch adds typed
+`funcra` calls as described in [functions](functions.md). User-defined types, modules,
+a compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
 
 The v0.0.3-beta.1 iteration milestone adds scoped `while`, `break`, and `continue`

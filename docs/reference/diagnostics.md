@@ -4,7 +4,8 @@ Use the error code to identify the class of failure, then use the source locatio
 and help to repair it. Codes `E0001` through `E0009` exist in v0.0.1; the remaining
 codes through `E0015` are available in v0.0.2. Beta.1 adds `E0016` through
 `E0019`; published beta.2 retains those assignments and adds contextual
-declaration/assignment repair help. This page describes beta.2 and current main.
+declaration/assignment repair help. This page covers beta.2 and the unreleased function checkout;
+E0020–E0029 are new in that checkout and are absent from beta.2 binaries.
 
 ## Codes and first repairs
 
@@ -29,6 +30,17 @@ declaration/assignment repair help. This page describes beta.2 and current main.
 | `E0017` | Execution work budget exhausted | Check loop progress or raise the explicit budget |
 | `E0018` | Selected print count exhausted | Reduce prints or raise the explicit print budget |
 | `E0019` | Negative repeat count | Supply zero to skip the loop or a positive integer count |
+
+| `E0020` | Invalid or conflicting function definition | Check signature, duplicate names, and binding collisions |
+| `E0021` | Invalid return or unit value use | Match the declared result; use unit calls as statements |
+| `E0022` | Missing return path | Cover every branch or add a final return after loops |
+| `E0023` | Unknown or non-callable function | Declare a funcra with that exact name |
+| `E0024` | Invalid argument mapping | Check labels, duplicates, required values, and positional order |
+| `E0025` | Purity violation | Keep output and impure calls outside pure functions/contracts/defaults |
+| `E0026` | Contract failure | Satisfy needs/ensures and inspect the bounded call trace |
+| `E0027` | Function resource limit | Check the named ExecutionOptions field and recursion/frame size |
+| `E0028` | Unsupported function form | Use file-level named functions without captures |
+| `E0029` | Output snapshot limit | Reduce selected output or change max_capture_bytes |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

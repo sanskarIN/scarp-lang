@@ -540,8 +540,34 @@ fn current_main_keeps_unintegrated_commands_and_syntax_out() {
             .unwrap();
         assert_eq!(result.status.code(), Some(2));
     }
-    for source in ["funcra f() -> unit {}", "println(1.25);", "println([1,2]);"] {
+    for source in ["println(1.25);", "println([1,2]);"] {
         assert!(scarp::compile(source).is_err(), "{source}");
+    }
+}
+
+#[test]
+fn typed_calls_run_and_check_with_the_existing_cli_contract() {
+    let fixture = Fixture::new();
+    let path = fixture.file("functions.srp", "pure funcra size(n: integer = 2) -> integer { return n; } repeat size() as i { print(i); }");
+    let result = command().arg("run").arg(&path).output().unwrap();
+    assert!(result.status.success());
+    assert_eq!(result.stdout, b"0\n1\n");
+    assert!(result.stderr.is_empty());
+    let result = command().arg("check").arg(&path).output().unwrap();
+    assert!(result.status.success() && result.stdout.is_empty() && result.stderr.is_empty());
+}
+
+#[test]
+fn contract_failures_render_traces_without_replaying_output() {
+    let fixture = Fixture::new();
+    let path = fixture.file("contract.srp", "funcra positive(n: integer) -> integer needs n > 0; { eprint(n); return n; } print(\"pending\"); print(positive(0));");
+    for operation in ["run", "check"] {
+        let result = command().arg(operation).arg(&path).output().unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        let error = String::from_utf8(result.stderr).unwrap();
+        assert!(error.contains("E0026") && error.contains("called funcra positive here"));
+        assert!(!error.contains("pending\n"));
     }
 }
 

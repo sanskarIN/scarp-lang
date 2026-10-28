@@ -96,6 +96,16 @@ pub enum DiagnosticKind {
     ExecutionLimit,
     OutputLimit,
     RepeatCount,
+    FunctionDefinition,
+    InvalidReturn,
+    MissingReturn,
+    UnknownFunction,
+    CallArguments,
+    ImpureFunction,
+    ContractViolation,
+    CallLimit,
+    FunctionUnsupported,
+    CaptureLimit,
 }
 
 impl DiagnosticKind {
@@ -120,6 +130,16 @@ impl DiagnosticKind {
             Self::ExecutionLimit => "E0017",
             Self::OutputLimit => "E0018",
             Self::RepeatCount => "E0019",
+            Self::FunctionDefinition => "E0020",
+            Self::InvalidReturn => "E0021",
+            Self::MissingReturn => "E0022",
+            Self::UnknownFunction => "E0023",
+            Self::CallArguments => "E0024",
+            Self::ImpureFunction => "E0025",
+            Self::ContractViolation => "E0026",
+            Self::CallLimit => "E0027",
+            Self::FunctionUnsupported => "E0028",
+            Self::CaptureLimit => "E0029",
         }
     }
 }

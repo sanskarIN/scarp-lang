@@ -51,16 +51,24 @@ class ReleaseAssets(unittest.TestCase):
                 f"docs/releases/v{version}.md", "examples/bindings.srp",
                 "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             ) if name != omit}
-            if version.startswith("0.0.3-"):
+            if (version.startswith("0.0.3-") or version == "0.0.4-dev"):
                 for name in ("loops", "repeat", "control_escapes"):
                     for extension in ("srp", "stdout"):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version == "0.0.3-beta.2":
+            if version in ("0.0.3-beta.2", "0.0.4-dev"):
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
+                ):
+                    if member != omit:
+                        files[member] = b"fixture"
+            if version == "0.0.4-dev":
+                for member in (
+                    "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
+                    "examples/function_contracts.srp", "examples/function_contracts.stdout",
+                    "examples/function_recursion.srp", "examples/function_recursion.stdout",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
@@ -144,6 +152,24 @@ class ReleaseAssets(unittest.TestCase):
     def test_complete_syntax_release_keeps_sorted_checksums(self):
         self.build(version="0.0.3-beta.2")
         entries = verifier.verify(self.directory, "0.0.3-beta.2", COMMIT).splitlines()
+        self.assertEqual(len(entries), 3)
+        self.assertEqual(entries, sorted(entries))
+
+    def test_function_candidate_requires_its_guide_and_all_example_pairs(self):
+        for member in (
+            "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
+            "examples/function_contracts.srp", "examples/function_contracts.stdout",
+            "examples/function_recursion.srp", "examples/function_recursion.stdout",
+            "examples/repeat.srp", "docs/syntax-migration.md",
+        ):
+            with self.subTest(member=member):
+                self.build(version="0.0.4-dev", omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, "0.0.4-dev", COMMIT)
+
+    def test_complete_function_candidate_has_three_sorted_checksums(self):
+        self.build(version="0.0.4-dev")
+        entries = verifier.verify(self.directory, "0.0.4-dev", COMMIT).splitlines()
         self.assertEqual(len(entries), 3)
         self.assertEqual(entries, sorted(entries))
 

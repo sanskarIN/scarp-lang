@@ -24,7 +24,7 @@ use std::{fmt, io};
 
 use ast::Program;
 use diagnostics::Diagnostic;
-pub use limits::ExecutionLimits;
+pub use limits::{ExecutionLimits, ExecutionOptions};
 pub use resolver::ResolvedProgram;
 
 /// Parse source without performing name resolution or arithmetic evaluation.
@@ -52,6 +52,48 @@ pub fn check(source: &str) -> Result<(), Diagnostic> {
 /// Validate with caller-selected deterministic execution and print budgets.
 pub fn check_with_limits(source: &str, limits: ExecutionLimits) -> Result<(), Diagnostic> {
     interpreter::validate_with_limits(&compile(source)?, limits)
+}
+
+/// Runtime validation with all function and output-storage resource options.
+pub fn check_with_options(source: &str, options: ExecutionOptions) -> Result<(), Diagnostic> {
+    interpreter::validate_with_options(&compile(source)?, options)
+}
+
+/// Single-writer execution with all interpreter options.
+pub fn run_with_options(
+    source: &str,
+    output: &mut impl io::Write,
+    options: ExecutionOptions,
+) -> Result<(), RunError> {
+    interpreter::execute_with_options(
+        &compile(source).map_err(RunError::Diagnostic)?,
+        output,
+        options,
+    )
+}
+
+/// Dual-writer execution with all interpreter options.
+///
+/// ```
+/// let (mut out, mut err) = (Vec::new(), Vec::new());
+/// scarp::run_with_io_and_options(
+///     "funcra twice(n: integer) -> integer { return n * 2; } print(twice(9));",
+///     &mut out, &mut err, scarp::ExecutionOptions::default())?;
+/// assert_eq!(out, b"18\n");
+/// # Ok::<(), scarp::RunError>(())
+/// ```
+pub fn run_with_io_and_options(
+    source: &str,
+    stdout: &mut impl io::Write,
+    stderr: &mut impl io::Write,
+    options: ExecutionOptions,
+) -> Result<(), RunError> {
+    interpreter::execute_with_io_and_options(
+        &compile(source).map_err(RunError::Diagnostic)?,
+        stdout,
+        stderr,
+        options,
+    )
 }
 
 /// A source/evaluation diagnostic or a failure writing program output.

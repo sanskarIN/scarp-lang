@@ -2,10 +2,13 @@
 
 use std::collections::HashMap;
 
+mod functions;
+use functions::{build_call_graph, resolve_function};
+
 use crate::{
     ast::{
-        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, OutputTarget,
-        PrintArgument, Program, Statement,
+        AssignmentOperator, BinaryOperator, Expression, ExpressionKind, FunctionDeclaration,
+        OutputTarget, PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     parser::MAX_BLOCK_DEPTH,
@@ -19,9 +22,15 @@ pub struct ResolvedProgram {
     pub(crate) statements: Vec<ResolvedOperation>,
     slot_types: Vec<ValueType>,
     statement_count: usize,
+    pub(crate) functions: Vec<ResolvedFunction>,
+    metadata: Vec<FunctionInfo>,
 }
 
 impl ResolvedProgram {
+    /// Source-ordered function metadata, produced without executing user code.
+    pub fn functions(&self) -> &[FunctionInfo] {
+        &self.metadata
+    }
     /// Number of executable operations, including branch guards and declarations,
     /// excluding block containers and unconditional bookkeeping jumps.
     pub fn statement_count(&self) -> usize {
@@ -47,6 +56,12 @@ pub(crate) struct ResolvedOperation {
 
 #[derive(Debug, Clone)]
 pub(crate) enum ResolvedStatement {
+    Return {
+        value: Option<ResolvedExpression>,
+    },
+    Call {
+        expression: ResolvedExpression,
+    },
     RepeatInit {
         count: ResolvedExpression,
         count_slot: usize,
@@ -80,7 +95,6 @@ pub(crate) enum ResolvedStatement {
         value: ResolvedExpression,
         operator_span: Span,
     },
-    Println(ResolvedArgument),
     Output {
         arguments: Vec<ResolvedArgument>,
         target: OutputTarget,
@@ -99,6 +113,118 @@ pub(crate) struct ResolvedExpression {
     pub syntax: Expression,
     pub slots: Vec<Option<usize>>,
     pub kind: ValueType,
+    pub calls: Vec<Option<ResolvedCall>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ResolvedCall {
+    pub function: usize,
+    /// Parameter indices in the original explicit-argument order.
+    pub parameters: Vec<usize>,
+}
+
+/// Static function signature and call-graph information. Spans are source bytes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionInfo {
+    pub name: String,
+    pub span: Span,
+    pub parameters: Vec<ParameterInfo>,
+    pub result: ValueType,
+    pub pure: bool,
+    pub contracts: Vec<ContractInfo>,
+    pub callees: Vec<String>,
+    pub recursive: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParameterInfo {
+    pub name: String,
+    pub kind: ValueType,
+    pub span: Span,
+    pub default: Option<Span>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContractInfo {
+    pub postcondition: bool,
+    pub span: Span,
+}
+
+/// Deterministic human-readable static function information. Does not execute.
+pub fn write_function_insight(
+    program: &ResolvedProgram,
+    output: &mut impl std::io::Write,
+) -> std::io::Result<()> {
+    writeln!(output, "Scarp function insight 1")?;
+    for function in program.functions() {
+        write!(
+            output,
+            "{} funcra {}(",
+            if function.pure { "pure" } else { "impure" },
+            function.name
+        )?;
+        for (index, parameter) in function.parameters.iter().enumerate() {
+            if index > 0 {
+                write!(output, ", ")?;
+            }
+            write!(output, "{}: {}", parameter.name, parameter.kind)?;
+            if let Some(span) = parameter.default {
+                write!(output, " = default@{}..{}", span.start, span.end)?;
+            }
+        }
+        writeln!(
+            output,
+            ") -> {} [{}..{}]",
+            function.result, function.span.start, function.span.end
+        )?;
+        for parameter in &function.parameters {
+            writeln!(
+                output,
+                "  parameter {} [{}..{}]",
+                parameter.name, parameter.span.start, parameter.span.end
+            )?;
+        }
+        for contract in &function.contracts {
+            writeln!(
+                output,
+                "  {} [{}..{}]",
+                if contract.postcondition {
+                    "ensures"
+                } else {
+                    "needs"
+                },
+                contract.span.start,
+                contract.span.end
+            )?;
+        }
+        writeln!(
+            output,
+            "  callees: {}",
+            if function.callees.is_empty() {
+                "-".into()
+            } else {
+                function.callees.join(", ")
+            }
+        )?;
+        writeln!(output, "  recursive: {}", function.recursive)?;
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ResolvedFunction {
+    pub statements: Vec<ResolvedOperation>,
+    pub slots: usize,
+    pub defaults: Vec<Option<ResolvedExpression>>,
+    pub contracts: Vec<ResolvedContract>,
+    pub result_slot: Option<usize>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ResolvedContract {
+    pub postcondition: bool,
+    pub expression: ResolvedExpression,
+    pub span: Span,
 }
 
 struct Binding {
@@ -107,36 +233,105 @@ struct Binding {
     mutable: bool,
     kind: ValueType,
     repeat_index: bool,
+    parameter: bool,
 }
 type Scope = HashMap<String, Binding>;
 
 /// Resolve a syntax tree. Inner declarations can shadow outer names, but never
 /// reuse a slot, and never escape their lexical block.
 pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
-    let mut resolver = Resolver {
-        scopes: vec![HashMap::new()],
-        statements: Vec::new(),
-        slot_types: Vec::new(),
-        loops: Vec::new(),
-    };
-    resolver.statement_list(program.statements)?;
+    let mut declarations = Vec::new();
+    let mut statements = Vec::new();
+    let mut metadata: Vec<FunctionInfo> = Vec::new();
+    let mut names: HashMap<String, usize> = HashMap::new();
+    for statement in program.statements {
+        if let Statement::Function(function) = statement {
+            check_name(&function.name, function.name_span)?;
+            if function.name == "repeat" {
+                return Err(Diagnostic::new(
+                    DiagnosticKind::FunctionDefinition,
+                    function.name_span,
+                    "repeat cannot name a function because it starts a loop statement",
+                ));
+            }
+            if let Some(&previous) = names.get(&function.name) {
+                return Err(Diagnostic::new(
+                    DiagnosticKind::FunctionDefinition,
+                    function.name_span,
+                    format!("function {:?} is already declared", function.name),
+                )
+                .with_related(metadata[previous].span, "the first definition is here"));
+            }
+            if metadata.len() >= 4096 || function.parameters.len() > 1024 {
+                return Err(Diagnostic::new(
+                    DiagnosticKind::FunctionDefinition,
+                    function.span,
+                    "function declarations exceed 4096 functions or 1024 parameters per function",
+                ));
+            }
+            names.insert(function.name.clone(), metadata.len());
+            metadata.push(FunctionInfo {
+                name: function.name.clone(),
+                span: function.span,
+                parameters: function
+                    .parameters
+                    .iter()
+                    .map(|p| ParameterInfo {
+                        name: p.name.clone(),
+                        kind: p.kind,
+                        span: p.span,
+                        default: p.default.as_ref().map(|e| e.nodes()[e.root()].span),
+                    })
+                    .collect(),
+                result: function.result,
+                pure: function.pure,
+                contracts: function
+                    .contracts
+                    .iter()
+                    .map(|c| ContractInfo {
+                        postcondition: c.postcondition,
+                        span: c.span,
+                    })
+                    .collect(),
+                callees: Vec::new(),
+                recursive: false,
+            });
+            declarations.push(function);
+        } else {
+            statements.push(statement);
+        }
+    }
+    let functions = declarations
+        .into_iter()
+        .map(|f| resolve_function(f, &metadata, &names))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut resolver = Resolver::new(&metadata, &names);
+    resolver.statement_list(statements)?;
     let statement_count = resolver
         .statements
         .iter()
         .filter(|statement| !matches!(statement.kind, ResolvedStatement::Jump { .. }))
         .count();
-    Ok(ResolvedProgram {
+    let mut result = ResolvedProgram {
         statements: resolver.statements,
         slot_types: resolver.slot_types,
         statement_count,
-    })
+        functions,
+        metadata,
+    };
+    build_call_graph(&mut result);
+    Ok(result)
 }
 
-struct Resolver {
+struct Resolver<'a> {
     scopes: Vec<Scope>,
     statements: Vec<ResolvedOperation>,
     slot_types: Vec<ValueType>,
     loops: Vec<LoopContext>,
+    functions: &'a [FunctionInfo],
+    names: &'a HashMap<String, usize>,
+    result: Option<ValueType>,
+    pure: bool,
 }
 
 struct LoopContext {
@@ -144,11 +339,90 @@ struct LoopContext {
     continues: Vec<usize>,
 }
 
-impl Resolver {
+impl<'a> Resolver<'a> {
+    fn new(functions: &'a [FunctionInfo], names: &'a HashMap<String, usize>) -> Self {
+        Self {
+            scopes: vec![HashMap::new()],
+            statements: Vec::new(),
+            slot_types: Vec::new(),
+            loops: Vec::new(),
+            functions,
+            names,
+            result: None,
+            pure: false,
+        }
+    }
+
+    fn expression(&self, syntax: Expression) -> Result<ResolvedExpression, Diagnostic> {
+        resolve_expression(syntax, &self.scopes, self.functions, self.names, self.pure)
+    }
+
+    fn binding_name(&self, name: &str, span: Span) -> Result<(), Diagnostic> {
+        check_name(name, span)?;
+        if let Some(&function) = self.names.get(name) {
+            return Err(Diagnostic::new(
+                DiagnosticKind::FunctionDefinition,
+                span,
+                format!("binding {name:?} collides with a function"),
+            )
+            .with_related(self.functions[function].span, "function declared here"));
+        }
+        Ok(())
+    }
     fn statement_list(&mut self, statements: Vec<Statement>) -> Result<(), Diagnostic> {
         for statement in statements {
             let span = statement.span();
             match statement {
+                Statement::Function(function) => {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::FunctionUnsupported,
+                        function.span,
+                        "function declarations are allowed only at file scope",
+                    ))
+                }
+                Statement::Return { value, span } => {
+                    let expected = self.result.ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::InvalidReturn,
+                            span,
+                            "return is only valid inside funcra",
+                        )
+                    })?;
+                    let value = value.map(|v| self.expression(v)).transpose()?;
+                    match (&value, expected) {
+                        (None, ValueType::Unit) => {}
+                        (Some(value), kind) if kind != ValueType::Unit && value.kind == kind => {}
+                        _ => {
+                            return Err(Diagnostic::new(
+                                DiagnosticKind::InvalidReturn,
+                                span,
+                                format!(
+                                    "return must {}",
+                                    if expected == ValueType::Unit {
+                                        "be bare for a unit function".into()
+                                    } else {
+                                        format!("produce {expected}")
+                                    }
+                                ),
+                            ))
+                        }
+                    }
+                    self.emit(ResolvedStatement::Return { value }, span);
+                }
+                Statement::Call { expression, span } => {
+                    if !matches!(
+                        expression.nodes()[expression.root()].kind,
+                        ExpressionKind::UserCall { .. }
+                    ) {
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::CallArguments,
+                            span,
+                            "a call statement requires a call expression",
+                        ));
+                    }
+                    let expression = self.expression(expression)?;
+                    self.emit(ResolvedStatement::Call { expression }, span);
+                }
                 Statement::Repeat {
                     count,
                     index,
@@ -156,14 +430,14 @@ impl Resolver {
                     statements,
                     span,
                 } => {
-                    let count = resolve_expression(count, &self.scopes)?;
+                    let count = self.expression(count)?;
                     let count_span = count.syntax.nodes()[count.syntax.root()].span;
                     require_type(count.kind, ValueType::Integer, count_span).map_err(|error| {
                         error.with_help(
                             "repeat needs an integer count: repeat 5 as index { statements }",
                         )
                     })?;
-                    check_name(&index, index_span)?;
+                    self.binding_name(&index, index_span)?;
                     let count_slot = self.slot_types.len();
                     let index_slot = count_slot + 1;
                     self.slot_types
@@ -197,6 +471,7 @@ impl Resolver {
                             mutable: false,
                             kind: ValueType::Integer,
                             repeat_index: true,
+                            parameter: false,
                         },
                     );
                     self.statement_list(statements)?;
@@ -217,7 +492,7 @@ impl Resolver {
                     statements,
                     span,
                 } => {
-                    let condition = resolve_expression(condition, &self.scopes)?;
+                    let condition = self.expression(condition)?;
                     let condition_span = condition.syntax.nodes()[condition.syntax.root()].span;
                     require_type(condition.kind, ValueType::Boolean, condition_span).map_err(|error|
                         error.with_help("while needs a boolean guard; compare values, for example while index < count { statements }"))?;
@@ -271,7 +546,7 @@ impl Resolver {
                     }
                     let mut exits = Vec::new();
                     for branch in branches {
-                        let condition = resolve_expression(branch.condition, &self.scopes)?;
+                        let condition = self.expression(branch.condition)?;
                         let condition_span = condition.syntax.nodes()[condition.syntax.root()].span;
                         require_type(condition.kind, ValueType::Boolean, condition_span)?;
                         let guard = self.emit(
@@ -309,7 +584,7 @@ impl Resolver {
                     mutable,
                     ..
                 } => {
-                    check_name(&name, name_span)?;
+                    self.binding_name(&name, name_span)?;
                     let current = self.scopes.last().expect("a file scope always exists");
                     if let Some(previous) = current.get(&name) {
                         return Err(Diagnostic::new(
@@ -321,7 +596,8 @@ impl Resolver {
                         .with_help("choose a different name or introduce a nested scope"));
                     }
                     // Resolve before insertion: a shadowing initializer sees the outer name.
-                    let value = resolve_expression(initializer, &self.scopes)?;
+                    let value = self.expression(initializer)?;
+                    require_value(value.kind, span)?;
                     let slot = self.slot_types.len();
                     let kind = value.kind;
                     self.slot_types.push(kind);
@@ -336,18 +612,13 @@ impl Resolver {
                                 mutable,
                                 kind,
                                 repeat_index: false,
+                                parameter: false,
                             },
                         );
                     self.emit(ResolvedStatement::Store { slot, value }, span);
                 }
                 Statement::Println { argument, .. } => {
-                    let argument = match argument {
-                        PrintArgument::String(value) => ResolvedArgument::String(value),
-                        PrintArgument::Expression(expression) => ResolvedArgument::Expression(
-                            resolve_expression(expression, &self.scopes)?,
-                        ),
-                    };
-                    self.emit(ResolvedStatement::Println(argument), span);
+                    self.output(vec![argument], OutputTarget::Stdout, true, span)?;
                 }
                 Statement::Output {
                     arguments,
@@ -395,12 +666,12 @@ impl Resolver {
                         )
                         .with_help(if binding.repeat_index {
                             "repeat indices are read-only; copy the index into a separate var variable to change a local value"
-                        } else { "declare this binding with var to allow assignment" }));
+                        } else if binding.parameter { "parameters are immutable; copy the parameter into a local var to change a local value" } else { "declare this binding with var to allow assignment" }));
                     }
                     let slot = binding.slot;
                     let expected_type = binding.kind;
                     let declaration = binding.declaration;
-                    let value = resolve_expression(value, &self.scopes)?;
+                    let value = self.expression(value)?;
                     match operator {
                         AssignmentOperator::Set if value.kind != expected_type => {
                             let span = value.syntax.nodes()[value.syntax.root()].span;
@@ -484,12 +755,24 @@ impl Resolver {
         newline: bool,
         span: Span,
     ) -> Result<(), Diagnostic> {
+        if self.pure {
+            return Err(Diagnostic::new(
+                DiagnosticKind::ImpureFunction,
+                span,
+                "pure functions cannot perform output",
+            ));
+        }
         let arguments = arguments
             .into_iter()
             .map(|argument| match argument {
                 PrintArgument::String(value) => Ok(ResolvedArgument::String(value)),
                 PrintArgument::Expression(expression) => {
-                    resolve_expression(expression, &self.scopes).map(ResolvedArgument::Expression)
+                    let expression = self.expression(expression)?;
+                    require_value(
+                        expression.kind,
+                        expression.syntax.nodes()[expression.syntax.root()].span,
+                    )?;
+                    Ok(ResolvedArgument::Expression(expression))
                 }
             })
             .collect::<Result<_, _>>()?;
@@ -518,15 +801,114 @@ fn lookup<'a>(scopes: &'a [Scope], name: &str) -> Option<&'a Binding> {
 fn resolve_expression(
     syntax: Expression,
     scopes: &[Scope],
+    functions: &[FunctionInfo],
+    names: &HashMap<String, usize>,
+    pure: bool,
 ) -> Result<ResolvedExpression, Diagnostic> {
     let mut slots = Vec::with_capacity(syntax.nodes().len());
+    let mut calls = Vec::with_capacity(syntax.nodes().len());
     let mut types: Vec<ValueType> = Vec::with_capacity(syntax.nodes().len());
     for node in syntax.nodes() {
+        let mut call = None;
         let (kind, slot) = match &node.kind {
+            ExpressionKind::UserCall {
+                name,
+                arguments,
+                function_span,
+            } => {
+                let &id = names.get(name).ok_or_else(|| {
+                    Diagnostic::new(
+                        DiagnosticKind::UnknownFunction,
+                        *function_span,
+                        if lookup(scopes, name).is_some() {
+                            format!("binding {name:?} is not callable")
+                        } else {
+                            format!("unknown function {name:?}")
+                        },
+                    )
+                    .with_help("declare a funcra; output forms such as print are statements")
+                })?;
+                let function = &functions[id];
+                if pure && !function.pure {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::ImpureFunction,
+                        *function_span,
+                        format!("pure expressions cannot call impure function {name:?}"),
+                    ));
+                }
+                let mut parameters = Vec::new();
+                let mut supplied = vec![false; function.parameters.len()];
+                let mut named = false;
+                for (position, argument) in arguments.iter().enumerate() {
+                    let parameter = if let Some((label, span)) = &argument.label {
+                        named = true;
+                        function
+                            .parameters
+                            .iter()
+                            .position(|p| &p.name == label)
+                            .ok_or_else(|| {
+                                Diagnostic::new(
+                                    DiagnosticKind::CallArguments,
+                                    *span,
+                                    format!("unknown parameter {label:?} in {name:?}"),
+                                )
+                            })?
+                    } else {
+                        if named || position >= supplied.len() {
+                            return Err(Diagnostic::new(DiagnosticKind::CallArguments,
+                                syntax.nodes()[argument.expression].span,
+                                "positional arguments must precede named arguments and fit the signature"));
+                        }
+                        position
+                    };
+                    if supplied[parameter] {
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::CallArguments,
+                            argument
+                                .label
+                                .as_ref()
+                                .map_or(syntax.nodes()[argument.expression].span, |a| a.1),
+                            format!(
+                                "parameter {:?} was supplied twice",
+                                function.parameters[parameter].name
+                            ),
+                        ));
+                    }
+                    require_type(
+                        types[argument.expression],
+                        function.parameters[parameter].kind,
+                        syntax.nodes()[argument.expression].span,
+                    )?;
+                    supplied[parameter] = true;
+                    parameters.push(parameter);
+                }
+                for (parameter, supplied) in function.parameters.iter().zip(supplied) {
+                    if !supplied && parameter.default.is_none() {
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::CallArguments,
+                            *function_span,
+                            format!("missing required argument {:?}", parameter.name),
+                        ));
+                    }
+                }
+                call = Some(ResolvedCall {
+                    function: id,
+                    parameters,
+                });
+                (function.result, None)
+            }
+
             ExpressionKind::Integer(_) => (ValueType::Integer, None),
             ExpressionKind::Boolean(_) => (ValueType::Boolean, None),
             ExpressionKind::String(_) => (ValueType::String, None),
             ExpressionKind::Name(name) => {
+                if names.contains_key(name) && lookup(scopes, name).is_none() {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::FunctionUnsupported,
+                        node.span,
+                        "function values are not supported; call the function with arguments",
+                    ));
+                }
                 check_name(name, node.span)?;
                 let binding = lookup(scopes, name).ok_or_else(|| unknown_name(name, node.span))?;
                 (binding.kind, Some(binding.slot))
@@ -570,6 +952,7 @@ fn resolve_expression(
             } => {
                 match operator {
                     BinaryOperator::Equal | BinaryOperator::NotEqual => {
+                        require_value(types[*left], *operator_span)?;
                         require_type(types[*right], types[*left], *operator_span)?;
                     }
                     _ => {
@@ -589,19 +972,33 @@ fn resolve_expression(
         };
         types.push(kind);
         slots.push(slot);
+        calls.push(call);
     }
     let kind = types[syntax.root()];
     Ok(ResolvedExpression {
         syntax,
         slots,
         kind,
+        calls,
     })
 }
 
 pub(crate) fn resolve_standalone(
     expression: &Expression,
 ) -> Result<ResolvedExpression, Diagnostic> {
-    resolve_expression(expression.clone(), &[])
+    resolve_expression(expression.clone(), &[], &[], &HashMap::new(), false)
+}
+
+fn require_value(kind: ValueType, span: Span) -> Result<(), Diagnostic> {
+    if kind == ValueType::Unit {
+        Err(Diagnostic::new(
+            DiagnosticKind::InvalidReturn,
+            span,
+            "a unit call is allowed only as a standalone statement",
+        ))
+    } else {
+        Ok(())
+    }
 }
 
 pub(crate) fn require_type(
@@ -639,6 +1036,11 @@ fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
             | "while"
             | "break"
             | "continue"
+            | "funcra"
+            | "pure"
+            | "return"
+            | "needs"
+            | "ensures"
     ) {
         Err(Diagnostic::new(
             DiagnosticKind::ReservedName,

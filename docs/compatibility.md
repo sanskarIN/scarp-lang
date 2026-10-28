@@ -4,7 +4,7 @@ Development declarations use `bind` and `var`; see the [migration guide](syntax-
 
 Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
-v0.0.3-beta.1, and v0.0.3-beta.2 snapshots. Current main follows beta.2 syntax;
+v0.0.3-beta.1, and v0.0.3-beta.2 snapshots. Beta.2 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
 
 ## Identify the code you are running
@@ -125,3 +125,20 @@ two-field `ExecutionLimits` struct. Use the additive dual-writer APIs for
 `Statement::Declaration` and handle `Statement::Output`, `OutputTarget`, and
 `TokenKind::Comma`. Single-argument stdout line forms retain `Statement::Println`.
 See [output and dual-writer migration](output.md) for details.
+
+## Unreleased function integration
+
+The `scarp/funcra-main` branch adds [typed functions](functions.md) after beta.2.
+Existing run/check/execute entry points and the two-field `ExecutionLimits`
+struct keep their signatures. They use the default call-depth/count/live-slot
+and cumulative output-snapshot limits in `ExecutionOptions`, including for
+programs without functions. Hosts needing different caps can select options.
+These limits do not bound all parser allocations and are not a sandbox.
+
+Syntax hosts must handle `Statement::Function`, `Return`, `Call`,
+`ExpressionKind::UserCall`, `TokenKind::Colon`/`Arrow`, and `ValueType::Unit` /
+`Value::Unit` in exhaustive matches. Unit is a function result marker, not a
+source value literal. E0001–E0019 retain their assignments; E0020–E0029 are new.
+Unknown call names now report E0023 instead of E0005. The newly reserved words
+`funcra`, `pure`, `return`, `needs`, `ensures` may require binding renames.
+`repeat`/`as` bindings remain compatible; `repeat` cannot be a function name.

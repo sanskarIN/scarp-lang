@@ -14,9 +14,12 @@ you are running matches the documentation. Start with
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-Development main identifies as `0.0.3-beta.2`. It is an experimental prerelease; syntax and
-APIs remain subject to change. Published beta packages retain their original syntax.
-Numerical, function, backend, project, and CLI redesign PRs remain separate.
+Published beta.2 identifies as `0.0.3-beta.2`; this unreleased function checkout
+identifies as `0.0.4-dev`. Syntax and APIs remain subject to change. Published
+packages retain their original syntax.
+The separate `scarp/funcra-main` branch identifies as `0.0.4-dev` and adds
+[typed functions](functions.md); check out that branch explicitly to try them.
+It is unreleased. Numerical, backend, project, and CLI redesign PRs remain separate.
 
 ## Build the development checkout
 
@@ -36,7 +39,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.3-beta.2
+scarp 0.0.4-dev
 ```
 
 Run commands from the repository root so relative example paths resolve:
