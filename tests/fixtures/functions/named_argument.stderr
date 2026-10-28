@@ -1,0 +1,5 @@
+error[E0024]: parameter "n" was supplied twice
+ --> named_argument.srp:4:19
+  |
+4 | print(count(n: 1, n: 2));
+  |                   ^

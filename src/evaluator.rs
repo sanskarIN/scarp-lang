@@ -31,12 +31,22 @@ pub(crate) struct Workspace {
 }
 
 enum Task {
+    UserCall(usize, usize, Span),
     Visit(usize),
     Negate(Span),
     Not(Span),
     Boolean(Span),
     Binary(BinaryOperator, Span),
     Logical(LogicalOperator, usize, Span),
+}
+
+pub(crate) enum Evaluation {
+    Complete(Value),
+    Call {
+        node: usize,
+        arguments: Vec<Value>,
+        span: Span,
+    },
 }
 
 impl Workspace {
@@ -46,14 +56,39 @@ impl Workspace {
         environment: &[Value],
         budget: &mut Budget,
     ) -> Result<Value, Diagnostic> {
+        self.start(expression);
+        match self.resume(expression, environment, budget)? {
+            Evaluation::Complete(value) => Ok(value),
+            Evaluation::Call { span, .. } => Err(Diagnostic::new(
+                DiagnosticKind::FunctionUnsupported,
+                span,
+                "user calls require a program execution frame",
+            )),
+        }
+    }
+
+    pub(crate) fn start(&mut self, expression: &ResolvedExpression) {
         self.values.clear();
         self.tasks.clear();
         self.tasks.push(Task::Visit(expression.syntax.root()));
+    }
+
+    pub(crate) fn accept(&mut self, value: Value) {
+        self.values.push(value);
+    }
+
+    pub(crate) fn resume(
+        &mut self,
+        expression: &ResolvedExpression,
+        environment: &[Value],
+        budget: &mut Budget,
+    ) -> Result<Evaluation, Diagnostic> {
         let Self { values, tasks } = self;
         while let Some(task) = tasks.pop() {
             let span = match &task {
                 Task::Visit(index) => expression.syntax.nodes()[*index].span,
-                Task::Negate(span)
+                Task::UserCall(_, _, span)
+                | Task::Negate(span)
                 | Task::Not(span)
                 | Task::Boolean(span)
                 | Task::Binary(_, span)
@@ -64,6 +99,12 @@ impl Workspace {
                 Task::Visit(index) => {
                     let node = &expression.syntax.nodes()[index];
                     match &node.kind {
+                        ExpressionKind::UserCall { arguments, .. } => {
+                            tasks.push(Task::UserCall(index, arguments.len(), node.span));
+                            for argument in arguments.iter().rev() {
+                                tasks.push(Task::Visit(argument.expression));
+                            }
+                        }
                         ExpressionKind::Integer(value) => values.push(Value::Integer(*value)),
                         ExpressionKind::Boolean(value) => values.push(Value::Boolean(*value)),
                         ExpressionKind::String(value) => values.push(Value::from(value.as_str())),
@@ -112,6 +153,14 @@ impl Workspace {
                         }
                     }
                 }
+                Task::UserCall(node, count, span) => {
+                    let arguments = values.split_off(values.len() - count);
+                    return Ok(Evaluation::Call {
+                        node,
+                        arguments,
+                        span,
+                    });
+                }
                 Task::Negate(span) => {
                     let integer = values.pop().unwrap().require_integer(span)?;
                     values.push(Value::Integer(
@@ -144,9 +193,11 @@ impl Workspace {
                 }
             }
         }
-        Ok(values
-            .pop()
-            .expect("a resolved expression produces one value"))
+        Ok(Evaluation::Complete(
+            values
+                .pop()
+                .expect("a resolved expression produces one value"),
+        ))
     }
 }
 

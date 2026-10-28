@@ -159,11 +159,11 @@ fn rejects_invalid_characters_without_splitting_unicode() {
 }
 
 #[test]
-fn rejects_unknown_statement_names() {
+fn rejects_unknown_call_names() {
     for name in ["prnt", "println_extra", "Println", "_println"] {
         let source = format!("{name}(\"text\");");
         let error = compile(&source).unwrap_err();
-        assert_eq!(error.kind, DiagnosticKind::UnknownStatement);
+        assert_eq!(error.kind, DiagnosticKind::UnknownFunction);
         assert_eq!(error.span, Span::new(0, name.len()));
     }
 }

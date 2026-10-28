@@ -1,0 +1,3 @@
+funcra wrong() -> integer {
+    return "text";
+}

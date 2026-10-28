@@ -1,0 +1,4 @@
+funcra count(n: integer) -> integer {
+    return n;
+}
+print(count(n: 1, n: 2));

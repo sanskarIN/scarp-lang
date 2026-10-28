@@ -6,6 +6,8 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueType {
+    /// Function result only.
+    Unit,
     Integer,
     Boolean,
     String,
@@ -14,6 +16,7 @@ pub enum ValueType {
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            Self::Unit => "unit",
             Self::Integer => "integer",
             Self::Boolean => "boolean",
             Self::String => "string",
@@ -25,6 +28,8 @@ impl fmt::Display for ValueType {
 /// mutate its copies or values already captured for output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
+    /// Internal marker; rejected in ordinary value contexts.
+    Unit,
     Integer(i64),
     Boolean(bool),
     String(Arc<str>),
@@ -33,6 +38,7 @@ pub enum Value {
 impl Value {
     pub fn kind(&self) -> ValueType {
         match self {
+            Self::Unit => ValueType::Unit,
             Self::Integer(_) => ValueType::Integer,
             Self::Boolean(_) => ValueType::Boolean,
             Self::String(_) => ValueType::String,
@@ -86,6 +92,7 @@ impl From<String> for Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Unit => f.write_str("unit"),
             Self::Integer(value) => value.fmt(f),
             Self::Boolean(value) => value.fmt(f),
             Self::String(value) => f.write_str(value),
