@@ -57,7 +57,7 @@ class ReleaseAssets(unittest.TestCase):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version == "0.0.3-beta.3.dev":
+            if version == "0.0.3-beta.2":
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
@@ -130,20 +130,20 @@ class ReleaseAssets(unittest.TestCase):
     def test_syntax_release_requires_migration_guides(self):
         for member in ("docs/output.md", "docs/syntax-migration.md"):
             with self.subTest(member=member):
-                self.build(version="0.0.3-beta.3.dev", omit=member)
+                self.build(version="0.0.3-beta.2", omit=member)
                 with self.assertRaisesRegex(ValueError, "missing " + member):
-                    verifier.verify(self.directory, "0.0.3-beta.3.dev", COMMIT)
+                    verifier.verify(self.directory, "0.0.3-beta.2", COMMIT)
 
     def test_syntax_release_requires_raw_output_example_and_snapshot(self):
         for member in ("examples/output.srp", "examples/output.stdout"):
             with self.subTest(member=member):
-                self.build(version="0.0.3-beta.3.dev", omit=member)
+                self.build(version="0.0.3-beta.2", omit=member)
                 with self.assertRaisesRegex(ValueError, "missing " + member):
-                    verifier.verify(self.directory, "0.0.3-beta.3.dev", COMMIT)
+                    verifier.verify(self.directory, "0.0.3-beta.2", COMMIT)
 
     def test_complete_syntax_release_keeps_sorted_checksums(self):
-        self.build(version="0.0.3-beta.3.dev")
-        entries = verifier.verify(self.directory, "0.0.3-beta.3.dev", COMMIT).splitlines()
+        self.build(version="0.0.3-beta.2")
+        entries = verifier.verify(self.directory, "0.0.3-beta.2", COMMIT).splitlines()
         self.assertEqual(len(entries), 3)
         self.assertEqual(entries, sorted(entries))
 
