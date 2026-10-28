@@ -136,3 +136,30 @@ documentation. The API remains experimental; review the
 Development output uses `print`/`write` with `println` retained as a permanent
 alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
 [output and dual-writer migration](output.md) for semantics and new AST variants.
+
+## Function options and immutable metadata (unreleased)
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let source = "pure funcra double(n: integer) -> integer { return n * 2; } print(double(3));";
+    let program = scarp::compile(source)?;
+    assert_eq!(program.functions()[0].name, "double");
+    let options = scarp::ExecutionOptions {
+        max_call_depth: 32,
+        max_calls: 1_000,
+        ..scarp::ExecutionOptions::default()
+    };
+    let mut output = Vec::new();
+    scarp::interpreter::execute_with_options(&program, &mut output, options)?;
+    assert_eq!(output, b"6\n");
+    Ok(())
+}
+```
+
+`functions()` exposes read-only signatures, source spans, declared purity,
+contracts, sorted callees, and recursive-component membership. Inspecting it
+does not execute defaults or user code. `write_function_insight` formats it into
+a caller-owned writer. Top-level binding counts exclude function-local slots;
+live-slot limits count all active frames, including their saved repeat counts,
+indices, and result slots. See [functions](functions.md) for precise budgets and
+`check_with_options`, `run_with_options`, and dual-stream options entry points.

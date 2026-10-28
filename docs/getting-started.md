@@ -16,7 +16,9 @@ you are running matches the documentation. Start with
 
 Development main identifies as `0.0.3-beta.2`. It is an experimental prerelease; syntax and
 APIs remain subject to change. Published beta packages retain their original syntax.
-Numerical, function, backend, project, and CLI redesign PRs remain separate.
+The separate `scarp/funcra-main` branch identifies as `0.0.4-dev` and adds
+[typed functions](functions.md); check out that branch explicitly to try them.
+It is unreleased. Numerical, backend, project, and CLI redesign PRs remain separate.
 
 ## Build the development checkout
 

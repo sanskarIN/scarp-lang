@@ -1,6 +1,7 @@
 # Scarp prototype language reference
 
-This reference describes v0.0.3-beta.2. See the
+This source reference describes unreleased 0.0.4-dev on `scarp/funcra-main`.
+Published v0.0.3-beta.2 remains the published experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
 not change this reference until their implementation is accepted.
@@ -215,8 +216,9 @@ stderr. Exit codes are `0` for success, `1` for source/file/output failures, and
 ## Scope
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on main and described
-in [the variable reference](variables.md). Functions, user-defined types, modules, a
-compiler backend, and a package manager are not implemented. The implemented expression semantics are also
+in [the variable reference](variables.md). The function branch adds typed
+`funcra` calls as described in [functions](functions.md). User-defined types, modules,
+a compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
 
 The v0.0.3-beta.1 iteration milestone adds scoped `while`, `break`, and `continue`

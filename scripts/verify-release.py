@@ -57,16 +57,21 @@ def verify(directory, version, commit):
             "examples/loops.srp", "examples/loops.stdout",
             "examples/repeat.srp", "examples/repeat.stdout",
             "examples/control_escapes.srp", "examples/control_escapes.stdout",
-        ) if version.startswith("0.0.3-") else ()
+        ) if (version.startswith("0.0.3-") or version == "0.0.4-dev") else ()
         syntax_migration_files = (
             "examples/output.srp", "examples/output.stdout",
             "docs/output.md", "docs/syntax-migration.md",
-        ) if version == "0.0.3-beta.2" else ()
+        ) if version in ("0.0.3-beta.2", "0.0.4-dev") else ()
+        function_files = (
+            "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
+            "examples/function_contracts.srp", "examples/function_contracts.stdout",
+            "examples/function_recursion.srp", "examples/function_recursion.stdout",
+        ) if version == "0.0.4-dev" else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",
             "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
-            *iteration_examples, *syntax_migration_files,
+            *iteration_examples, *syntax_migration_files, *function_files,
         ):
             if root + "/" + member not in paths:
                 raise ValueError(f"{name}: missing {member}")

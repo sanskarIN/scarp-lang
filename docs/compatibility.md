@@ -116,3 +116,20 @@ the body does not run. Existing identifier spellings repeat/as remain legal.
 Development output uses `print`/`write` with `println` retained as a permanent
 alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
 [output and dual-writer migration](output.md) for semantics and new AST variants.
+
+## Unreleased function integration
+
+The `scarp/funcra-main` branch adds [typed functions](functions.md) after beta.2.
+Existing run/check/execute entry points and the two-field `ExecutionLimits`
+struct keep their signatures. They use the default call-depth/count/live-slot
+and cumulative output-snapshot limits in `ExecutionOptions`, including for
+programs without functions. Hosts needing different caps can select options.
+These limits do not bound all parser allocations and are not a sandbox.
+
+Syntax hosts must handle `Statement::Function`, `Return`, `Call`,
+`ExpressionKind::UserCall`, `TokenKind::Colon`/`Arrow`, and `ValueType::Unit` /
+`Value::Unit` in exhaustive matches. Unit is a function result marker, not a
+source value literal. E0001–E0019 retain their assignments; E0020–E0029 are new.
+Unknown call names now report E0023 instead of E0005. The newly reserved words
+`funcra`, `pure`, `return`, `needs`, `ensures` may require binding renames.
+`repeat`/`as` bindings remain compatible; `repeat` cannot be a function name.

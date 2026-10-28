@@ -11,8 +11,11 @@ work/print budgets, and tab/CR escapes. See the [iteration guide](docs/iteration
 and [budget guide](docs/budgets.md). Published v0.0.2 packages retain their language.
 
 Scarp is an experimental programming language implemented in Rust. This repository
-contains **0.0.3-beta.2**, an experimental prerelease with a lexer, parser,
-name resolver, and command-line interface. Syntax and library APIs may change.
+contains **0.0.4-dev**, unreleased function integration with a lexer, parser,
+name resolver, interpreter, and command-line interface. Syntax and library APIs may change.
+The published beta.2 remains the release baseline. The separate
+[`scarp/funcra-main` branch](docs/functions.md) adds typed functions, defaults,
+named arguments, purity/contracts, and bounded heap call frames.
 
 ```scarp
 // My first Scarp program
@@ -203,8 +206,8 @@ measured execution improvements. C/C++/Rust performance comparisons and native
 code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
-and reports the first error. It has no user-defined functions,
-floating-point values, type annotations, user-defined types, imports, standard library,
+and reports the first error. The function branch implements typed named functions.
+It has no floating-point values, user-defined types, imports, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -217,13 +220,13 @@ test suite.
 Future work is **planned**, in this order:
 
 1. Decimal values and numerical collections.
-2. User-defined functions.
-3. User-defined types and function type checking.
+2. Function stabilization and a separate public release decision.
+3. User-defined types and callable values.
 4. A compiler backend.
 5. Developer tooling.
 6. Domain-specific libraries.
 
-These capabilities are excluded from this prerelease. Integer expressions are implemented as
+The remaining capabilities require separate milestones. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Integer, string, and boolean bindings are implemented on main. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).

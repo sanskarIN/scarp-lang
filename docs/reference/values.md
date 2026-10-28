@@ -17,7 +17,9 @@ must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
 There are no floating-point, collection, or user-defined values yet.
-Type annotations and explicit conversion functions are also not implemented.
+Local type annotations and explicit conversions are not implemented. On the
+unreleased [function branch](../functions.md), parameter and result types are
+mandatory; they do not change primitive value or operator rules.
 
 ## Precedence and associativity
 

@@ -5,8 +5,9 @@ Development declarations use `bind` and `var`; see the [migration guide](syntax-
 Choose a guide by the task you want to complete. Current tutorials target development main. Release notes describe the
 published snapshots. The language includes variables, string bindings, booleans,
 conditionals, bounded while/repeat loops, and five string escapes.
-Development main adds the declaration migration and [output statements](output.md). Numerical, function, native,
-and CLI redesign stacks remain separate.
+Published beta.2 includes the declaration migration and [output statements](output.md).
+The unreleased `scarp/funcra-main` branch adds [typed functions](functions.md).
+Numerical, native, and CLI redesign stacks remain separate.
 
 ## Guides and what each adds
 
@@ -14,6 +15,7 @@ and CLI redesign stacks remain separate.
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
+| [Functions](functions.md) | Learn typed calls, named/default arguments, contracts, and resource options on the function branch |
 | [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |

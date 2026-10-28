@@ -140,3 +140,20 @@ Replay uses supplied writers and explicit LF bytes; stream changes flush the
 previous writer. Validation discards values immediately and creates no replay
 events. Single-writer hosts reject required stderr before replay. See the
 [output guide](output.md) for the additive APIs and AST compatibility rules.
+
+## Function branch adaptation (unreleased)
+
+`resolver/functions.rs` resolves parameter defaults, contracts, return paths,
+and an iterative strongly-connected-component call graph. It creates one flat
+plan per function, preserving lexical isolation from the file frame. Immutable
+public metadata has no mutable execution caches.
+
+`evaluator::Workspace` suspends its task/value vectors at user-call nodes.
+`interpreter/machine.rs` manages heap frames and resumes the caller after defaults,
+needs, body, and ensures. Repeat counts use a dedicated completion that saves the
+count once. All loop targets stay inside their invocation. Return changes the
+current frame's stage instead of relying on Rust unwinding.
+
+The outer interpreter module owns stream replay and I/O failures. Output snapshot
+and frame caps are logical accounting, including during silent validation; they
+are not a general allocation sandbox. See [functions](functions.md).
