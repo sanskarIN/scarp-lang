@@ -2,7 +2,9 @@
 
 Use the error code to identify the class of failure, then use the source location
 and help to repair it. Codes `E0001` through `E0009` exist in v0.0.1; the remaining
-codes belong to the development variable stack.
+codes through `E0015` are available in v0.0.2. Beta.1 adds `E0016` through
+`E0019`; published beta.2 retains those assignments and adds contextual
+declaration/assignment repair help. This page describes beta.2 and current main.
 
 ## Codes and first repairs
 
@@ -12,7 +14,7 @@ codes belong to the development variable stack.
 | `E0002` | Unterminated string | Close the quote; use `\n` instead of a physical line break |
 | `E0003` | Unsupported escape | Use `\\`, `\"`, `\n`, `\t`, or `\r` in v0.0.3 |
 | `E0004` | Unexpected token or missing syntax | Add the named punctuation or correct the statement form |
-| `E0005` | Unknown statement | Use a supported declaration, assignment, block, or `print` call |
+| `E0005` | Unknown statement or legacy declaration | Use a supported statement; migrate `let` to `bind` and `let mut` to `var` |
 | `E0006` | Integer literal outside the range | Use a representable signed 64-bit value |
 | `E0007` | Arithmetic overflow | Keep every intermediate integer result within range |
 | `E0008` | Division by zero | Make the divisor evaluate to a nonzero integer |
@@ -23,7 +25,7 @@ codes belong to the development variable stack.
 | `E0013` | Assignment to an immutable binding | Declare the intended target with `var` |
 | `E0014` | Block nesting exceeds 64 levels | Flatten unnecessary statement blocks |
 | `E0015` | Primitive type mismatch | Keep assignment types fixed; arithmetic/order use integers and logic uses booleans |
-| `E0016` | Loop control outside a loop | Place break/continue in a while body |
+| `E0016` | Loop control outside a loop | Place break/continue in the while/repeat body it should control |
 | `E0017` | Execution work budget exhausted | Check loop progress or raise the explicit budget |
 | `E0018` | Selected print count exhausted | Reduce prints or raise the explicit print budget |
 | `E0019` | Negative repeat count | Supply zero to skip the loop or a positive integer count |
@@ -90,7 +92,7 @@ label = 42;
 ```
 
 Keep the string binding and introduce a separate integer binding, or assign
-another string. `mut` permits replacement, not a change of primitive type.
+another string. `var` permits replacement, not a change of primitive type.
 There are no implicit conversions.
 
 ### Arithmetic type mismatch: E0015
@@ -100,8 +102,35 @@ bind label = "Scarp";
 print(label + 1);
 ```
 
-Print the label and number in separate statements. String concatenation and
-mixed string/integer arithmetic are unsupported.
+Use `print(label, 1);` to display separate values on one line. String
+concatenation and mixed string/integer arithmetic are unsupported.
+
+### Incomplete variable statements: E0004
+
+```scarp-invalid
+bind total = ;
+```
+
+Supply an initializer after `=` and finish with a semicolon, for example
+`bind total = 0;`. A missing name or terminator receives different repair help.
+
+```scarp-invalid
+var total = 0;
+total += ;
+```
+
+Supply the assignment's right-hand expression, such as `total += 2;`.
+More specific failures retain their original code: an out-of-range integer is
+E0006, while a division by zero is E0008 after static checks succeed.
+
+### Negative repeat count: E0019
+
+```scarp-invalid
+repeat -1 as index { print(index); }
+```
+
+Use zero to skip the loop or a positive integer count. Repeat evaluates its
+count once; the immutable index ranges from zero through count minus one.
 
 ## Why a later error can appear first
 

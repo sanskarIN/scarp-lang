@@ -8,6 +8,10 @@ you can fix the failing layer first.
 
 Run `scarp --version`. The published v0.0.1 interpreter does not support variables,
 blocks, or `check`. The variable prerelease reports `scarp 0.0.2`.
+The current published prerelease reports `scarp 0.0.3-beta.2`. It uses `bind` and
+`var`; beta.1 and earlier variable releases use `let` and `let mut`. E0005 on an
+old declaration includes replacement help. Functions are still a separate
+candidate and are not accepted by the published beta.2 interpreter.
 See [compatibility](compatibility.md) for the feature matrix.
 
 An older executable on `PATH` can differ from your checkout. Compare:
@@ -75,12 +79,29 @@ changing value or a nested block for a deliberately separate local.
 
 ## Strings do not format or combine as expected
 
-Placeholders inside a string are literal text. There is no interpolation,
-concatenation, `print` function, or multiple-argument `print`. Print labels and
-values with separate statements. `+=` is integer arithmetic, not string append.
+Placeholders inside a string are literal text. There is no interpolation or
+concatenation. Beta.2 output statements do accept multiple arguments:
 
-Use only `\\`, `\"`, and `\n` escapes. To represent a line break inside a string,
+```scarp
+bind count = 3;
+print("count:", count);
+write("done");
+```
+
+Exact stdout is `count: 3\ndone`. Arguments display with one ASCII space;
+`write` does not add a final newline. `+=` is integer arithmetic, not string
+append. Output statements cannot be called inside an expression.
+
+Beta.1 and beta.2 support `\\`, `\"`, `\n`, `\t`, and `\r` escapes. To represent a line break inside a string,
 write `\n` rather than placing a physical newline between its quotes.
+
+## A successful command writes to stderr
+
+`eprint` and `ewrite` intentionally use stderr and may succeed with exit code 0.
+Run `check` to evaluate the same program silently. A source/runtime/budget failure
+discards both pending program streams before rendering its diagnostic. A writer
+failure during replay may leave earlier bytes. See [output](output.md) for exact
+stream and flush behavior; stderr content alone does not identify a failure.
 
 ## Package creation refuses to continue
 

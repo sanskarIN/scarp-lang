@@ -3,8 +3,9 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Use this guide before copying an example into a different Scarp executable or
-updating a Rust embedding host. It compares the published v0.0.1/v0.0.2 snapshots with
-the `0.0.3-beta.1` iteration milestone documented here.
+updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
+v0.0.3-beta.1, and v0.0.3-beta.2 snapshots. Current main follows beta.2 syntax;
+separate feature branches can differ from both main and downloaded binaries.
 
 ## Identify the code you are running
 
@@ -15,29 +16,33 @@ be different commands with different behavior.
 For a source snapshot, `git status --short`, `git branch --show-current`, and
 `git rev-parse HEAD` identify local changes, the branch, and the commit. A branch
 name alone is not an immutable version. The published release is associated with
-the `v0.0.1` tag; the variable prerelease uses version `0.0.2` and tag `v0.0.2`.
+the corresponding tag: `v0.0.1`, `v0.0.2`, `v0.0.3-beta.1`, or
+`v0.0.3-beta.2`. Check that a release archive's BUILD-INFO version and source
+commit match the intended tag. A development package's version alone does not
+prove its contents are the published release.
 
 ## Language and command matrix
 
-| Capability | v0.0.1 | v0.0.2 | v0.0.3-beta.1 |
-| --- | --- | --- | --- |
-| UTF-8 source, comments, three string escapes | Yes | Yes | Yes |
-| String literal print statements | Yes | Yes | Yes |
-| Checked signed 64-bit arithmetic | Yes | Yes | Yes |
-| Integer declarations and variable references | No | Yes | Yes |
-| Explicit mutability and compound assignment | No | Yes | Yes |
-| Block scopes and shadowing | No | Yes | Yes |
-| String variables and grouped string values | No | Yes | Yes |
-| Primitive type consistency checks | No variable types | Yes | Yes |
-| `run`, `tokens`, global help/version | Yes | Yes | Yes |
-| `check` and per-command help | No | Yes | Yes |
-| Boolean values, comparisons, short-circuit logic | No | Yes | Yes |
-| `if`/`elif`/`else` statements with scoped bodies | No | Yes | Yes |
-| While loops and deterministic execution budgets | No | No | Yes |
-| User functions, imports | No | No | No |
-| Native compilation of Scarp programs | No | No | No |
-| Counted repeat with an immutable index | No | No | Yes |
-| Tab/carriage-return string escapes | No | No | Yes |
+| Capability | v0.0.1 | v0.0.2 | v0.0.3-beta.1 | v0.0.3-beta.2 |
+| --- | --- | --- | --- | --- |
+| UTF-8 source, comments, backslash/quote/LF escapes | Yes | Yes | Yes | Yes |
+| Checked signed 64-bit arithmetic | Yes | Yes | Yes | Yes |
+| Integer/string/boolean bindings, scopes and decisions | No | Yes | Yes | Yes |
+| Declaration spelling | None | `let` / `let mut` | `let` / `let mut` | `bind` / `var` |
+| Line output spelling | `println` | `println` | `println` | `print`, with `println` alias |
+| Raw output and explicit stderr | No | No | No | `write`, `eprint`, `ewrite` |
+| Zero/multiple output arguments and trailing commas | No | No | No | Yes |
+| `run`, `tokens`, global help/version | Yes | Yes | Yes | Yes |
+| `check` and per-command help | No | Yes | Yes | Yes |
+| While/repeat, nearest-loop break/continue | No | No | Yes | Yes |
+| Work/output limits and CLI budget options | No | No | Yes | Yes |
+| Tab/carriage-return string escapes | No | No | Yes | Yes |
+| User functions, imports, or native compilation | No | No | No | No |
+
+To migrate beta.1 source, replace declaration tokens `let` with `bind` and
+`let mut` with `var`. `println` continues to work in beta.2; `print` is the
+canonical line-output spelling. Strings/comments retain their original text.
+See [declaration migration](syntax-migration.md) and [output](output.md).
 
 Integer range, precedence, division truncation, mandatory semicolons, and
 no-output-on-invalid-source behavior remain consistent. Development adds
@@ -60,7 +65,7 @@ block containers. All branches contribute to binding metadata, even if unselecte
 
 ## Library migration
 
-| API or type | v0.0.1 | Development |
+| API or type | v0.0.1 | v0.0.3-beta.2 |
 | --- | --- | --- |
 | `compile(source)` | Returns syntax `Program` | Returns immutable `ResolvedProgram` |
 | `parse(source)` convenience function | Absent | Returns unresolved syntax |
@@ -85,18 +90,19 @@ programs establish their bindings through source declarations.
 
 ## Platform and toolchain scope
 
-Both documented snapshots declare Rust 1.74 as the minimum for source builds.
-Published v0.0.1 archives cover Windows x64 MSVC, Linux x64 GNU, and Apple Silicon
-macOS. The v0.0.2 packages cover those same native targets.
+All four documented releases declare Rust 1.74 as the minimum for source builds.
+Their native archives cover Windows x64 MSVC, Linux x64 GNU, and Apple Silicon
+macOS. Beta.2 Linux binaries are built on Ubuntu 22.04. Other architectures need
+their own source build and validation; a supported OS name is not enough.
 
 A successful source test on one host is not evidence of a universal binary.
 Use the matching archive or build with a compatible local Rust toolchain. The
-[release notes](releases/v0.0.2.md) describe the current archive scope.
+[release notes](releases/v0.0.3-beta.2.md) describe the current archive scope.
 
 ## Integration and future changes
 
 Syntax and public Rust APIs remain experimental. Review the
-[v0.0.2 notes](releases/v0.0.2.md) when updating a host application. Planned
+[beta.2 notes](releases/v0.0.3-beta.2.md) when updating a host application. Planned
 features in a roadmap or proposal are not available merely because they are named.
 
 The feature stack and this documentation are reviewed through separate PRs.
@@ -113,6 +119,9 @@ No function signatures or ExecutionLimits fields change. Compiled binding
 metadata includes a saved count and immutable index slot per repeat, even when
 the body does not run. Existing identifier spellings repeat/as remain legal.
 
-Development output uses `print`/`write` with `println` retained as a permanent
-alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
-[output and dual-writer migration](output.md) for semantics and new AST variants.
+Beta.2 retains existing run/check/execute entry-point signatures and the
+two-field `ExecutionLimits` struct. Use the additive dual-writer APIs for
+`eprint`/`ewrite`. Syntax hosts must replace `Statement::Let` with
+`Statement::Declaration` and handle `Statement::Output`, `OutputTarget`, and
+`TokenKind::Comma`. Single-argument stdout line forms retain `Statement::Println`.
+See [output and dual-writer migration](output.md) for details.
