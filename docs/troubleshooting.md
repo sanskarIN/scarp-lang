@@ -8,10 +8,10 @@ you can fix the failing layer first.
 
 Run `scarp --version`. The published v0.0.1 interpreter does not support variables,
 blocks, or `check`. The variable prerelease reports `scarp 0.0.2`.
-The current published prerelease reports `scarp 0.0.3-beta.2`. It uses `bind` and
+The beta.3 prerelease reports `scarp 0.0.3-beta.3`. It uses `bind` and
 `var`; beta.1 and earlier variable releases use `let` and `let mut`. E0005 on an
-old declaration includes replacement help. Functions are still a separate
-candidate and are not accepted by the published beta.2 interpreter.
+old declaration includes replacement help. Typed functions require beta.3;
+the earlier beta.2 interpreter does not accept them.
 See [compatibility](compatibility.md) for the feature matrix.
 
 An older executable on `PATH` can differ from your checkout. Compare:

@@ -1,23 +1,17 @@
 # Scarp
 
-The published v0.0.3-beta.2 prerelease and this checkout use `bind` and `var`;
-see the [migration guide](docs/syntax-migration.md). Earlier tags retain their
-original declaration syntax.
-
 **Build Beyond Boundaries.**
 
-Scarp v0.0.2 introduces variables, mutation, lexical scopes, strings, booleans,
-and conditional statements. These features are integrated into `main`.
-The v0.0.3 iteration milestone adds counted repeat, scoped while/break/continue,
-work/print budgets, and tab/CR escapes. See the [iteration guide](docs/iteration.md)
-and [budget guide](docs/budgets.md). Published v0.0.2 packages retain their language.
+Scarp is an experimental programming language implemented in Rust. This checkout
+contains **0.0.3-beta.3**, the typed-function prerelease, with a lexer, parser,
+name resolver, interpreter, and command-line interface. Syntax and library APIs
+may change.
 
-Scarp is an experimental programming language implemented in Rust. This repository
-contains **0.0.4-dev**, unreleased function integration with a lexer, parser,
-name resolver, interpreter, and command-line interface. Syntax and library APIs may change.
-The published beta.2 remains the release baseline. The separate
-[`scarp/funcra-main` branch](docs/functions.md) adds typed functions, defaults,
-named arguments, purity/contracts, and bounded heap call frames.
+Use immutable `bind` and mutable `var` declarations, checked integers, strings,
+booleans, conditionals, while/repeat loops, and explicit output streams.
+[Typed `funcra` functions](docs/functions.md) support named/default arguments,
+recursion, unit returns, purity, contracts, and bounded heap call frames.
+See the [migration guide](docs/syntax-migration.md) for older declaration syntax.
 
 ```scarp
 // My first Scarp program
@@ -36,7 +30,7 @@ guides. Start there for a reading path matched to your task.
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[v0.0.3-beta.2 notes](docs/releases/v0.0.3-beta.2.md) for platform support, verification, and
+[v0.0.3-beta.3 notes](docs/releases/v0.0.3-beta.3.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:
@@ -87,8 +81,11 @@ the CLI does not reject other filename extensions.
 - Inferred primitive types, checked same-type assignment, and string value snapshots.
 - Boolean comparisons and short-circuit `and`, `or`, and `not` expressions.
 - Scoped `if`/`elif`/`else` statements with explicit boolean conditions.
-- `while` and counted `repeat` loops, nearest-loop `break`/`continue`, and
-  deterministic work/output limits shared by `run` and `check`.
+- `while` and counted `repeat` loops, nearest-loop `break`/`continue`.
+- Typed file-level `funcra`, positional/named/default arguments, forward and
+  mutual recursion, explicit returns, verified purity, and executable contracts.
+- Heap call frames and six deterministic CLI/embedding resource limits shared
+  by `run` and `check`; see [budgets](docs/budgets.md).
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
 - `//` comments to the end of the line, and flexible whitespace between tokens.
@@ -138,7 +135,7 @@ without writing program output. It returns zero and remains silent on success.
 It evaluates selected loops, declarations, and assignments in fresh local
 storage, so reachable unused arithmetic failures are still reported. The Rust
 library's `scarp::compile` only parses and resolves; it does not evaluate arithmetic.
-There is no `scarp compile` CLI command in beta.2.
+There is no `scarp compile` CLI command in beta.3.
 
 `tokens` checks lexical validity without parsing or executing the file. It prints
 one token per line, including decoded string text, one-based line/column ranges,
@@ -211,7 +208,7 @@ measured execution improvements. C/C++/Rust performance comparisons and native
 code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
-and reports the first error. The function branch implements typed named functions.
+and reports the first error. Functions are interpreted using heap call frames.
 It has no floating-point values, user-defined types, imports, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
@@ -225,7 +222,7 @@ test suite.
 Future work is **planned**, in this order:
 
 1. Decimal values and numerical collections.
-2. Function stabilization and a separate public release decision.
+2. Function tooling and further diagnostic improvements.
 3. User-defined types and callable values.
 4. A compiler backend.
 5. Developer tooling.
@@ -235,13 +232,15 @@ The remaining capabilities require separate milestones. Integer expressions are 
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Integer, string, and boolean bindings are implemented on main. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [v0.0.3-beta.2 notes](docs/releases/v0.0.3-beta.2.md) describe the integrated variable
-milestone, downloads, and limitations. Later features remain separate PRs and
+The [v0.0.3-beta.3 notes](docs/releases/v0.0.3-beta.3.md) describe the integrated variable
+milestones, downloads, and limitations. Experimental numerical/native features
+remain separate PRs and
 require an explicit integration decision.
 
 The [function integration in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)
-adds typed calls, defaults, contracts, and bounded heap frames to this unreleased
-checkout. Published beta.2 binaries do not contain functions. Release notes
+integrated typed calls, defaults, contracts, and bounded heap frames into main.
+Beta.3 publishes that work with CLI resource controls. Beta.2 binaries do not
+contain functions. Release notes
 describe immutable snapshots; branch names can move.
 
 ## License

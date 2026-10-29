@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4-dev — unreleased
+## 0.0.3-beta.3 — 2026-10-29 — prerelease
 
 - Adapt typed file-level `funcra` functions onto beta.2 main without importing
   the experimental numeric, native, or CLI stacks. Forward calls, recursion,
@@ -9,7 +9,12 @@
   and function-aware repeat counts preserve atomic stdout/stderr preparation.
 - New function codes E0020–E0029 preserve existing E0001–E0019. Unknown call names
   now report E0023; unknown non-call statements retain E0005.
-- This is branch development, not a published release. See [functions](docs/functions.md).
+- Expose call depth/count, live slots, and output snapshot caps as CLI options
+  for both run and check, with exact-boundary tests and actionable diagnostics.
+- Verify bundled documentation/examples against the exact Git tree; require all
+  function guides/examples and smoke-test every resource flag in native archives.
+- Add a separately gated tag publisher using successful final-main checks and
+  native packages. See [release notes](docs/releases/v0.0.3-beta.3.md).
 
 ## 0.0.3-beta.2 — 2026-10-28 — prerelease
 

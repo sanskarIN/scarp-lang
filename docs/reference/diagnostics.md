@@ -4,8 +4,8 @@ Use the error code to identify the class of failure, then use the source locatio
 and help to repair it. Codes `E0001` through `E0009` exist in v0.0.1; the remaining
 codes through `E0015` are available in v0.0.2. Beta.1 adds `E0016` through
 `E0019`; published beta.2 retains those assignments and adds contextual
-declaration/assignment repair help. This page covers beta.2 and the unreleased function checkout;
-E0020–E0029 are new in that checkout and are absent from beta.2 binaries.
+declaration/assignment repair help. This page covers beta.3; E0020–E0029 were added for functions and are absent
+from earlier beta.2 binaries.
 
 ## Codes and first repairs
 
@@ -38,7 +38,7 @@ E0020–E0029 are new in that checkout and are absent from beta.2 binaries.
 | `E0024` | Invalid argument mapping | Check labels, duplicates, required values, and positional order |
 | `E0025` | Purity violation | Keep output and impure calls outside pure functions/contracts/defaults |
 | `E0026` | Contract failure | Satisfy needs/ensures and inspect the bounded call trace |
-| `E0027` | Function resource limit | Check the named ExecutionOptions field and recursion/frame size |
+| `E0027` | Function resource limit | Check the named CLI flag or ExecutionOptions field and recursion/frame size |
 | `E0028` | Unsupported function form | Use file-level named functions without captures |
 | `E0029` | Output snapshot limit | Reduce selected output or change max_capture_bytes |
 

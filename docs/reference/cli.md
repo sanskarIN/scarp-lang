@@ -6,7 +6,7 @@ development stack; see [compatibility](../compatibility.md).
 
 ## Commands and availability
 
-| Invocation | Purpose | v0.0.1 | v0.0.2 through beta.2 |
+| Invocation | Purpose | v0.0.1 | v0.0.2 through beta.3 |
 | --- | --- | --- | --- |
 | `scarp run <path>` | Read, validate, and execute a source file | Yes | Yes |
 | `scarp tokens <path>` | Print lexer tokens without parsing | Yes | Yes |
@@ -18,7 +18,7 @@ development stack; see [compatibility](../compatibility.md).
 The `tokens` and `check` commands also accept `--help` and `-h` after the
 command name. Only one source path is accepted. There is no stdin input mode,
 watch mode, import path, or `scarp build` command.
-`exec`, `verify`, `inspect`, and `compile` are not accepted commands in beta.2;
+`exec`, `verify`, `inspect`, and `compile` are not accepted commands in beta.3;
 proposed CLI designs do not change the shipped command contract.
 
 v0.0.3 keeps these spellings and adds contextual guidance for run/check/tokens.
@@ -38,8 +38,9 @@ native executable.
 
 ## What each file command validates
 
-`run` validates the complete file before writing program output. Beta.2
-validation includes names, scopes, mutability, and primitive types. Arithmetic
+`run` validates the complete file before writing program output. Validation
+includes names, scopes, mutability, primitive types, and typed function bodies.
+Selected calls, defaults, contracts, and arithmetic
 is checked before any pending prints are written.
 
 `check` uses the same preparation pass as execution, discarding each print value
@@ -59,6 +60,11 @@ before the path. Defaults are 1,000,000 work steps and 100,000 selected prints.
 Each option can occur once; unsigned decimal zero is allowed. Budget failures use
 status 1 and leave output empty; malformed options use status 2. See
 [loops and budgets](../proposals/0006-bounded-loops.md) for exact accounting.
+
+Beta.3 also accepts `--max-call-depth`, `--max-calls`, `--max-live-slots`, and
+`--max-capture-bytes`. They follow the same placement, decimal-count, duplicate,
+separator, and usage-error rules as steps/prints; `tokens` rejects all six.
+Defaults and exact accounting are in the [budget guide](../budgets.md).
 
 The [budget guide](../budgets.md) provides copy-paste invocations and explains
 zero limits, E0017/E0018, and embedding APIs.

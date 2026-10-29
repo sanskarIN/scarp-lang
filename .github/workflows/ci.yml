@@ -43,7 +43,7 @@ jobs:
         run: cargo bench --locked --offline --bench runtime -- --quick
       - name: Verify release asset validation
         if: runner.os == 'Linux'
-        run: python3 -m unittest discover -s scripts -p 'test_release_assets.py'
+        run: python3 -m unittest discover -s scripts -p 'test_*release*.py'
       - name: Validate PowerShell check script
         if: runner.os == 'Windows'
         shell: pwsh

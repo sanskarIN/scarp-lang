@@ -1,6 +1,6 @@
 # Scarp prototype language reference
 
-This source reference describes unreleased 0.0.4-dev on `scarp/funcra-main`.
+This source reference describes Scarp 0.0.3-beta.3 and current main.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
@@ -53,7 +53,7 @@ preserved; token dumps escape string values for readability.
 
 Trivia means whitespace and line comments. Trivia can appear between tokens.
 The following base grammar applies after trivia has been removed. This
-unreleased checkout extends it with typed function declarations, call
+beta.3 extends it with typed function declarations, call
 expressions/statements, returns, and contracts; see [functions](functions.md).
 Those extensions additionally recognize `:` and `->` punctuation.
 
@@ -229,7 +229,7 @@ success, `1` for source/file/output failures, and
 ## Scope
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on main and described
-in [the variable reference](variables.md). The function branch adds typed
+in [the variable reference](variables.md). Beta.3 adds typed
 `funcra` calls as described in [functions](functions.md). User-defined types, modules,
 a compiler backend, and a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
