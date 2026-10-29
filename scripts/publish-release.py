@@ -19,7 +19,7 @@ spec.loader.exec_module(verifier)
 WORKFLOWS = {
     ".github/workflows/ci.yml": {
         "Minimum Rust / 1.74.0", "Stable / ubuntu-latest",
-        "Stable / windows-latest", "Stable / macos-latest",
+        "Stable / windows-latest", "Stable / macos-15",
     },
     ".github/workflows/packages.yml": {
         "Package / x86_64-pc-windows-msvc", "Package / x86_64-unknown-linux-gnu",
