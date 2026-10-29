@@ -85,8 +85,9 @@ workflows on main; it also supports a maintainer dispatch. It executes only
 trusted main push revisions and checks out the triggering SHA. The request
 currently names **only 0.0.3-beta.3**, with Sanskar's tagger identity. A later
 release requires a new reviewed request matching Cargo and versioned notes.
-An already published release is left unchanged. A draft or orphaned tag stops
-the job for inspection rather than being overwritten.
+An already published release is left unchanged. A draft requires an explicit
+`resume_release_id` and full `resume_commit` in the reviewed request. An orphaned
+tag or unmatched draft stops the job for inspection.
 
 `scripts/publish-release.py` requires both latest push workflows on the exact
 current main SHA to succeed, with all four Rust jobs and three native jobs. A
@@ -105,3 +106,23 @@ write and actions read permissions; the check/package jobs stay read-only.
 If main advances, the older candidate is skipped; its successor must pass its
 own exact-source gates. A failure after tag/draft creation preserves them for
 maintainer inspection. Do not move a tag to recover a failed publication.
+
+## Recover a verified draft
+
+GitHub's authenticated releases collection includes drafts; a public lookup by
+tag can return 404 for a draft. The publisher resolves drafts from that
+collection and uses release IDs for metadata and publication. Asset IDs provide
+authenticated binary downloads for draft comparison.
+
+A reviewed recovery request pins the exact draft ID and original source SHA.
+The existing annotated tag must name that SHA and match the maintainer identity;
+the source must be an ancestor of current main. Both the current publication
+code and original tagged source must pass their exact-main four Rust/three
+package jobs. Artifacts are downloaded from the original source's package run.
+Every source blob, build record, hash, original release note, and uploaded/draft
+download must match before the draft is published by ID. The existing tag and
+assets are preserved. Future version requests must remove these one-time recovery
+fields and select their own new version/source.
+
+See the [beta.3 recovery record](releases/v0.0.3-beta.3-publication-recovery.md)
+for the original tag, draft ID, and validation scope.
