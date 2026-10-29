@@ -149,10 +149,15 @@ try {
     [System.IO.File]::WriteAllText($functionSource, $functionBody + 'print(f(4));')
     foreach ($verb in @('run', 'check')) {
         $bounded = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, '--max-call-depth', '5', '--max-calls', '5', '--max-live-slots', '10', '--max-capture-bytes', '72', $functionSource)
-        $expected = if ($verb -eq 'run') { "0`n" } else { '' }
-        if ($bounded.ExitCode -ne 0 -or $bounded.Stderr.Length -ne 0 -or [System.Text.Encoding]::UTF8.GetString($bounded.Stdout) -cne $expected) {
+        if ($bounded.ExitCode -ne 0 -or $bounded.Stderr.Length -ne 0) {
             throw 'Packaged function budget boundary check failed'
         }
+        if ($verb -eq 'run') {
+            if ([Convert]::ToBase64String($bounded.Stdout) -cne [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("0`n"))) {
+                throw 'Packaged bounded function output differs'
+            }
+        }
+        elseif ($bounded.Stdout.Length -ne 0) { throw 'Packaged bounded validation must be silent' }
     }
     [System.IO.File]::WriteAllText($functionSource, $functionBody + 'print("OUT"); eprint("ERR"); print(f(4));')
     foreach ($verb in @('run', 'check')) {

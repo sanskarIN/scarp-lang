@@ -52,8 +52,8 @@ preserved; token dumps escape string values for readability.
 ## Grammar
 
 Trivia means whitespace and line comments. Trivia can appear between tokens.
-The following base grammar applies after trivia has been removed. This
-beta.3 extends it with typed function declarations, call
+The following base grammar applies after trivia has been removed.
+Beta.3 extends it with typed function declarations, call
 expressions/statements, returns, and contracts; see [functions](functions.md).
 Those extensions additionally recognize `:` and `->` punctuation.
 
