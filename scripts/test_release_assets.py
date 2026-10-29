@@ -8,6 +8,7 @@ import tempfile
 import unittest
 import zipfile
 import hashlib
+import subprocess
 
 spec = importlib.util.spec_from_file_location(
     "verify_release", Path(__file__).with_name("verify-release.py")
@@ -37,7 +38,7 @@ class ReleaseAssets(unittest.TestCase):
         self.directory = Path(self.scratch.name)
         self.build()
 
-    def build(self, *, omit=None, executable=True, version="0.0.2", working_tree="clean", record_version=None):
+    def build(self, *, omit=None, executable=True, version="0.0.2", working_tree="clean", record_version=None, commit=COMMIT, extra_files=None):
         for target, suffix in (
             ("x86_64-pc-windows-msvc", ".zip"),
             ("x86_64-unknown-linux-gnu", ".tar.gz"),
@@ -57,23 +58,25 @@ class ReleaseAssets(unittest.TestCase):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version in ("0.0.3-beta.2", "0.0.4-dev"):
+            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev"):
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version == "0.0.4-dev":
+            if version in ("0.0.3-beta.3", "0.0.4-dev"):
                 for member in (
                     "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
                     "examples/function_contracts.srp", "examples/function_contracts.stdout",
                     "examples/function_recursion.srp", "examples/function_recursion.stdout",
+                    "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
+            files.update(extra_files or {})
             files["BUILD-INFO.txt"] = (
-                f"version={record_version or version}\ntarget={target}\ncommit={COMMIT}\n"
+                f"version={record_version or version}\ntarget={target}\ncommit={commit}\n"
                 f"working_tree={working_tree}\ncompiler=rustc fixture\n"
             ).encode()
             if suffix == ".zip":
@@ -161,17 +164,63 @@ class ReleaseAssets(unittest.TestCase):
             "examples/function_contracts.srp", "examples/function_contracts.stdout",
             "examples/function_recursion.srp", "examples/function_recursion.stdout",
             "examples/repeat.srp", "docs/syntax-migration.md",
+            "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
         ):
             with self.subTest(member=member):
-                self.build(version="0.0.4-dev", omit=member)
-                with self.assertRaisesRegex(ValueError, "missing " + member):
-                    verifier.verify(self.directory, "0.0.4-dev", COMMIT)
+                for version in ("0.0.3-beta.3", "0.0.4-dev"):
+                    self.build(version=version, omit=member)
+                    with self.assertRaisesRegex(ValueError, "missing " + member):
+                        verifier.verify(self.directory, version, COMMIT)
 
     def test_complete_function_candidate_has_three_sorted_checksums(self):
-        self.build(version="0.0.4-dev")
-        entries = verifier.verify(self.directory, "0.0.4-dev", COMMIT).splitlines()
-        self.assertEqual(len(entries), 3)
-        self.assertEqual(entries, sorted(entries))
+        for version in ("0.0.3-beta.3", "0.0.4-dev"):
+            self.build(version=version)
+            entries = verifier.verify(self.directory, version, COMMIT).splitlines()
+            self.assertEqual(len(entries), 3)
+            self.assertEqual(entries, sorted(entries))
+
+    def source_fixture(self):
+        source = self.directory / "source"
+        source.mkdir()
+        files = {
+            "README.md": b"fixture", "LICENSE": b"fixture",
+            "docs/reference/cli.md": "exact tagged guide\nनमस्ते\n".encode(),
+            "docs/extra.md": b"also required from the exact tree\n",
+        }
+        for name, data in files.items():
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        subprocess.run(["git", "init", "--quiet", str(source)], check=True)
+        subprocess.run(["git", "-C", str(source), "add", "."], check=True)
+        subprocess.run([
+            "git", "-C", str(source), "-c", "user.name=Release Fixture",
+            "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "fixture",
+        ], check=True)
+        commit = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+        return source, commit, files
+
+    def test_packages_match_exact_git_source_in_all_three_archives(self):
+        source, commit, files = self.source_fixture()
+        self.build(version="0.0.3-beta.3", commit=commit, extra_files=files)
+        # A modified checkout must not replace the immutable tagged content.
+        (source / "README.md").write_text("uncommitted change")
+        manifest = verifier.verify(self.directory, "0.0.3-beta.3", commit, source)
+        self.assertEqual(len(manifest.splitlines()), 3)
+
+    def test_valid_hashes_do_not_hide_stale_packaged_documentation(self):
+        source, commit, files = self.source_fixture()
+        files["docs/reference/cli.md"] = b"stale guide with valid archive checksum"
+        self.build(version="0.0.3-beta.3", commit=commit, extra_files=files)
+        with self.assertRaisesRegex(ValueError, "source differs.*docs/reference/cli.md"):
+            verifier.verify(self.directory, "0.0.3-beta.3", commit, source)
+
+    def test_every_tagged_guide_is_required_even_outside_the_minimum_file_list(self):
+        source, commit, files = self.source_fixture()
+        del files["docs/extra.md"]
+        self.build(version="0.0.3-beta.3", commit=commit, extra_files=files)
+        with self.assertRaises(KeyError):
+            verifier.verify(self.directory, "0.0.3-beta.3", commit, source)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # Functions with funcra
 
-This guide describes the unreleased `scarp/funcra-main` integration for
-`0.0.4-dev`. Published v0.0.3-beta.2 binaries do not contain functions. The
+This guide describes typed functions in `0.0.3-beta.3` and current main.
+Earlier v0.0.3-beta.2 binaries do not contain functions. The
 declaration keyword is exactly `funcra`; calls use the function name. Parameter
 and result types are mandatory, while local bindings keep inferred types.
 
@@ -171,7 +171,7 @@ Call-graph metadata includes calls in repeat counts, defaults, and contracts.
 
 ## Support and next steps
 
-This branch adapts only functions from the older stack in PR #27 and the repairs
+This release adapts only functions from the older stack in PR #27 and the repairs
 in PR #37 onto beta.2 main. It does not integrate that stack's decimals, vectors,
 bit operations, numerical built-ins, C backend, or CLI redesign. Existing
 commands remain `run`, `check`, and `tokens`. `compile` is unsupported and exits
@@ -180,6 +180,6 @@ not advertised, and there is no native backend in this source baseline.
 
 Function values/types, nested/anonymous functions, closures/captures, overloads,
 generics, and per-function resource annotations remain explicitly unsupported.
-The next gates are cross-platform CI, resource/diagnostic review, then a
-separate decision about the next public version. No v0.0.4 tag or release is
-created by this integration. See [the design](proposals/0015-funcra-functions.md).
+CLI resource controls are described in [budgets](budgets.md). See the
+[beta.3 notes](releases/v0.0.3-beta.3.md) for compatibility and downloads, and
+[the design](proposals/0015-funcra-functions.md) for deferred capabilities.

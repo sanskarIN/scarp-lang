@@ -8,18 +8,17 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the current guides | v0.0.3-beta.2 or `main` | bind/var, print/write, explicit stderr, while/repeat, and budgets |
+| Follow the current guides | v0.0.3-beta.3 or `main` | Typed functions, contracts, bind/var, output streams, loops, and six resource budgets |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
 | Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-Published beta.2 identifies as `0.0.3-beta.2`; this unreleased function checkout
-identifies as `0.0.4-dev`. Syntax and APIs remain subject to change. Published
-packages retain their original syntax.
-The separate `scarp/funcra-main` branch identifies as `0.0.4-dev` and adds
-[typed functions](functions.md); check out that branch explicitly to try them.
-It is unreleased. Numerical, backend, project, and CLI redesign PRs remain separate.
+Beta.3 identifies as `0.0.3-beta.3` and includes [typed functions](functions.md)
+on main. The temporary `0.0.4-dev` integration identifier was never published;
+the requested next public beta uses the next sequential beta.3 version.
+Syntax and APIs remain subject to change. Published packages retain their
+original syntax. Numerical, backend, project, and CLI redesign PRs remain separate.
 
 ## Build the development checkout
 
@@ -39,7 +38,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.4-dev
+scarp 0.0.3-beta.3
 ```
 
 Run commands from the repository root so relative example paths resolve:
@@ -84,7 +83,7 @@ development, `cargo run -- ...` selects the current checkout explicitly.
 
 Downloaded release archives already contain an executable and do not require
 Rust for running programs. Their platform and checksum instructions are in the
-[v0.0.3-beta.2 release notes](releases/v0.0.3-beta.2.md). Select Windows x64 MSVC,
+[v0.0.3-beta.3 release notes](releases/v0.0.3-beta.3.md). Select Windows x64 MSVC,
 Linux x64 GNU, or Apple Silicon macOS to match the host. Verify the archive's
 SHA-256 against its companion checksum before extracting, keep the supplied
 `examples/` and `docs/` directories, and run commands from the extracted root.

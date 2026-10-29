@@ -9,7 +9,7 @@ use std::{
 
 use scarp::{
     diagnostics::{Diagnostic, LocationTracker},
-    lexer, ExecutionLimits, RunError,
+    lexer, ExecutionOptions, RunError,
 };
 
 const HELP: &str = "Scarp — Build Beyond Boundaries.
@@ -22,31 +22,37 @@ Usage:
   scarp --version            Show the prototype version
 
 Use -- before a filename that begins with a dash.
-run/check options before the path: --max-steps <count>, --max-prints <count>.
+run/check options before the path: --max-steps, --max-prints, --max-call-depth,
+--max-calls, --max-live-slots, --max-capture-bytes (each followed by a count).
 Defaults: 1000000 execution steps, 100000 selected output statements.
 Iteration: while condition { ... }, repeat count as index { ... }.
 Use scarp run --help or scarp check --help for budget examples.
 ";
 
-const RUN_HELP: &str =
-    "Usage: scarp run [--max-steps <count>] [--max-prints <count>] [--] <file.srp>
+const RUN_HELP: &str = "Usage: scarp run [budget options] [--] <file.srp>
 
 Execute checked source, preparing every selected output statement before writing either stream.
 while guards are boolean; repeat count as index saves one nonnegative integer count.
 break; exits the nearest loop; continue; rechecks while or advances repeat.
 Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
+Function defaults: --max-call-depth 256, --max-calls 100000,
+--max-live-slots 1000000, --max-capture-bytes 16777216.
+Snapshot bytes are a logical storage cap, not an exact process-memory limit.
 Counts are unsigned decimal digits, zero is valid, and each option may occur once.
 Example: scarp run --max-steps 2000000 --max-prints 10 examples/repeat.srp
 Use scarp check with the same options to evaluate without printing.
 ";
 
-const CHECK_HELP: &str =
-    "Usage: scarp check [--max-steps <count>] [--max-prints <count>] [--] <file.srp>
+const CHECK_HELP: &str = "Usage: scarp check [budget options] [--] <file.srp>
 
 Check syntax, names, and types, then evaluate the selected path without printing.
 Loops and arithmetic execute with fresh storage and the same limits as run.
 This evaluates code; it is not a static-only check. All bodies are type-checked.
 Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
+Function defaults: --max-call-depth 256, --max-calls 100000,
+--max-live-slots 1000000, --max-capture-bytes 16777216.
+All six options take unsigned decimal counts, allow zero, and may occur once.
+Snapshot bytes are a logical storage cap, including when check discards output.
 Example: scarp check --max-steps 2000000 examples/repeat.srp
 Use tokens for lexing without executing a program. No execution-limit flags on tokens.
 ";
@@ -93,7 +99,7 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
         }
         _ => {}
     }
-    let (command, filename, limits) = match invocation(&args) {
+    let (command, filename, options) = match invocation(&args) {
         Ok(invocation) => invocation,
         Err(message) => {
             let _ = writeln!(errors, "error: {message}\n\n{HELP}");
@@ -146,12 +152,12 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else if command == "check" {
-        match scarp::check_with_limits(&source, limits) {
+        match scarp::check_with_options(&source, options) {
             Ok(()) => 0,
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
     } else {
-        match scarp::run_with_io_and_limits(&source, output, errors, limits) {
+        match scarp::run_with_io_and_options(&source, output, errors, options) {
             Ok(()) => 0,
             Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
             Err(RunError::Output(error)) => write_output(Err(error), errors),
@@ -163,12 +169,11 @@ fn file_command(command: &OsStr) -> bool {
     matches!(command.to_str(), Some("run" | "tokens" | "check"))
 }
 
-fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'static str> {
+fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionOptions), &'static str> {
     let command = args.first().ok_or("expected a command and a file path")?;
-    let mut limits = ExecutionLimits::default();
+    let mut options = ExecutionOptions::default();
     let mut index = 1;
-    let mut seen_steps = false;
-    let mut seen_prints = false;
+    let mut seen = Vec::new();
     let mut separator = false;
     while let Some(argument) = args.get(index) {
         if argument == "--" {
@@ -176,15 +181,21 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'
             index += 1;
             break;
         }
-        let steps = argument == "--max-steps";
-        let prints = argument == "--max-prints";
-        if !steps && !prints {
-            break;
-        }
+        let flag = match argument.to_str() {
+            Some(
+                flag @ ("--max-steps"
+                | "--max-prints"
+                | "--max-call-depth"
+                | "--max-calls"
+                | "--max-live-slots"
+                | "--max-capture-bytes"),
+            ) => flag,
+            _ => break,
+        };
         if command != "run" && command != "check" {
             return Err("execution limits are available only for run and check");
         }
-        if (steps && seen_steps) || (prints && seen_prints) {
+        if seen.contains(&flag) {
             return Err("execution limit options cannot be repeated");
         }
         let digits = args
@@ -197,13 +208,21 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'
         let value = digits
             .parse::<u64>()
             .map_err(|_| "execution limit is too large")?;
-        if steps {
-            limits.max_steps = value;
-            seen_steps = true;
-        } else {
-            limits.max_prints = usize::try_from(value).map_err(|_| "print limit is too large")?;
-            seen_prints = true;
+        match flag {
+            "--max-steps" => options.limits.max_steps = value,
+            "--max-calls" => options.max_calls = value,
+            _ => {
+                let value = usize::try_from(value).map_err(|_| "resource limit is too large")?;
+                match flag {
+                    "--max-prints" => options.limits.max_prints = value,
+                    "--max-call-depth" => options.max_call_depth = value,
+                    "--max-live-slots" => options.max_live_slots = value,
+                    "--max-capture-bytes" => options.max_capture_bytes = value,
+                    _ => unreachable!(),
+                }
+            }
         }
+        seen.push(flag);
         index += 2;
     }
     let filename = args
@@ -212,7 +231,7 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionLimits), &'
     if index + 1 != args.len() || (!separator && filename.to_string_lossy().starts_with('-')) {
         return Err("expected a command and a file path");
     }
-    Ok((command.as_os_str(), filename.as_os_str(), limits))
+    Ok((command.as_os_str(), filename.as_os_str(), options))
 }
 
 fn report_diagnostic(error: &Diagnostic, path: &Path, source: &str, errors: &mut impl Write) -> u8 {

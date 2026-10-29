@@ -1,6 +1,6 @@
 # Embed Scarp in a Rust application
 
-This guide targets the published beta.2 API and current main. It helps a host application choose
+This guide targets the beta.3 API and current main. It helps a host application choose
 between parsing, compilation, validation, and execution while retaining control
 of output and diagnostics. See [compatibility](compatibility.md) for v0.0.1 API
 differences.
@@ -168,7 +168,7 @@ Development output uses `print`/`write` with `println` retained as a permanent
 alias. `eprint`/`ewrite` require explicit stderr in embedding hosts. See
 [output and dual-writer migration](output.md) for semantics and new AST variants.
 
-## Function options and immutable metadata (unreleased)
+## Function options and immutable metadata (beta.3)
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {

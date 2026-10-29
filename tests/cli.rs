@@ -124,6 +124,241 @@ fn malformed_execution_budget_options_are_usage_errors() {
 }
 
 #[test]
+fn function_budget_flags_enforce_exact_boundaries_in_run_and_check() {
+    let fixture = Fixture::new();
+    let file = fixture.file(
+        "recursion.srp",
+        "pure funcra f(n: integer) -> integer { if n == 0 { return 0; } return f(n - 1); } print(f(4));",
+    );
+    for mode in ["run", "check"] {
+        for (flag, accepted, rejected) in [
+            ("--max-call-depth", "5", "4"),
+            ("--max-calls", "5", "4"),
+            ("--max-live-slots", "10", "9"),
+        ] {
+            let success = command()
+                .args([mode, flag, accepted])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert!(success.status.success(), "{flag}: {}", stderr(&success));
+            assert_eq!(
+                success.stdout,
+                if mode == "run" {
+                    b"0\n".as_slice()
+                } else {
+                    b"".as_slice()
+                }
+            );
+            assert!(success.stderr.is_empty());
+            let failure = command()
+                .args([mode, flag, rejected])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert_eq!(failure.status.code(), Some(1));
+            assert!(failure.stdout.is_empty());
+            let diagnostic = stderr(&failure);
+            assert!(diagnostic.contains("E0027"), "{diagnostic}");
+            assert!(diagnostic.contains(flag), "{diagnostic}");
+            assert!(
+                diagnostic.contains(&format!("limit of {rejected}")),
+                "{diagnostic}"
+            );
+        }
+    }
+}
+
+#[test]
+fn snapshot_budget_counts_values_separators_empty_lines_and_utf8() {
+    let fixture = Fixture::new();
+    for (source, expected, bytes) in [
+        ("print(1);", "1\n", 72),
+        ("print();", "\n", 64),
+        ("print(1, 2);", "1 2\n", 209),
+        ("print(\"न\");", "न\n", 67),
+    ] {
+        let file = fixture.file("snapshot.srp", source);
+        for mode in ["run", "check"] {
+            let success = command()
+                .args([mode, "--max-capture-bytes", &bytes.to_string()])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert!(success.status.success(), "{source}: {}", stderr(&success));
+            assert_eq!(
+                success.stdout,
+                if mode == "run" {
+                    expected.as_bytes()
+                } else {
+                    b""
+                }
+            );
+            assert!(success.stderr.is_empty());
+            let failure = command()
+                .args([mode, "--max-capture-bytes", &(bytes - 1).to_string()])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert_eq!(failure.status.code(), Some(1));
+            assert!(failure.stdout.is_empty());
+            let diagnostic = stderr(&failure);
+            assert!(diagnostic.contains("E0029"), "{diagnostic}");
+            assert!(diagnostic.contains("--max-capture-bytes"), "{diagnostic}");
+            assert!(
+                diagnostic.contains(&format!("limit of {}", bytes - 1)),
+                "{diagnostic}"
+            );
+        }
+    }
+}
+
+#[test]
+fn function_budget_errors_discard_both_program_streams() {
+    let fixture = Fixture::new();
+    let file = fixture.file(
+        "atomic.srp",
+        "funcra f() -> unit { f(); } print(\"OUT\"); eprint(\"ERR\"); f();",
+    );
+    for mode in ["run", "check"] {
+        for (flag, count, code) in [
+            ("--max-call-depth", "0", "E0027"),
+            ("--max-calls", "0", "E0027"),
+            ("--max-capture-bytes", "100", "E0029"),
+        ] {
+            let result = command()
+                .args([mode, flag, count])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            assert!(result.stderr.starts_with(b"error["));
+            assert!(stderr(&result).contains(code));
+        }
+    }
+    let slots = fixture.file(
+        "slots.srp",
+        "print(\"OUT\"); eprint(\"ERR\"); bind value = 1;",
+    );
+    for mode in ["run", "check"] {
+        let result = command()
+            .args([mode, "--max-live-slots", "0"])
+            .arg(&slots)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(result.stderr.starts_with(b"error[E0027]"));
+    }
+}
+
+#[test]
+fn all_budget_flags_allow_zero_and_mixed_order_without_changing_path_rules() {
+    let fixture = Fixture::new();
+    fixture.file("--max-calls", "// empty program\n");
+    for mode in ["run", "check"] {
+        let result = command()
+            .args([
+                mode,
+                "--max-calls",
+                "0",
+                "--max-prints",
+                "0",
+                "--max-capture-bytes",
+                "0",
+                "--max-steps",
+                "0",
+                "--max-live-slots",
+                "0",
+                "--max-call-depth",
+                "0",
+                "--",
+                "--max-calls",
+            ])
+            .current_dir(&fixture.directory)
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "{}", stderr(&result));
+        assert!(result.stdout.is_empty());
+        assert!(result.stderr.is_empty());
+    }
+}
+
+#[test]
+fn function_budget_option_errors_are_rejected_before_reading_source() {
+    let fixture = Fixture::new();
+    let missing = fixture.directory.join("missing.srp");
+    for flag in [
+        "--max-call-depth",
+        "--max-calls",
+        "--max-live-slots",
+        "--max-capture-bytes",
+    ] {
+        for mode in ["run", "check"] {
+            for invalid in [
+                "",
+                "-1",
+                "+1",
+                "1.0",
+                " 1",
+                "1_000",
+                "१",
+                "18446744073709551616",
+            ] {
+                let result = command()
+                    .args([mode, flag, invalid])
+                    .arg(&missing)
+                    .output()
+                    .unwrap();
+                assert_eq!(
+                    result.status.code(),
+                    Some(2),
+                    "{mode} {flag} {invalid:?}: {}",
+                    stderr(&result)
+                );
+                assert!(result.stdout.is_empty());
+                assert!(!stderr(&result).contains("could not read"));
+            }
+            let repeated = command()
+                .args([mode, flag, "1", "--max-steps", "100", flag, "2"])
+                .arg(&missing)
+                .output()
+                .unwrap();
+            assert_eq!(repeated.status.code(), Some(2));
+            assert!(stderr(&repeated).contains("cannot be repeated"));
+            let absent = command().args([mode, flag]).output().unwrap();
+            assert_eq!(absent.status.code(), Some(2));
+        }
+        let tokens = command()
+            .args(["tokens", flag, "1"])
+            .arg(&missing)
+            .output()
+            .unwrap();
+        assert_eq!(tokens.status.code(), Some(2));
+        assert!(stderr(&tokens).contains("only for run and check"));
+    }
+}
+
+#[test]
+fn help_lists_all_function_budget_flags_and_defaults() {
+    for mode in ["run", "check"] {
+        let result = command().args([mode, "--help"]).output().unwrap();
+        assert!(result.status.success());
+        assert!(result.stderr.is_empty());
+        let help = String::from_utf8(result.stdout).unwrap();
+        for entry in [
+            "--max-call-depth 256",
+            "--max-calls 100000",
+            "--max-live-slots 1000000",
+            "--max-capture-bytes 16777216",
+        ] {
+            assert!(help.contains(entry), "{entry}: {help}");
+        }
+    }
+}
+
+#[test]
 fn conditional_programs_run_and_skipped_static_errors_reach_stderr() {
     let fixture = Fixture::new();
     let valid = fixture.file(

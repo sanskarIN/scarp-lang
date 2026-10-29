@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -43,7 +43,7 @@ jobs:
         run: cargo bench --locked --offline --bench runtime -- --quick
       - name: Verify release asset validation
         if: runner.os == 'Linux'
-        run: python3 -m unittest discover -s scripts -p 'test_release_assets.py'
+        run: python3 -m unittest discover -s scripts -p 'test_*release*.py'
       - name: Validate PowerShell check script
         if: runner.os == 'Windows'
         shell: pwsh

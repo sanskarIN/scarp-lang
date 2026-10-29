@@ -18,7 +18,7 @@ integers do not automatically become strings for arithmetic.
 
 There are no floating-point, collection, or user-defined values yet.
 Local type annotations and explicit conversions are not implemented. On the
-unreleased [function branch](../functions.md), parameter and result types are
+[function system in beta.3](../functions.md), parameter and result types are
 mandatory; they do not change primitive value or operator rules.
 
 ## Precedence and associativity

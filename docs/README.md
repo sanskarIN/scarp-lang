@@ -3,10 +3,10 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Choose a guide by the task you want to complete. Current tutorials target the
-published v0.0.3-beta.2 syntax and current main. They include variables, strings,
+v0.0.3-beta.3 syntax and current main. They include variables, strings,
 booleans, conditionals, bounded while/repeat loops, five string escapes, and
 [output statements](output.md). Release notes describe fixed snapshots;
-this unreleased checkout additionally contains [typed funcra functions](functions.md).
+beta.3 adds [typed funcra functions](functions.md) and CLI resource controls.
 Numerical, native, and CLI redesign stacks remain separate.
 
 ## Guides and what each adds
@@ -15,7 +15,7 @@ Numerical, native, and CLI redesign stacks remain separate.
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
-| [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources in the unreleased checkout |
+| [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources in beta.3 |
 | [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
@@ -68,7 +68,8 @@ Published behavior is recorded in the [v0.0.1 notes](releases/v0.0.1.md).
 The [v0.0.2 notes](releases/v0.0.2.md) describe the variable prerelease.
 The [v0.0.3-beta.1 notes](releases/v0.0.3-beta.1.md) describe the iteration release;
 the [v0.0.3-beta.2 notes](releases/v0.0.3-beta.2.md) cover declaration migration,
-output streams, and current downloads. Use [compatibility](compatibility.md)
+and output streams. The [v0.0.3-beta.3 notes](releases/v0.0.3-beta.3.md) cover
+functions, CLI resource controls, and current downloads. Use [compatibility](compatibility.md)
 before running a current tutorial with an older installed executable.
 [Release preparation](releasing.md) describes the separate packaging and
 publication process. The root [changelog](../CHANGELOG.md) distinguishes released

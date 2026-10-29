@@ -1,6 +1,6 @@
 # Typed funcra functions
 
-Status: implemented on the unreleased `scarp/funcra-main` branch for review.
+Status: integrated into main through PR #41 and included in v0.0.3-beta.3.
 Published beta.2 does not include this syntax. This adaptation uses the function
 core reviewed in PRs #27/#37 and excludes their older prerequisite stack.
 

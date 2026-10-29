@@ -141,7 +141,7 @@ previous writer. Validation discards values immediately and creates no replay
 events. Single-writer hosts reject required stderr before replay. See the
 [output guide](output.md) for the additive APIs and AST compatibility rules.
 
-## Function branch adaptation (unreleased)
+## Function integration (beta.3)
 
 `resolver/functions.rs` resolves parameter defaults, contracts, return paths,
 and an iterative strongly-connected-component call graph. It creates one flat

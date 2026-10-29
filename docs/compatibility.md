@@ -4,7 +4,7 @@ Development declarations use `bind` and `var`; see the [migration guide](syntax-
 
 Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
-v0.0.3-beta.1, and v0.0.3-beta.2 snapshots. Beta.2 uses the syntax described below;
+v0.0.3-beta.1, beta.2, and beta.3 snapshots. Beta.3 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
 
 ## Identify the code you are running
@@ -17,27 +17,28 @@ For a source snapshot, `git status --short`, `git branch --show-current`, and
 `git rev-parse HEAD` identify local changes, the branch, and the commit. A branch
 name alone is not an immutable version. The published release is associated with
 the corresponding tag: `v0.0.1`, `v0.0.2`, `v0.0.3-beta.1`, or
-`v0.0.3-beta.2`. Check that a release archive's BUILD-INFO version and source
+`v0.0.3-beta.2`, or `v0.0.3-beta.3`. Check that a release archive's BUILD-INFO version and source
 commit match the intended tag. A development package's version alone does not
 prove its contents are the published release.
 
 ## Language and command matrix
 
-| Capability | v0.0.1 | v0.0.2 | v0.0.3-beta.1 | v0.0.3-beta.2 |
-| --- | --- | --- | --- | --- |
-| UTF-8 source, comments, backslash/quote/LF escapes | Yes | Yes | Yes | Yes |
-| Checked signed 64-bit arithmetic | Yes | Yes | Yes | Yes |
-| Integer/string/boolean bindings, scopes and decisions | No | Yes | Yes | Yes |
-| Declaration spelling | None | `let` / `let mut` | `let` / `let mut` | `bind` / `var` |
-| Line output spelling | `println` | `println` | `println` | `print`, with `println` alias |
-| Raw output and explicit stderr | No | No | No | `write`, `eprint`, `ewrite` |
-| Zero/multiple output arguments and trailing commas | No | No | No | Yes |
-| `run`, `tokens`, global help/version | Yes | Yes | Yes | Yes |
-| `check` and per-command help | No | Yes | Yes | Yes |
-| While/repeat, nearest-loop break/continue | No | No | Yes | Yes |
-| Work/output limits and CLI budget options | No | No | Yes | Yes |
-| Tab/carriage-return string escapes | No | No | Yes | Yes |
-| User functions, imports, or native compilation | No | No | No | No |
+| Capability | v0.0.1 | v0.0.2 | v0.0.3-beta.1 | v0.0.3-beta.2 | v0.0.3-beta.3 |
+| --- | --- | --- | --- | --- | --- |
+| UTF-8 source, comments, backslash/quote/LF escapes | Yes | Yes | Yes | Yes | Yes |
+| Checked signed 64-bit arithmetic | Yes | Yes | Yes | Yes | Yes |
+| Integer/string/boolean bindings, scopes and decisions | No | Yes | Yes | Yes | Yes |
+| Declaration spelling | None | `let` / `let mut` | `let` / `let mut` | `bind` / `var` | `bind` / `var` |
+| Line output spelling | `println` | `println` | `println` | `print`, with `println` alias | `print`, with `println` alias |
+| Raw output and explicit stderr | No | No | No | `write`, `eprint`, `ewrite` | `write`, `eprint`, `ewrite` |
+| Zero/multiple output arguments and trailing commas | No | No | No | Yes | Yes |
+| `run`, `tokens`, global help/version | Yes | Yes | Yes | Yes | Yes |
+| `check` and per-command help | No | Yes | Yes | Yes | Yes |
+| While/repeat, nearest-loop break/continue | No | No | Yes | Yes | Yes |
+| Work/output limits and CLI budget options | No | No | Yes | Yes | Yes |
+| Tab/carriage-return string escapes | No | No | Yes | Yes | Yes |
+| Typed funcra, recursion, named/default arguments and contracts | No | No | No | No | Yes |
+| Imports or native compilation | No | No | No | No | No |
 
 To migrate beta.1 source, replace declaration tokens `let` with `bind` and
 `let mut` with `var`. `println` continues to work in beta.2; `print` is the
@@ -50,7 +51,7 @@ semantic checks before evaluation, so a later unknown name or type mismatch can
 precede an earlier arithmetic failure in the reported diagnostic.
 
 The variable milestone is available on main. Its implementation was reviewed in
-PRs #7â€“#15, covering bindings, mutation, scopes, validation, strings, documentation,
+PRs #7–#15, covering bindings, mutation, scopes, validation, strings, documentation,
 booleans, conditionals, and execution workspace improvements. Later feature
 branches intentionally remain outside this release.
 
@@ -90,19 +91,19 @@ programs establish their bindings through source declarations.
 
 ## Platform and toolchain scope
 
-All four documented releases declare Rust 1.74 as the minimum for source builds.
+All five documented releases declare Rust 1.74 as the minimum for source builds.
 Their native archives cover Windows x64 MSVC, Linux x64 GNU, and Apple Silicon
 macOS. Beta.2 Linux binaries are built on Ubuntu 22.04. Other architectures need
 their own source build and validation; a supported OS name is not enough.
 
 A successful source test on one host is not evidence of a universal binary.
 Use the matching archive or build with a compatible local Rust toolchain. The
-[release notes](releases/v0.0.3-beta.2.md) describe the current archive scope.
+[release notes](releases/v0.0.3-beta.3.md) describe the current archive scope.
 
 ## Integration and future changes
 
 Syntax and public Rust APIs remain experimental. Review the
-[beta.2 notes](releases/v0.0.3-beta.2.md) when updating a host application. Planned
+[beta.3 notes](releases/v0.0.3-beta.3.md) when updating a host application. Planned
 features in a roadmap or proposal are not available merely because they are named.
 
 The feature stack and this documentation are reviewed through separate PRs.
@@ -126,9 +127,9 @@ two-field `ExecutionLimits` struct. Use the additive dual-writer APIs for
 `TokenKind::Comma`. Single-argument stdout line forms retain `Statement::Println`.
 See [output and dual-writer migration](output.md) for details.
 
-## Unreleased function integration
+## Function migration from beta.2 to beta.3
 
-The `scarp/funcra-main` branch adds [typed functions](functions.md) after beta.2.
+Beta.3 adds [typed functions](functions.md) after beta.2, integrated on main.
 Existing run/check/execute entry points and the two-field `ExecutionLimits`
 struct keep their signatures. They use the default call-depth/count/live-slot
 and cumulative output-snapshot limits in `ExecutionOptions`, including for

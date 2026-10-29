@@ -46,11 +46,44 @@ Each extra argument separator consumes one work step. A selected `write();` or
 Dual-stream hosts can use `run_with_io_and_limits` or
 `interpreter::execute_with_io_and_limits` with the same limits.
 
-## Function branch options (unreleased)
+## Function and snapshot options (beta.3)
 
-On `scarp/funcra-main`, the additive `ExecutionOptions` selects call depth,
-cumulative calls, live binding slots, and cumulative output snapshot storage.
-Existing two-field ExecutionLimits literals remain valid; old entry points use
-default additional caps. These apply during run and check, including snapshot
-limits for programs without functions. CLI flags still select only steps/prints;
-use the embedding options API for other limits. See [functions](functions.md).
+All six options are available on both `run` and `check`, before the file path.
+Each takes unsigned decimal digits, allows zero, and may occur once. Options
+may appear in any order. Missing, negative, signed, nondecimal, overflowing, or
+duplicate counts produce usage status 2 before the file is read. `tokens`
+rejects execution options; `--` ends option parsing for a dash-prefixed path.
+
+| CLI option | Default | ExecutionOptions field | Meaning |
+| --- | --- | --- | --- |
+| `--max-steps` | 1,000,000 | `limits.max_steps` | Selected instruction and expression work |
+| `--max-prints` | 100,000 | `limits.max_prints` | Selected output statements, including empty writes |
+| `--max-call-depth` | 256 | `max_call_depth` | Active user frames, excluding the file frame |
+| `--max-calls` | 100,000 | `max_calls` | Cumulative selected calls, including defaults/contracts |
+| `--max-live-slots` | 1,000,000 | `max_live_slots` | Slots across live file/function frames and saved loop state |
+| `--max-capture-bytes` | 16,777,216 | `max_capture_bytes` | Cumulative logical output snapshot storage |
+
+```sh
+scarp run --max-call-depth 512 --max-calls 200000 examples/function_recursion.srp
+scarp check --max-live-slots 10000 --max-capture-bytes 1048576 examples/functions.srp
+```
+
+`ExecutionOptions` is additive: existing two-field `ExecutionLimits` literals
+remain valid and old entry points use the additional defaults. Both run and
+check enforce all caps, even for programs without functions. An empty program
+succeeds with all six limits at zero. A call with zero depth/call allowance or
+a selected output value with insufficient snapshot allowance fails with status 1.
+
+E0027 identifies the exhausted call/depth/slot budget and its CLI/API control.
+E0029 names the configured snapshot cap. Both discard pending stdout and stderr.
+Snapshot storage counts UTF-8 string payload bytes plus 64 bytes per value or
+separator; other scalar payloads use eight bytes. An empty printed line costs
+64 bytes, `print(1)` costs 72, and `print(1, 2)` costs 209. A newline attached to
+a value has no separate snapshot charge. Empty writes have no snapshot payload
+but still consume an output-statement allowance. Shared values are charged for
+each snapshot; pending outer arguments count before nested calls finish.
+
+This is a logical storage budget, not an exact encoded-output or process-memory
+measurement. Parser allocations are outside these execution caps. See
+[functions](functions.md) for evaluation order and [embedding](embedding.md)
+for reusable immutable plans and caller-selected options.

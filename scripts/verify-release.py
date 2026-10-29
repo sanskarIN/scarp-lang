@@ -4,15 +4,44 @@ import argparse
 import hashlib
 from pathlib import Path
 import re
+import subprocess
 import tarfile
 import zipfile
 
 
-def verify(directory, version, commit):
+def verify_source_members(read_member, root, source_files):
+    for name, expected in source_files.items():
+        data = read_member(root + "/" + name)
+        digest = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+        if digest != expected:
+            raise ValueError(f"package source differs from release commit: {name}")
+
+
+def source_files_at(source_directory, commit):
+    result = subprocess.run(
+        ["git", "-C", str(source_directory), "ls-tree", "-rz", commit, "--",
+         "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "docs", "examples"],
+        check=True, stdout=subprocess.PIPE,
+    )
+    files = {}
+    for record in result.stdout.split(b"\0"):
+        if record:
+            metadata, name = record.decode("utf-8").split("\t", 1)
+            mode, kind, digest = metadata.split()
+            if kind != "blob" or mode not in ("100644", "100755"):
+                raise ValueError(f"unsupported packaged source entry: {name}")
+            files[name] = digest
+    if "README.md" not in files or "LICENSE" not in files:
+        raise ValueError("release source tree is missing root documentation")
+    return files
+
+
+def verify(directory, version, commit, source_directory=None):
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", version):
         raise ValueError("expected a three-part package version")
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError("expected the full release commit")
+    source_files = source_files_at(source_directory, commit) if source_directory is not None else {}
     checksums = []
     for target, extension in (
         ("x86_64-pc-windows-msvc", ".zip"),
@@ -34,6 +63,7 @@ def verify(directory, version, commit):
             with zipfile.ZipFile(archive) as package:
                 paths = set(package.namelist())
                 record = package.read(root + "/BUILD-INFO.txt")
+                verify_source_members(package.read, root, source_files)
         else:
             with tarfile.open(archive, "r:gz") as package:
                 paths = set(package.getnames())
@@ -43,6 +73,12 @@ def verify(directory, version, commit):
                 record = stream.read()
                 if not package.getmember(root + "/scarp").mode & 0o111:
                     raise ValueError(f"missing executable permission: {name}")
+                def read_member(name):
+                    member = package.getmember(name)
+                    if not member.isfile():
+                        raise ValueError(f"packaged source is not a regular file: {name}")
+                    return package.extractfile(member).read()
+                verify_source_members(read_member, root, source_files)
         fields = dict(line.split("=", 1) for line in record.decode("utf-8").splitlines())
         for key, expected in (
             ("version", version), ("target", target),
@@ -61,12 +97,13 @@ def verify(directory, version, commit):
         syntax_migration_files = (
             "examples/output.srp", "examples/output.stdout",
             "docs/output.md", "docs/syntax-migration.md",
-        ) if version in ("0.0.3-beta.2", "0.0.4-dev") else ()
+        ) if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev") else ()
         function_files = (
             "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
             "examples/function_contracts.srp", "examples/function_contracts.stdout",
             "examples/function_recursion.srp", "examples/function_recursion.stdout",
-        ) if version == "0.0.4-dev" else ()
+            "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
+        ) if version in ("0.0.3-beta.3", "0.0.4-dev") else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",
@@ -86,16 +123,17 @@ def main():
     parser.add_argument("--version", required=True)
     parser.add_argument("--commit", required=True)
     parser.add_argument("--write-manifest", action="store_true")
+    parser.add_argument("--source-directory", type=Path, help="compare packaged docs/examples with exact Git blobs")
     args = parser.parse_args()
     try:
-        manifest = verify(args.directory, args.version, args.commit)
+        manifest = verify(args.directory, args.version, args.commit, args.source_directory)
         path = args.directory / "SHA256SUMS"
         if args.write_manifest:
             with path.open("x", encoding="utf-8", newline="\n") as output:
                 output.write(manifest)
         elif path.read_text(encoding="utf-8") != manifest:
             raise ValueError("SHA256SUMS differs from the verified archives")
-    except (OSError, ValueError, KeyError, tarfile.TarError, zipfile.BadZipFile) as error:
+    except (OSError, ValueError, KeyError, subprocess.CalledProcessError, tarfile.TarError, zipfile.BadZipFile) as error:
         parser.exit(1, f"release verification failed: {error}\n")
 
 

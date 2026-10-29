@@ -1,0 +1,42 @@
+name: Publish requested prerelease
+
+on:
+  workflow_run:
+    workflows: [Rust checks, Release packages]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scarp-prerelease-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify and publish requested beta
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out the tested main revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify final CI, source records, archives, draft, and public downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCARP_SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: python3 scripts/publish-release.py
