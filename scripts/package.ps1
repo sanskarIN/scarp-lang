@@ -144,6 +144,27 @@ try {
         }
     }
     $errorLog = Join-Path $stagingRoot 'invalid.stderr'
+    $functionSource = Join-Path $stagingRoot 'function-budgets.srp'
+    $functionBody = 'pure funcra f(n: integer) -> integer { if n == 0 { return 0; } return f(n - 1); } '
+    [System.IO.File]::WriteAllText($functionSource, $functionBody + 'print(f(4));')
+    foreach ($verb in @('run', 'check')) {
+        $bounded = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, '--max-call-depth', '5', '--max-calls', '5', '--max-live-slots', '10', '--max-capture-bytes', '72', $functionSource)
+        $expected = if ($verb -eq 'run') { "0`n" } else { '' }
+        if ($bounded.ExitCode -ne 0 -or $bounded.Stderr.Length -ne 0 -or [System.Text.Encoding]::UTF8.GetString($bounded.Stdout) -cne $expected) {
+            throw 'Packaged function budget boundary check failed'
+        }
+    }
+    [System.IO.File]::WriteAllText($functionSource, $functionBody + 'print("OUT"); eprint("ERR"); print(f(4));')
+    foreach ($verb in @('run', 'check')) {
+        foreach ($flag in @('--max-call-depth', '--max-calls', '--max-live-slots', '--max-capture-bytes')) {
+            $limited = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, $flag, '0', $functionSource)
+            $diagnostic = [System.Text.Encoding]::UTF8.GetString($limited.Stderr)
+            $code = if ($flag -eq '--max-capture-bytes') { 'E0029' } else { 'E0027' }
+            if ($limited.ExitCode -ne 1 -or $limited.Stdout.Length -ne 0 -or -not $diagnostic.StartsWith("error[$code]") -or -not $diagnostic.Contains($flag)) {
+                throw "Packaged function resource/atomicity check failed: $flag"
+            }
+        }
+    }
     [System.IO.File]::WriteAllText($invalidSource, 'println("first"); println(1 / 0);')
     $invalidOutput = & $executable run $invalidSource 2> $errorLog
     if ($LASTEXITCODE -ne 1 -or $invalidOutput) { throw 'Packaged error exit/output check failed' }
