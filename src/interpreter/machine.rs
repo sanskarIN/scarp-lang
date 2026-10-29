@@ -474,7 +474,8 @@ fn limit(
         format!("{resource} limit of {configured} exceeded"),
     )
     .with_help(format!(
-        "check recursion and frame size, or raise ExecutionOptions.{field}"
+        "check recursion and frame size, or raise --{} / ExecutionOptions.{field}",
+        field.replace('_', "-")
     ))
 }
 
@@ -500,8 +501,9 @@ fn charge_capture(
         return Err(Diagnostic::new(
             DiagnosticKind::CaptureLimit,
             span,
-            "output snapshot storage limit exceeded",
-        ));
+            format!("output snapshot storage limit of {} exceeded", options.max_capture_bytes),
+        )
+        .with_help("reduce selected output or raise --max-capture-bytes / ExecutionOptions.max_capture_bytes"));
     }
     *used += amount;
     Ok(())
