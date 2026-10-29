@@ -1,10 +1,15 @@
 """Keep publication gates closed for incomplete CI and inconsistent assets."""
 
 import copy
+import contextlib
 import importlib.util
+import io
+import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("publish_release", Path(__file__).with_name("publish-release.py"))
 publisher = importlib.util.module_from_spec(spec)
@@ -13,6 +18,70 @@ COMMIT = "a" * 40
 
 
 class PublicationGates(unittest.TestCase):
+    def recovery_fixture(self):
+        request = dict(version="0.0.3-beta.3", resume_commit=COMMIT, resume_release_id=42,
+                       tagger_name="Maintainer", tagger_email="maintainer@example.invalid")
+        release = dict(id=42, tag_name="v0.0.3-beta.3", draft=True, prerelease=True)
+        tag = dict(tag="v0.0.3-beta.3", object=dict(type="commit", sha=COMMIT),
+                   tagger=dict(name=request["tagger_name"], email=request["tagger_email"]))
+        return request, release, tag
+
+    def test_authenticated_collection_resolves_drafts_and_rejects_ambiguity(self):
+        _, draft, _ = self.recovery_fixture()
+        self.assertEqual(publisher.release_from_list([draft], draft["tag_name"]), draft)
+        self.assertIsNone(publisher.release_from_list([draft], "v0.0.2"))
+        with self.assertRaises(ValueError):
+            publisher.release_from_list([draft, draft], draft["tag_name"])
+
+    def test_main_uses_collection_for_release_lookup_instead_of_public_tag_endpoint(self):
+        request, release, _ = self.recovery_fixture()
+        release.update(draft=False, html_url="https://github.com/example/project/releases/tag/v0.0.3-beta.3")
+        with patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "read_text", return_value=json.dumps(request)), \
+             patch.object(publisher.subprocess, "check_output", return_value=COMMIT + "\n"), \
+             patch.dict(os.environ, SCARP_SOURCE_SHA=COMMIT, GITHUB_REPOSITORY="example/project"), \
+             patch.object(publisher, "api", return_value=[release]) as api_call, \
+             contextlib.redirect_stdout(io.StringIO()):
+            publisher.main()
+        api_call.assert_called_once_with("repos/example/project/releases?per_page=100")
+
+    def test_explicit_draft_recovery_retains_exact_tagged_source_and_identity(self):
+        request, release, tag = self.recovery_fixture()
+        self.assertEqual(publisher.validate_resume(request, release, tag), COMMIT)
+
+    def test_recovery_requires_exact_draft_id_and_full_commit(self):
+        request, release, tag = self.recovery_fixture()
+        for field, value in (("resume_release_id", 43), ("resume_release_id", "42"),
+                             ("resume_commit", "main"), ("resume_commit", "a" * 39)):
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                publisher.validate_resume(dict(request, **{field: value}), release, tag)
+
+    def test_recovery_rejects_changed_tag_target_type_or_maintainer(self):
+        request, release, tag = self.recovery_fixture()
+        for changed in (
+            dict(tag, object=dict(type="commit", sha="b" * 40)),
+            dict(tag, object=dict(type="tag", sha=COMMIT)),
+            dict(tag, tag="v0.0.3-beta.2"),
+            dict(tag, tagger=dict(name="Other", email=request["tagger_email"])),
+            dict(tag, tagger=dict(name=request["tagger_name"], email="other@example.invalid")),
+        ):
+            with self.assertRaises(ValueError):
+                publisher.validate_resume(request, release, changed)
+
+    def test_recovery_rejects_published_stable_or_mismatched_draft(self):
+        request, release, tag = self.recovery_fixture()
+        for changed in (dict(release, draft=False), dict(release, prerelease=False),
+                        dict(release, tag_name="v0.0.3-beta.2")):
+            with self.assertRaises(ValueError):
+                publisher.validate_resume(request, changed, tag)
+
+    def test_publication_patch_uses_release_id_and_explicit_patch_method(self):
+        payload = dict(draft=False, prerelease=True, make_latest="false")
+        with patch.object(publisher, "gh", return_value="{}") as gh_call:
+            publisher.api("repos/example/project/releases/42", payload=payload, method="PATCH")
+        gh_call.assert_called_once_with("api", "repos/example/project/releases/42", "--method", "PATCH",
+                                        "--input", "-", payload=payload, optional=False)
+
     def runs(self):
         return [dict(id=index, path=path, head_sha=COMMIT, event="push", head_branch="main",
                      status="completed", conclusion="success")
