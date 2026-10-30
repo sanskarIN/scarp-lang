@@ -143,3 +143,16 @@ source value literal. E0001–E0019 retain their assignments; E0020–E0029 are 
 Unknown call names now report E0023 instead of E0005. The newly reserved words
 `funcra`, `pure`, `return`, `needs`, `ensures` may require binding renames.
 `repeat`/`as` bindings remain compatible; `repeat` cannot be a function name.
+
+## Finite-float alpha candidate
+
+This source checkout extends beta.3 with [finite binary64 scalars](floats.md).
+Published beta.3 and earlier tags keep their original integer/string/Boolean
+behavior. No existing diagnostic code is renumbered: E0030/E0031 are new.
+Previously rejected valid float literals now parse; malformed forms remain errors.
+No implicit numeric conversion, local type annotation, CLI rename, or dependency
+is introduced. Syntax/embedding hosts must handle float variants in TokenKind,
+ExpressionKind, Value and ValueType; FiniteFloat::new checks host values.
+The legacy integer evaluate helper keeps its result type. Default execution
+options and all six budget fields remain unchanged. Public alpha tagging and
+publication require explicit authorization after the final source/package gates.

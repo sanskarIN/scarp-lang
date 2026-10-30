@@ -9,6 +9,7 @@ bindings and string-valued expressions require the development stack.
 | Kind | Examples | Rules |
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
+| Float (alpha) | `0.5`, `1e3`, `-0.0` | Finite binary64; no integer coercion |
 | Boolean | `true`, `false` | v0.0.2 and later; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text; v0.0.3 adds tab/CR to the three older escapes |
 
@@ -16,7 +17,8 @@ Development bindings infer their kind from the initializer. Mutable assignment
 must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
-There are no floating-point, collection, or user-defined values yet.
+The [alpha candidate](../floats.md) adds finite binary64 float values.
+Collections and user-defined values remain unavailable.
 Local type annotations and explicit conversions are not implemented. On the
 [function system in beta.3](../functions.md), parameter and result types are
 mandatory; they do not change primitive value or operator rules.
@@ -26,10 +28,10 @@ mandatory; they do not change primitive value or operator rules.
 | Order, strongest first | Syntax | Behavior |
 | --- | --- | --- |
 | Grouping | `(expression)` | Evaluate the grouped expression |
-| Unary minus | `-primary` | Checked integer negation |
-| Multiplication/division | `*`, `/` | Left-associative checked integer arithmetic |
-| Addition/subtraction | `+`, `-` | Left-associative checked integer arithmetic |
-| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` | One comparison; ordering is integer-only |
+| Unary minus | `-primary` | Integer checked negation or float sign change |
+| Multiplication/division | `*`, `/` | Left-associative same-type numeric arithmetic |
+| Addition/subtraction | `+`, `-` | Left-associative same-type numeric arithmetic |
+| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` | One comparison; ordering requires matching numeric kinds |
 | Boolean negation | `not` | Negate a boolean, including a complete comparison |
 | Boolean conjunction | `and` | Skip the right boolean if the left is false |
 | Boolean disjunction | `or` | Skip the right boolean if the left is true |
@@ -101,10 +103,10 @@ already exist and be declared with `var`.
 | Operator | Effect |
 | --- | --- |
 | `=` | Replace the value with another value of the same inferred type |
-| `+=` | Add an integer expression to the previous integer value |
-| `-=` | Subtract an integer expression from the previous integer value |
-| `*=` | Multiply the previous integer value by an integer expression |
-| `/=` | Divide the previous integer value by an integer expression |
+| `+=` | Add a same-kind numeric value to the previous value |
+| `-=` | Subtract a same-kind numeric value from the previous value |
+| `*=` | Multiply by a same-kind numeric value |
+| `/=` | Divide by a same-kind nonzero numeric value |
 
 The right-hand expression sees the previous environment. For example,
 `var x = 2; x += x + 1;` leaves `x` equal to `5`.
@@ -117,7 +119,7 @@ inside the right-hand expression identify that expression's operator instead.
 Strings support `\\`, `\"`, `\n`, `\t`, and `\r` in v0.0.3. Other escapes are errors. A physical CR or LF
 inside a string is invalid. Parenthesized strings are supported in development.
 
-Arithmetic and compound assignment remain integer-only. There is no string
+Arithmetic and compound assignment accept same-type integer or float operands. There is no string
 concatenation, indexing, interpolation, or automatic formatting of placeholders.
 Print labels and values with separate statements:
 

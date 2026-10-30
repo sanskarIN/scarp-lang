@@ -176,6 +176,30 @@ try {
     if ([System.IO.File]::ReadAllText($errorLog) -notmatch 'E0008') {
         throw 'Packaged arithmetic diagnostic check failed'
     }
+    $floatSource = Join-Path $stagingRoot 'floats.srp'
+    [System.IO.File]::WriteAllText($floatSource, 'pure funcra half(n: float = 1.0) -> float { return n / 2.0; } print(half()); eprint(-0.0);')
+    foreach ($verb in @('run', 'check')) {
+        $floats = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, '--max-steps', '100', '--max-prints', '2', '--max-call-depth', '1', '--max-calls', '1', '--max-live-slots', '2', '--max-capture-bytes', '144', $floatSource)
+        if ($floats.ExitCode -ne 0) { throw 'Packaged float call/resource check failed' }
+        if ($verb -eq 'run') {
+            if ([System.Text.Encoding]::UTF8.GetString($floats.Stdout) -cne "0.5`n" -or [System.Text.Encoding]::UTF8.GetString($floats.Stderr) -cne "-0.0`n") {
+                throw 'Packaged float streams or signed-zero formatting differ'
+            }
+        }
+        elseif ($floats.Stdout.Length -ne 0 -or $floats.Stderr.Length -ne 0) {
+            throw 'Packaged float validation must be silent'
+        }
+    }
+    foreach ($case in @(@('1e309', 'E0030'), @('1e308 * 2.0', 'E0031'), @('1.0 / -0.0', 'E0008'))) {
+        [System.IO.File]::WriteAllText($floatSource, ('print("OUT"); eprint("ERR"); print(' + $case[0] + ');'))
+        foreach ($verb in @('run', 'check')) {
+            $failed = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, $floatSource)
+            $diagnostic = [System.Text.Encoding]::UTF8.GetString($failed.Stderr)
+            if ($failed.ExitCode -ne 1 -or $failed.Stdout.Length -ne 0 -or -not $diagnostic.StartsWith(('error[' + $case[1] + ']'))) {
+                throw 'Packaged float failure must discard both program streams'
+            }
+        }
+    }
     $tokens = & $executable tokens (Join-Path $extractedPackage 'examples/arithmetic.srp')
     if ($LASTEXITCODE -ne 0 -or -not ($tokens -match 'integer\(1\)')) {
         throw 'Packaged token inspection failed'

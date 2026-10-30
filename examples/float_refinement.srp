@@ -1,0 +1,16 @@
+// Newton refinement uses float values and an integer iteration count.
+pure funcra root(value: float, steps: integer = 6) -> float
+    needs value > 0.0;
+    needs steps >= 0;
+    ensures result > 0.0;
+{
+    var estimate = 1.0;
+    repeat steps as iteration {
+        estimate = (estimate + value / estimate) / 2.0;
+    }
+    return estimate;
+}
+
+bind sqrt2 = root(2.0);
+print("sqrt2 checked", sqrt2 > 1.414 and sqrt2 < 1.415);
+print("sqrt9", root(9.0));

@@ -20,7 +20,8 @@ inside functions. See [the executable examples](../examples/functions.srp).
 
 ## Types, names, and return paths
 
-Parameter types are `integer`, `boolean`, and `string`. There are no implicit
+The alpha candidate adds `float` parameters/results/defaults to the beta.3
+`integer`, `boolean`, and `string` types. See [finite floats](floats.md). There are no implicit
 conversions. Results may also be `unit`:
 
 ```scarp

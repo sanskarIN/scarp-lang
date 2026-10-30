@@ -1,11 +1,11 @@
-//! Primitive value evaluation with checked integer-only arithmetic.
+//! Primitive evaluation with checked integers and finite binary64 arithmetic.
 
 use crate::{
     ast::{BinaryOperator, Expression, ExpressionKind, LogicalOperator},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     limits::Budget,
     resolver::{self, ResolvedExpression},
-    value::{type_mismatch, Value},
+    value::{type_mismatch, FiniteFloat, Value, ValueType},
 };
 
 /// Evaluate a standalone integer expression, preserving the v0.0.1 return type.
@@ -106,6 +106,7 @@ impl Workspace {
                             }
                         }
                         ExpressionKind::Integer(value) => values.push(Value::Integer(*value)),
+                        ExpressionKind::Float(value) => values.push(Value::Float(*value)),
                         ExpressionKind::Boolean(value) => values.push(Value::Boolean(*value)),
                         ExpressionKind::String(value) => values.push(Value::from(value.as_str())),
                         ExpressionKind::Name(name) => {
@@ -162,10 +163,16 @@ impl Workspace {
                     });
                 }
                 Task::Negate(span) => {
-                    let integer = values.pop().unwrap().require_integer(span)?;
-                    values.push(Value::Integer(
-                        integer.checked_neg().ok_or_else(|| overflow(span))?,
-                    ));
+                    let value = values.pop().unwrap();
+                    values.push(match value {
+                        Value::Float(value) => finite(-value.get(), span)?,
+                        _ => Value::Integer(
+                            value
+                                .require_integer(span)?
+                                .checked_neg()
+                                .ok_or_else(|| overflow(span))?,
+                        ),
+                    });
                 }
                 Task::Not(span) => {
                     let value = values.pop().unwrap().require_boolean(span)?;
@@ -217,6 +224,33 @@ pub(crate) fn apply_binary(
             left != right
         }));
     }
+    if left.kind() == ValueType::Float || right.kind() == ValueType::Float {
+        let left = left.require_float(span)?;
+        let right = right.require_float(span)?;
+        return match operator {
+            BinaryOperator::Add => finite(left + right, span),
+            BinaryOperator::Subtract => finite(left - right, span),
+            BinaryOperator::Multiply => finite(left * right, span),
+            BinaryOperator::Divide => {
+                if right == 0.0 {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::DivisionByZero,
+                        span,
+                        "division by zero",
+                    )
+                    .with_help("the float divisor must be nonzero, including signed zero"));
+                }
+                finite(left / right, span)
+            }
+            BinaryOperator::Less => Ok(Value::Boolean(left < right)),
+            BinaryOperator::LessEqual => Ok(Value::Boolean(left <= right)),
+            BinaryOperator::Greater => Ok(Value::Boolean(left > right)),
+            BinaryOperator::GreaterEqual => Ok(Value::Boolean(left >= right)),
+            BinaryOperator::Equal | BinaryOperator::NotEqual => {
+                unreachable!("equality handled above")
+            }
+        };
+    }
     let left = left.require_integer(span)?;
     let right = right.require_integer(span)?;
     let result = match operator {
@@ -250,4 +284,15 @@ fn overflow(span: Span) -> Diagnostic {
         "integer arithmetic overflow",
     )
     .with_help("each result must fit in a signed 64-bit integer")
+}
+
+pub(crate) fn finite(value: f64, span: Span) -> Result<Value, Diagnostic> {
+    FiniteFloat::new(value).map(Value::Float).ok_or_else(|| {
+        Diagnostic::new(
+            DiagnosticKind::NonFiniteNumber,
+            span,
+            "numeric operation produced a non-finite result",
+        )
+        .with_help("keep every intermediate result finite")
+    })
 }

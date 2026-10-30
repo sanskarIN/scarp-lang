@@ -15,6 +15,7 @@ Numerical, native, and CLI redesign stacks remain separate.
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
+| [Finite floats](floats.md) | Use the alpha candidate's binary64 scalars, numeric diagnostics, and function integration |
 | [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources in beta.3 |
 | [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |

@@ -1,6 +1,7 @@
 //! The syntax tree for the currently supported language slice.
 
 use crate::diagnostics::Span;
+use crate::value::FiniteFloat;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Program {
@@ -187,6 +188,7 @@ pub enum ExpressionKind {
         function_span: Span,
     },
     Integer(i64),
+    Float(FiniteFloat),
     Boolean(bool),
     String(String),
     Name(String),

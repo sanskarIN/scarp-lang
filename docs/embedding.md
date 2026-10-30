@@ -194,3 +194,21 @@ a caller-owned writer. Top-level binding counts exclude function-local slots;
 live-slot limits count all active frames, including their saved repeat counts,
 indices, and result slots. See [functions](functions.md) for precise budgets and
 `check_with_options`, `run_with_options`, and dual-stream options entry points.
+
+## Finite float values (alpha candidate)
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let value = scarp::value::FiniteFloat::new(-0.0).expect("finite zero");
+    assert!(value.get().is_sign_negative());
+    assert!(scarp::value::FiniteFloat::new(f64::NAN).is_none());
+    let mut output = Vec::new();
+    scarp::run("pure funcra half(v: float) -> float { return v / 2.0; } print(half(1.5));", &mut output)?;
+    assert_eq!(output, b"0.75\n");
+    Ok(())
+}
+```
+
+Use `Value::as_float()` to inspect a float result, and `evaluate_value` for
+standalone float expressions. The integer evaluate helper intentionally rejects
+float results. Both streams use identical scalar formatting. See [floats](floats.md).

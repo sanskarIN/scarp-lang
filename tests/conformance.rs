@@ -93,6 +93,9 @@ fn observe(source: &str) {
 fn inserted_deleted_and_truncated_source_mutations_are_panic_free() {
     for source in [
         "bind value = 7; println(value);",
+        "var value=0.5; value+=2.5E-4; print(value, -0.0);",
+        "pure funcra f(x: float=0.5) -> float needs x>0.0; {return x*2.0;} print(f());",
+        "print(1e309, 1.2.3, .5, 1e-);",
         "var x = 0; while x < 3 { x += 1; if x == 2 { continue; } } println(x);",
         "var x = 1; if x < 2 { x += 3; } elif false {} else { x = 9; } println(x);",
         "bind ready = true; println(not ready or 1 < 2 and false);",
