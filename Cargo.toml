@@ -20,5 +20,9 @@ path = "src/main.rs"
 name = "runtime"
 harness = false
 
+[[bench]]
+name = "numerics"
+harness = false
+
 [lints.rust]
 unsafe_code = "forbid"
