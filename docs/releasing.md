@@ -9,8 +9,9 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-current candidate version and proposed tag are `0.0.4-alpha.1` and
-`v0.0.4-alpha.1`. The latest published snapshot remains `v0.0.3-beta.3`.
+requested version and tag are `0.0.4-alpha.1` and `v0.0.4-alpha.1`.
+The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
+records publication status; a version in source alone does not prove publication.
 Earlier published tags/assets must remain unchanged. For a future
 release, choose an unused version, update Cargo/lockfile/docs consistently, and
 use its exact tag and archive names throughout the process. An unpublished
@@ -84,14 +85,14 @@ to a package registry; `publish = false` remains set in `Cargo.toml`.
 
 `.github/workflows/publish.yml` listens for completion of the Rust/package
 workflows on main; it also supports a maintainer dispatch. It executes only
-trusted main push revisions and checks out the triggering SHA. There is
-currently **no request file**, so the publisher exits without Git or API calls.
-The completed beta.3 recovery request has been retired. Alpha preparation alone
-does not authorize a new request. After exact-release authorization, a new
-reviewed request must match Cargo and versioned notes and use the maintainer's
-tagger identity. Only three-part `alpha.N` or `beta.N` prerelease versions are
-accepted; stable, dev, and unrecognized suffixes are rejected. For example,
-after authorization a fresh alpha request would contain:
+trusted main push revisions and checks out the triggering SHA. The maintainer
+explicitly authorized **v0.0.4-alpha.1** tagging and prerelease publication on
+2026-10-30. The fresh request names only that version and the maintainer's
+tagger identity. The completed beta.3 recovery request has been retired; its
+release ID and original source are not reused. A different release requires a
+new explicit authorization and reviewed request matching Cargo and versioned
+notes. Only three-part `alpha.N` or `beta.N` prerelease versions are accepted;
+stable, dev, and unrecognized suffixes are rejected. The active request is:
 
 ```json
 {
@@ -101,9 +102,10 @@ after authorization a fresh alpha request would contain:
 }
 ```
 
-This documentation example is not an active request. Do not copy beta.3's
-one-time recovery ID/source into it. A request PR itself changes main: wait for
-all seven checks and reverify packages from that new exact final revision.
+Removing `.github/release-request.json` disables publication before any Git or
+API call. Do not copy beta.3's one-time recovery ID/source into a new request.
+A request PR itself changes main: wait for all seven checks and reverify
+packages from that new exact final revision.
 An already published release is left unchanged. A draft requires an explicit
 `resume_release_id` and full `resume_commit` in the reviewed request. An orphaned
 tag or unmatched draft stops the job for inspection.
