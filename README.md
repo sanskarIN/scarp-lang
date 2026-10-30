@@ -237,12 +237,11 @@ Future work is **planned**, in this order:
 
 The remaining capabilities require separate milestones. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
-Integer, string, and boolean bindings are implemented on main. Read the
+Integer, finite float, string, and boolean bindings are implemented on main. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [v0.0.3-beta.3 notes](docs/releases/v0.0.3-beta.3.md) describe the integrated variable
-milestones, downloads, and limitations. Experimental numerical/native features
-remain separate PRs and
-require an explicit integration decision.
+The [v0.0.4-alpha.1 notes](docs/releases/v0.0.4-alpha.1.md) describe the integrated
+scalar milestones, downloads, and limitations. Vectors and native backends remain
+separate PRs and require an explicit integration decision.
 
 The [function integration in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)
 integrated typed calls, defaults, contracts, and bounded heap frames into main.
