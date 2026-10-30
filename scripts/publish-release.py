@@ -134,6 +134,37 @@ def download_draft_asset(endpoint, asset, destination):
         raise RuntimeError(result.stderr.decode("utf-8", errors="replace"))
 
 
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
+def publication_window_open(request):
+    """A scheduled request has an inclusive UTC start and exclusive UTC end."""
+    fields = ("not_before", "not_after")
+    if not any(field in request for field in fields):
+        if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+            print("Scheduled runs require an explicit publication window; nothing to publish.")
+            return False
+        return True
+    dates = []
+    for field in fields:
+        value = request.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", value):
+            raise ValueError("scheduled requests require not_before and not_after as UTC timestamps ending in Z")
+        dates.append(datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc))
+    start, end = dates
+    if start >= end:
+        raise ValueError("publication window must end after it starts")
+    now = utc_now()
+    if now < start:
+        print(f"Scheduled publication waits until {request['not_before']}; nothing to publish now.")
+        return False
+    if now >= end:
+        print(f"Publication window ended at {request['not_after']}; no release action.")
+        return False
+    return True
+
+
 def main():
     request_path = Path(".github/release-request.json")
     if not request_path.exists():
@@ -143,6 +174,8 @@ def main():
     version = request["version"]
     if not re.fullmatch(r"\d+\.\d+\.\d+-(?:alpha|beta)\.\d+", version):
         raise ValueError("only an explicitly requested alpha or beta version may be published")
+    if not publication_window_open(request):
+        return
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     if head != os.environ["SCARP_SOURCE_SHA"]:
         raise ValueError("checkout does not match the triggering source commit")
@@ -203,6 +236,9 @@ def main():
         verifier.verify(publish, version, commit, Path.cwd())
         if api(f"{endpoint}/branches/main")["commit"]["sha"] != head:
             raise ValueError("main moved during asset verification; refusing to publish")
+        # A long verification run must not create a tag after its window ends.
+        if not publication_window_open(request):
+            return
         if existing is None:
             # Create a new annotated tag only after all final-source and asset gates.
             tag_object = api(f"{endpoint}/git/tags", payload={
@@ -230,6 +266,10 @@ def main():
         for name, original in files.items():
             if digest(downloaded / name) != digest(original):
                 raise ValueError(f"draft download differs: {name}")
+        if not publication_window_open(request):
+            return
+        if api(f"{endpoint}/branches/main")["commit"]["sha"] != head:
+            raise ValueError("main moved during draft verification; refusing to publish")
         api(f"{endpoint}/releases/{draft['id']}", method="PATCH", payload={
             "draft": False, "prerelease": True, "make_latest": "false",
         })

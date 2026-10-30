@@ -6,9 +6,9 @@ Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
 v0.0.3-beta.1, beta.2, and beta.3 snapshots. Beta.3 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
-The current source candidate targets `0.0.4-alpha.2` with numerical vectors.
+The current source targets `0.0.4-alpha.2` with numerical vectors.
 Published [alpha.1](releases/v0.0.4-alpha.1.md) supports scalar floats only.
-See [alpha.2 candidate notes](releases/v0.0.4-alpha.2.md); it is not published.
+See [alpha.2 notes](releases/v0.0.4-alpha.2.md) and the release page for publication status.
 
 ## Identify the code you are running
 
@@ -160,7 +160,7 @@ The legacy integer evaluate helper keeps its result type. Default execution
 options and all six budget fields remain unchanged. Public alpha tagging and
 publication require explicit authorization after the final source/package gates.
 
-## Numerical-vector candidate from alpha.1
+## Numerical vectors from alpha.1
 
 Alpha.2 adds Vector variants to ValueType/Value, vector/index syntax nodes and
 bracket tokens, plus diagnostics E0032–E0035. Exhaustive Rust matches must update.

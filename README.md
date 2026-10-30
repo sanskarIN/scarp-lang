@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-targets the 0.0.4-alpha.2 numerical-vector candidate, with finite binary64 values, a lexer, parser,
+targets the 0.0.4-alpha.2 numerical prerelease, with finite binary64 values, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -36,7 +36,11 @@ records publication status and provides verified native downloads after publicat
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See
-[alpha.2 candidate notes](docs/releases/v0.0.4-alpha.2.md); alpha.2 is untagged and unpublished.
+[alpha.2 release notes](docs/releases/v0.0.4-alpha.2.md). Publication is scheduled
+for 31 October at 10:00 AM IST, subject to the verified source/package gates.
+The [release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.2)
+records actual publication status. Start with [a numerical program](docs/tutorials/numerical-program.md)
+or [numerical error repairs](docs/reference/numerical-errors.md).
 
 ## Build and run
 

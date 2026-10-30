@@ -10,6 +10,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from datetime import datetime, timedelta, timezone
 
 spec = importlib.util.spec_from_file_location("publish_release", Path(__file__).with_name("publish-release.py"))
 publisher = importlib.util.module_from_spec(spec)
@@ -192,6 +193,193 @@ class PublicationGates(unittest.TestCase):
             changed["assets"][0][field] = value
             with self.assertRaises(ValueError):
                 publisher.check_release(changed, files, draft=True)
+
+
+class PublicationWindow(unittest.TestCase):
+    start = datetime(2026, 10, 31, 4, 30, tzinfo=timezone.utc)
+    end = datetime(2026, 10, 31, 18, 30, tzinfo=timezone.utc)
+
+    def request(self):
+        return dict(version="0.0.4-alpha.2", tagger_name="Sanskar", tagger_email="sanskarin@outlook.in",
+                    not_before="2026-10-31T04:30:00Z", not_after="2026-10-31T18:30:00Z")
+
+    def test_future_request_exits_before_git_environment_or_api(self):
+        with patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "read_text", return_value=json.dumps(self.request())), \
+             patch.object(publisher, "utc_now", return_value=self.start - timedelta(days=1)), \
+             patch.object(publisher.subprocess, "check_output") as git_call, \
+             patch.object(publisher, "api") as api_call, \
+             patch.dict(os.environ, {}, clear=True), \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            publisher.main()
+        self.assertIn("waits until 2026-10-31T04:30:00Z", output.getvalue())
+        git_call.assert_not_called()
+        api_call.assert_not_called()
+
+    def test_start_is_inclusive_end_exclusive_and_later_years_are_closed(self):
+        for now, expected in (
+            (self.start - timedelta(seconds=1), False), (self.start, True),
+            (self.end - timedelta(seconds=1), True), (self.end, False),
+            (self.start.replace(year=2027), False),
+        ):
+            with self.subTest(now=now), patch.object(publisher, "utc_now", return_value=now), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(publisher.publication_window_open(self.request()), expected)
+        # Fixed UTC conversion also checks the requested 10 AM India time.
+        self.assertEqual(self.start.astimezone(timezone(timedelta(hours=5, minutes=30))).hour, 10)
+
+    def test_malformed_partial_or_reversed_windows_fail_before_git_or_api(self):
+        changes = (
+            dict(not_before=None), dict(not_after=None), dict(not_after="2026-10-31"),
+            dict(not_before="2026-10-31T10:00:00+05:30"), dict(not_before="2026-10-32T04:30:00Z"),
+            dict(not_before="2026-10-31T4:30:00Z"), dict(not_after="2026-10-31T04:30:00Z"),
+            dict(not_after="2026-10-30T18:30:00Z"),
+        )
+        for change in changes:
+            request = dict(self.request(), **change)
+            with self.subTest(change=change), patch.object(Path, "exists", return_value=True), \
+                 patch.object(Path, "read_text", return_value=json.dumps(request)), \
+                 patch.object(publisher.subprocess, "check_output") as git_call, \
+                 patch.object(publisher, "api") as api_call:
+                with self.assertRaises(ValueError):
+                    publisher.main()
+                git_call.assert_not_called()
+                api_call.assert_not_called()
+        for missing in ("not_before", "not_after"):
+            request = self.request()
+            del request[missing]
+            with self.assertRaises(ValueError):
+                publisher.publication_window_open(request)
+
+    def test_legacy_immediate_requests_keep_manual_and_workflow_behavior(self):
+        for event in ("workflow_run", "workflow_dispatch", "pull_request"):
+            with patch.dict(os.environ, GITHUB_EVENT_NAME=event):
+                self.assertTrue(publisher.publication_window_open(dict(version="0.0.3-beta.3")))
+
+    def test_cron_cannot_activate_an_immediate_request_without_dates(self):
+        with patch.dict(os.environ, GITHUB_EVENT_NAME="schedule"), \
+             patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "read_text", return_value=json.dumps(dict(version="0.0.4-alpha.2"))), \
+             patch.object(publisher.subprocess, "check_output") as git_call, \
+             patch.object(publisher, "api") as api_call, \
+             contextlib.redirect_stdout(io.StringIO()):
+            publisher.main()
+        git_call.assert_not_called()
+        api_call.assert_not_called()
+
+    def test_due_schedule_still_requires_the_exact_checkout(self):
+        with patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "read_text", return_value=json.dumps(self.request())), \
+             patch.object(publisher, "utc_now", return_value=self.start), \
+             patch.object(publisher.subprocess, "check_output", return_value="b" * 40 + "\n"), \
+             patch.dict(os.environ, SCARP_SOURCE_SHA=COMMIT), \
+             patch.object(publisher, "api") as api_call:
+            with self.assertRaisesRegex(ValueError, "checkout does not match"):
+                publisher.main()
+            api_call.assert_not_called()
+
+    def drive_publication(self, clocks, move_after_draft=False, allow_publish=False):
+        """Exercise real stage ordering; external CI/archive behavior has separate tests."""
+        state = dict(created=False, mutations=[], gh_calls=[], files={}, public_downloads=[])
+        names = [f"archive-{i}.bin" for i in range(3)]
+        manifest = "".join("a" * 64 + "  " + name + "\n" for name in names)
+        draft = dict(id=42, tag_name="v0.0.4-alpha.2", draft=True, prerelease=True)
+
+        def fake_git(args, **kwargs):
+            if args[1] == "rev-parse":
+                return COMMIT + "\n"
+            if args[-1].endswith(":Cargo.toml"):
+                return 'version = "0.0.4-alpha.2"\n'
+            if ":docs/releases/" in args[-1]:
+                return "verified release notes\n"
+            raise AssertionError(args)
+
+        def fake_api(path, *, payload=None, optional=False, method="POST"):
+            if payload is not None:
+                state["mutations"].append((path, method))
+            if method == "PATCH":
+                if not allow_publish:
+                    raise AssertionError("unexpected publication")
+                self.assertEqual(payload, dict(draft=False, prerelease=True, make_latest="false"))
+                draft.update(draft=False, published_at="2026-10-31T04:31:00Z",
+                             html_url="https://example.invalid/releases/v0.0.4-alpha.2")
+                return draft
+            if path.endswith("/releases?per_page=100"):
+                return [draft] if state["created"] else []
+            if "/git/ref/tags/" in path:
+                return None
+            if path.endswith("/branches/main"):
+                return dict(commit=dict(sha="b" * 40 if move_after_draft and state["created"] else COMMIT))
+            if path.endswith("/git/tags"):
+                return dict(sha="b" * 40)
+            if path.endswith("/git/refs"):
+                return {}
+            if path.endswith("/releases/42"):
+                return draft
+            raise AssertionError(path)
+
+        def fake_gh(*args):
+            state["gh_calls"].append(args[:2])
+            if args[:2] == ("run", "download"):
+                directory = Path(args[args.index("--dir") + 1])
+                directory.mkdir(parents=True)
+                for name in [*names, *(name + ".sha256" for name in names)]:
+                    (directory / name).write_bytes(name.encode())
+            elif args[:2] == ("release", "create"):
+                state["files"] = {Path(path).name: Path(path).read_bytes() for path in args[-7:]}
+                draft["assets"] = [dict(id=i, name=name, browser_download_url="https://example.invalid/" + name)
+                                   for i, name in enumerate(state["files"])]
+                state["created"] = True
+            else:
+                raise AssertionError(args)
+
+        def download(endpoint, asset, destination):
+            destination.write_bytes(state["files"][asset["name"]])
+
+        def public_download(url, **kwargs):
+            name = url.rsplit("/", 1)[1]
+            state["public_downloads"].append(name)
+            return io.BytesIO(state["files"][name])
+
+        selected = {path: dict(id=i + 1) for i, path in enumerate(publisher.WORKFLOWS)}
+        with patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "read_text", return_value=json.dumps(self.request())), \
+             patch.object(publisher, "utc_now", side_effect=clocks), \
+             patch.object(publisher.subprocess, "check_output", side_effect=fake_git), \
+             patch.object(publisher, "api", side_effect=fake_api), \
+             patch.object(publisher, "gh", side_effect=fake_gh), \
+             patch.object(publisher, "verified_workflows", return_value=selected), \
+             patch.object(publisher.verifier, "verify", return_value=manifest), \
+             patch.object(publisher, "check_release"), \
+             patch.object(publisher, "download_draft_asset", side_effect=download), \
+             patch.object(publisher.urllib.request, "urlopen", side_effect=public_download), \
+             patch.dict(os.environ, dict(SCARP_SOURCE_SHA=COMMIT, GITHUB_REPOSITORY="example/project",
+                                        GITHUB_EVENT_NAME="schedule"), clear=True), \
+             contextlib.redirect_stdout(io.StringIO()):
+            publisher.main()
+        return state
+
+    def test_expiry_during_artifact_verification_prevents_tag_creation(self):
+        state = self.drive_publication([self.start, self.end])
+        self.assertEqual(state["mutations"], [])
+        self.assertNotIn(("release", "create"), state["gh_calls"])
+
+    def test_expiry_during_draft_downloads_prevents_publication(self):
+        state = self.drive_publication([self.start, self.start, self.end])
+        self.assertTrue(state["created"])
+        self.assertEqual([path.rsplit("/", 1)[1] for path, _ in state["mutations"]], ["tags", "refs"])
+        self.assertFalse(any(method == "PATCH" for _, method in state["mutations"]))
+
+    def test_main_change_or_cancellation_during_draft_checks_prevents_publication(self):
+        with self.assertRaisesRegex(ValueError, "main moved during draft verification"):
+            self.drive_publication([self.start, self.start, self.start], move_after_draft=True)
+
+    def test_in_window_schedule_reaches_publication_and_verifies_all_downloads(self):
+        state = self.drive_publication([self.start, self.start, self.start], allow_publish=True)
+        self.assertTrue(state["created"])
+        self.assertEqual(len(state["files"]), 7)
+        self.assertEqual(set(state["public_downloads"]), set(state["files"]))
+        self.assertEqual([method for _, method in state["mutations"]], ["POST", "POST", "PATCH"])
 
 
 if __name__ == "__main__":

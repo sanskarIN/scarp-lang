@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4-alpha.2 — release candidate, prepared 2026-10-30
+## 0.0.4-alpha.2 — scheduled prerelease, 2026-10-31
 
 - Immutable finite vectors, literals/indexing, whole-value assignment and typed
   funcra defaults/arguments/results/contracts with shared snapshots.
@@ -11,8 +11,10 @@
 - Add E0032–E0035 without changing established codes, independent numerical
   references, adversarial/function/CLI tests and three exact-output examples.
 - Record numerical benchmark results and require native vector smoke tests.
-- Prepare source/lockfile/notes with publication disabled. No alpha.2 tag or
-  release is authorized. See [candidate notes](docs/releases/v0.0.4-alpha.2.md).
+- Schedule the authorized alpha.2 publication for 31 October at 10:00 AM IST,
+  with an explicit UTC start/expiry window and unchanged source/artifact gates.
+  Add numerical tutorials, error repairs and checkpoint evidence. See
+  [release notes](docs/releases/v0.0.4-alpha.2.md).
 
 ## 0.0.4-alpha.1 — 2026-10-30 — prerelease
 

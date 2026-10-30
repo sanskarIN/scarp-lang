@@ -9,10 +9,10 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-candidate version is `0.0.4-alpha.2`; its tag is not authorized. Published alpha.1
-remains unchanged.
-The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
-records publication status; a version in source alone does not prove publication.
+requested version is `0.0.4-alpha.2`, scheduled for 31 October 2026 at 10:00 AM
+IST (04:30 UTC). The [alpha.2 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.2)
+records actual publication status; a version in source alone does not prove
+publication. Published alpha.1 remains unchanged.
 Earlier published tags/assets must remain unchanged. For a future
 release, choose an unused version, update Cargo/lockfile/docs consistently, and
 use its exact tag and archive names throughout the process. An unpublished
@@ -84,19 +84,38 @@ to a package registry; `publish = false` remains set in `Cargo.toml`.
 
 ## Requested prerelease publisher
 
-`.github/workflows/publish.yml` listens for completion of the Rust/package
-workflows on main; it also supports a maintainer dispatch. It executes only
-trusted main push revisions and checks out the triggering SHA. There is currently
-**no request file**: alpha.2 development and artifact preparation are authorized,
-while tagging/publication are explicitly withheld. The completed alpha.1 request
-has been removed without changing its public tag or assets. An alpha.2 request
-requires a later explicit instruction for that exact release, matching Cargo,
-versioned notes and the maintainer identity. Do not reuse beta.3 recovery fields.
-Only three-part alpha.N or beta.N prerelease versions are accepted.
+`.github/workflows/publish.yml` listens for completion of trusted main push
+Rust/package workflows and checks out the triggering SHA. It also supports a
+maintainer dispatch and scheduled runs, which check out the current default
+branch. Every path must pass the exact-main gates below. Only three-part alpha.N
+or beta.N prerelease versions are accepted.
 
-Without a request the publisher exits before any Git/API action. A later request
-PR changes main and must pass all seven fresh checks and package verification
-for its new exact final source. Preparation or a package version is not approval.
+The reviewed `.github/release-request.json` requests alpha.2 with the maintainer's
+name and email, an inclusive `not_before` of `2026-10-31T04:30:00Z` and exclusive
+`not_after` of `2026-10-31T18:30:00Z`. This permits publication on 31 October from
+10:00 AM IST until midnight IST, subject to verification. The workflow attempts
+at 10:00, 10:15 and 10:35 AM IST (04:30, 04:45 and 05:05 UTC). These cron entries
+match 31 October annually; the request's full year/date window makes subsequent
+years inert. Scheduled runs require explicit dates and cannot activate an
+undated immediate request. Do not reuse beta.3 recovery fields.
+
+Time checks apply to scheduled, manual and workflow-completion runs before any
+Git/API action, again before tag creation, and again before publication. Missing,
+invalid or partial date pairs cannot enable a timed release; equal or reversed
+windows are rejected. A run before the start or at/after expiry exits without
+starting the next release action. Undated requests retain the existing manual
+and workflow-completion behavior for separately authorized immediate releases.
+
+GitHub executes schedules in its cloud; the maintainer's computer and app do not
+need to remain open. A cron time is an attempt time, not a publication deadline:
+GitHub may delay or drop scheduled runs, and archive/draft verification takes
+time. The retries provide additional attempts; no attempt may publish after the
+window closes. If none succeeds, inspect the logs and obtain a new dated request.
+See GitHub's [schedule documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
+Without a request the publisher exits before any Git/API action. A request PR
+changes main and must pass all seven fresh checks and package verification for
+its new exact final source. Preparation or a package version is not approval.
 An already published release is left unchanged. A draft requires an explicit
 `resume_release_id` and full `resume_commit` in the reviewed request. An orphaned
 tag or unmatched draft stops the job for inspection.
@@ -116,8 +135,12 @@ URLs and digests appear in the job log. The publisher uses job-scoped contents
 write and actions read permissions; the check/package jobs stay read-only.
 
 If main advances, the older candidate is skipped; its successor must pass its
-own exact-source gates. A failure after tag/draft creation preserves them for
-maintainer inspection. Do not move a tag to recover a failed publication.
+own exact-source gates. The publisher rechecks main before tag creation and
+after draft verification, immediately before publication. To cancel a pending
+release, merge removal of the request file before publication; an older running
+job stops when it detects the main change. A failure, cancellation or window
+expiry after tag/draft creation preserves them for maintainer inspection. Do not
+move a tag to recover a failed publication.
 
 ## Recover a verified draft
 
