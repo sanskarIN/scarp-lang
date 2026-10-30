@@ -188,3 +188,9 @@ cumulative runtime vector payload by 8 * max_steps bytes, excluding container,
 task, parser and host memory. Snapshots account 64 + 8n bytes per value even when
 shared; output preparation charges n in both run/check. No new option field or
 hidden mutable global state is introduced. See [the contract](proposals/0017-numerical-vectors.md).
+
+Parser container state is separated from leaf-statement and atom temporaries.
+Private boxed parse failures keep recursive Result values small without changing
+public diagnostics or adding valid-path error allocations. This preserves the
+independent 64 block/expression limits on small parser stacks; a 512 KiB
+regression covers grouped scalars/vectors and nested calls at the combined bounds.

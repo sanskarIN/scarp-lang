@@ -37,3 +37,18 @@ Implementation sequence:
 The published alpha.1 release, tag and assets remain unchanged. Alpha.2 has no
 tag/publication authorization. Its preparation removes the previous active
 publication request and never creates a new alpha.2 request.
+
+## Stack regression found during validation
+
+The first [PR source run](https://github.com/sanskarIN/scarp-lang/actions/runs/41027960413)
+found a macOS debug stack overflow in the existing test combining 64 blocks
+with 64 expression levels. Large statement and atom temporaries were retained
+through recursive parser calls. Container/list parsing is now separated from
+leaf statements and atom parsing, and private boxed parser errors keep recursive
+Result values small. Public diagnostics and both depth limits are unchanged.
+
+A new regression parses scalar groups, vector groups and nested vector calls
+at the combined limits on an explicit 512 KiB thread, then resolves/executes
+those plans on the normal test worker. All earlier nesting tests remain intact;
+no environment stack increase or weakened limit is used. Final cross-platform
+rechecks are recorded in the milestone PR.

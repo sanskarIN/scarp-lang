@@ -149,6 +149,8 @@ Fraction-model reductions use independently accumulated integer numerators.
 with Python Decimal.exp at precision 60; Rust tests use numerical tolerances.
 Mean/MSE regressions cover representable results whose naive intermediates
 overflow, plus cancellation, signed zero, subnormals and underflow.
+Maximum block/group/call combinations additionally parse on an explicit 512 KiB
+thread and resolve/execute on the normal worker, preserving existing depth tests.
 
 ```sh
 cargo test --locked --offline --test vectors --test vector_functions

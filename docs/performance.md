@@ -126,6 +126,8 @@ These observations show removed interpreter dispatch for these workloads, not
 general performance parity with compiled languages. Absolute and cross-phase
 timings vary substantially, especially repeated calls and allocations; even
 native/Scarp phase ordering changes. Do not infer broad speedups from those rows.
+These records precede the later parser stack refinement; kernel execution is
+unchanged, but rerun compilation timing when assessing the final parser.
 
 Owned buffers move into Arc without payload copying; argument, binding and
 snapshot clones share storage. No buffer pool, SIMD promise, unchecked fast-math

@@ -140,6 +140,62 @@ fn nesting_limits_are_independent_and_work_at_their_boundaries() {
 }
 
 #[test]
+fn parser_nesting_limits_fit_a_small_native_thread_stack() {
+    let parsed = std::thread::Builder::new()
+        .stack_size(512 * 1024)
+        .spawn(|| {
+            let mut parsed = Vec::new();
+            for (expression, expected) in [
+                (
+                    format!(
+                        "{}1{}",
+                        "(".repeat(MAX_EXPRESSION_DEPTH),
+                        ")".repeat(MAX_EXPRESSION_DEPTH)
+                    ),
+                    "1\n",
+                ),
+                (
+                    format!(
+                        "{}[1.0]{}",
+                        "(".repeat(MAX_EXPRESSION_DEPTH - 1),
+                        ")".repeat(MAX_EXPRESSION_DEPTH - 1)
+                    ),
+                    "[1.0]\n",
+                ),
+                (
+                    format!(
+                        "{}[1.0]{}",
+                        "identity(".repeat(MAX_EXPRESSION_DEPTH - 1),
+                        ")".repeat(MAX_EXPRESSION_DEPTH - 1)
+                    ),
+                    "[1.0]\n",
+                ),
+            ] {
+                let source = format!(
+                    "pure funcra identity(v: vector)->vector{{return v;}} {}print({expression});{}",
+                    "{".repeat(MAX_BLOCK_DEPTH),
+                    "}".repeat(MAX_BLOCK_DEPTH)
+                );
+                let syntax = scarp::parse(&source).unwrap();
+                assert_eq!(syntax.statements.len(), 2);
+                parsed.push((syntax, expected));
+            }
+            parsed
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+    // Resolution/execution retain their normal worker-stack contract; the
+    // regression specifically bounds the recursive parser's stack use.
+    for (syntax, expected) in parsed {
+        let program = scarp::resolver::resolve(syntax).unwrap();
+        let mut actual = Vec::new();
+        interpreter::execute(&program, &mut actual).unwrap();
+        assert_eq!(actual, expected.as_bytes());
+    }
+}
+
+#[test]
 fn resolver_also_bounds_externally_constructed_syntax() {
     let mut statements = Vec::new();
     for _ in 0..=MAX_BLOCK_DEPTH {
