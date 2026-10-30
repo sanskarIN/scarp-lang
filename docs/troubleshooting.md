@@ -12,6 +12,8 @@ The beta.3 prerelease reports `scarp 0.0.3-beta.3`. It uses `bind` and
 `var`; beta.1 and earlier variable releases use `let` and `let mut`. E0005 on an
 old declaration includes replacement help. Typed functions require beta.3;
 the earlier beta.2 interpreter does not accept them.
+Finite floats require the `0.0.4-alpha.1` source candidate; published beta.3
+rejects decimal literals. Preparation does not imply an alpha is downloadable.
 See [compatibility](compatibility.md) for the feature matrix.
 
 An older executable on `PATH` can differ from your checkout. Compare:

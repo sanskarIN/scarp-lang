@@ -8,17 +8,20 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the current guides | v0.0.3-beta.3 or `main` | Typed functions, contracts, bind/var, output streams, loops, and six resource budgets |
+| Follow the float guides | Current `main` (0.0.4-alpha.1 candidate) | Finite binary64 scalars integrated with typed functions and six resource budgets |
+| Use the latest published snapshot | v0.0.3-beta.3 | Typed functions, contracts, bind/var, output streams, loops; no floats |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
 | Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-Beta.3 identifies as `0.0.3-beta.3` and includes [typed functions](functions.md)
-on main. The temporary `0.0.4-dev` integration identifier was never published;
-the requested next public beta uses the next sequential beta.3 version.
+Current main identifies as `0.0.4-alpha.1`; it is a release candidate awaiting
+explicit publication authorization. It includes [finite floats](floats.md) and
+[typed functions](functions.md). Published beta.3 identifies as `0.0.3-beta.3`
+and includes functions without floats. The temporary `0.0.4-dev` integration
+identifier was never published.
 Syntax and APIs remain subject to change. Published packages retain their
-original syntax. Numerical, backend, project, and CLI redesign PRs remain separate.
+original syntax. Vectors, backends, project tooling, and CLI redesign remain separate.
 
 ## Build the development checkout
 
@@ -38,7 +41,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.3-beta.3
+scarp 0.0.4-alpha.1
 ```
 
 Run commands from the repository root so relative example paths resolve:

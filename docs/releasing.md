@@ -9,7 +9,8 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-beta.3 version and tag are `0.0.3-beta.3` and `v0.0.3-beta.3`.
+current candidate version and proposed tag are `0.0.4-alpha.1` and
+`v0.0.4-alpha.1`. The latest published snapshot remains `v0.0.3-beta.3`.
 Earlier published tags/assets must remain unchanged. For a future
 release, choose an unused version, update Cargo/lockfile/docs consistently, and
 use its exact tag and archive names throughout the process. An unpublished
@@ -56,7 +57,8 @@ are not promised to be byte-for-byte reproducible across hosts or build times.
    Omit `--write-manifest` to recheck an existing manifest.
    For a new version, review the helper's required-file rules before relying on
    it. Match packaged docs/examples against that source tree as well as hashes.
-4. Recheck that the chosen tag is unused. Create an annotated `v<version>` tag
+4. Obtain explicit maintainer authorization for that exact release, then
+   recheck that the chosen tag is unused. Create an annotated `v<version>` tag
    on the verified revision with the maintainer's commit email and push only
    that tag. If it already exists, stop and investigate; do not move it.
 5. Create a draft GitHub Release using the existing tag, the versioned release
@@ -78,13 +80,30 @@ signature or independent provenance attestation.
 Release notes are stored in `docs/releases/`. Publication does not upload a crate
 to a package registry; `publish = false` remains set in `Cargo.toml`.
 
-## Requested beta publisher
+## Requested prerelease publisher
 
 `.github/workflows/publish.yml` listens for completion of the Rust/package
 workflows on main; it also supports a maintainer dispatch. It executes only
-trusted main push revisions and checks out the triggering SHA. The request
-currently names **only 0.0.3-beta.3**, with Sanskar's tagger identity. A later
-release requires a new reviewed request matching Cargo and versioned notes.
+trusted main push revisions and checks out the triggering SHA. There is
+currently **no request file**, so the publisher exits without Git or API calls.
+The completed beta.3 recovery request has been retired. Alpha preparation alone
+does not authorize a new request. After exact-release authorization, a new
+reviewed request must match Cargo and versioned notes and use the maintainer's
+tagger identity. Only three-part `alpha.N` or `beta.N` prerelease versions are
+accepted; stable, dev, and unrecognized suffixes are rejected. For example,
+after authorization a fresh alpha request would contain:
+
+```json
+{
+  "version": "0.0.4-alpha.1",
+  "tagger_name": "Sanskar",
+  "tagger_email": "sanskarin@outlook.in"
+}
+```
+
+This documentation example is not an active request. Do not copy beta.3's
+one-time recovery ID/source into it. A request PR itself changes main: wait for
+all seven checks and reverify packages from that new exact final revision.
 An already published release is left unchanged. A draft requires an explicit
 `resume_release_id` and full `resume_commit` in the reviewed request. An orphaned
 tag or unmatched draft stops the job for inspection.

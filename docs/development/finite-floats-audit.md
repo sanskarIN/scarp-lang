@@ -33,7 +33,7 @@ candidate alone does not authorize a new publication request.
 | PR | Current assessment | Action |
 | --- | --- | --- |
 | #16 | While/control/budget behavior is integrated in main | Superseded contract; retain pending maintainer archive review |
-| #17 | Scalar float candidate on an old baseline | Fresh port in this feature; close only after replacement acceptance |
+| #17 | Scalar foundation superseded by merged #45; eleven original numeric tests retained | Keep as historical reference pending maintainer archive review |
 | #18 | Numerical vectors and kernels are absent from main | Keep open as design/source reference; port after scalar floats |
 | #19 | Bit operations and radix literals are absent | Keep separate; needs a fresh main-based port |
 | #20 | Freestanding C backend is absent | Keep separate; needs interpreter differential tests |
@@ -58,3 +58,21 @@ See [the numeric contract](../proposals/0016-finite-floats.md). Exact-final-main
 green checks and three native archives are required before public tagging.
 Public alpha tagging/publication additionally requires explicit authorization
 for v0.0.4-alpha.1; beta.3 authorization is not reused.
+
+## Accepted feature evidence
+
+[PR #45](https://github.com/sanskarIN/scarp-lang/pull/45) merged three focused
+commits at `a1b254855341bd56021c1d5184a842ace7f7065e`. Its final-main
+[source checks](https://github.com/sanskarIN/scarp-lang/actions/runs/41017605143)
+passed all four stable/MSRV jobs, and its
+[package run](https://github.com/sanskarIN/scarp-lang/actions/runs/41017605156)
+passed all three native jobs. Downloaded archives passed checksums, executable
+permissions, clean commit records and byte-for-byte Git source checks.
+
+Local full shell and PowerShell checks passed 319 tests per debug/release mode
+(291 per mode before floats), all 20 exact-output examples, fmt, Clippy, build
+and rustdoc. The 33 release-tool tests, 50 Scarp documentation blocks, seven
+compiled/executed Rust hosts and 190 relative links also passed before release
+preparation. The local Windows MSVC archive passed native float smoke tests.
+These results establish the feature baseline; release metadata/tooling changes
+require their own fresh validation. No alpha publication has been authorized.

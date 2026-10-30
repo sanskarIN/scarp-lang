@@ -1,6 +1,6 @@
 [package]
 name = "scarp"
-version = "0.0.3-beta.3"
+version = "0.0.4-alpha.1"
 edition = "2021"
 rust-version = "1.74"
 description = "The Scarp programming language prototype"

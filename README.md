@@ -3,11 +3,11 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-contains the beta.3 function baseline plus the finite-float alpha candidate, with a lexer, parser,
+is the 0.0.4-alpha.1 release candidate, with finite binary64 floats, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
-Use immutable `bind` and mutable `var` declarations, checked integers, strings,
+Use immutable `bind` and mutable `var` declarations, checked integers, finite floats, strings,
 booleans, conditionals, while/repeat loops, and explicit output streams.
 [Typed `funcra` functions](docs/functions.md) support named/default arguments,
 recursion, unit returns, purity, contracts, and bounded heap call frames.
@@ -29,7 +29,8 @@ guides. Start there for a reading path matched to your task.
 The [finite-float guide](docs/floats.md) describes the alpha candidate in this
 checkout: decimal/scientific literals, checked finite arithmetic, and float
 function parameters/results. Published beta.3 binaries remain integer/string/
-Boolean only. This source change does not publish an alpha release.
+Boolean only. The [alpha candidate notes](docs/releases/v0.0.4-alpha.1.md)
+describe the new scope; no public alpha tag or release is created by preparation.
 
 ## Build and run
 

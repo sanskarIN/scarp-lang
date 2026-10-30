@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4-alpha.1 — in development
+## 0.0.4-alpha.1 — release candidate, prepared 2026-10-30
 
 - Finite binary64 float scalars with decimal/scientific literals, same-type
   arithmetic/comparisons, checked nonfinite results and signed-zero divisors.
@@ -9,6 +9,9 @@
 - Append E0030/E0031 without changing existing codes; add numeric examples and
   boundary, rounding, source-span, concurrency and native-package regressions.
 - No vectors, native backend, CLI rename, or third-party dependencies.
+- Require float guides/example fixtures in native archives and retire the
+  completed beta.3 recovery request. Publication remains disabled pending
+  explicit alpha authorization. See [candidate notes](docs/releases/v0.0.4-alpha.1.md).
 
 ## 0.0.3-beta.3 — 2026-10-29 — prerelease
 

@@ -1,6 +1,6 @@
 # Scarp prototype language reference
 
-This source reference includes the finite-float alpha candidate on top of
+This source reference targets the 0.0.4-alpha.1 release candidate on top of
 the Scarp 0.0.3-beta.3 baseline. Published beta.3 does not include floats.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an

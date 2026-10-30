@@ -3,11 +3,13 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Choose a guide by the task you want to complete. Current tutorials target the
-v0.0.3-beta.3 syntax and current main. They include variables, strings,
+0.0.4-alpha.1 candidate on current main. They include variables, strings,
 booleans, conditionals, bounded while/repeat loops, five string escapes, and
 [output statements](output.md). Release notes describe fixed snapshots;
-beta.3 adds [typed funcra functions](functions.md) and CLI resource controls.
-Numerical, native, and CLI redesign stacks remain separate.
+beta.3 added [typed funcra functions](functions.md) and CLI resource controls.
+The alpha candidate adds [finite floats](floats.md). Vectors, native backends,
+and CLI redesign remain separate. See [candidate notes](releases/v0.0.4-alpha.1.md)
+for publication status and compatibility.
 
 ## Guides and what each adds
 

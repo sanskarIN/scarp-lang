@@ -6,6 +6,8 @@ Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
 v0.0.3-beta.1, beta.2, and beta.3 snapshots. Beta.3 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
+Current main is the `0.0.4-alpha.1` candidate with finite floats; it is not yet
+a published snapshot. See [candidate notes](releases/v0.0.4-alpha.1.md).
 
 ## Identify the code you are running
 
