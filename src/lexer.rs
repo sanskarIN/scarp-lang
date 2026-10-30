@@ -9,6 +9,7 @@ pub enum TokenKind {
     Identifier(String),
     String(String),
     Integer(String),
+    Float(String),
     Plus,
     Minus,
     Star,
@@ -41,6 +42,7 @@ impl fmt::Display for TokenKind {
             Self::Identifier(name) => write!(f, "identifier({name})"),
             Self::String(value) => write!(f, "string({value:?})"),
             Self::Integer(digits) => write!(f, "integer({digits})"),
+            Self::Float(digits) => write!(f, "float({digits})"),
             Self::Plus => f.write_str("+"),
             Self::Minus => f.write_str("-"),
             Self::Star => f.write_str("*"),
@@ -187,12 +189,19 @@ impl Lexer<'_> {
                         }
                     }
                 }
-                ch if ch.is_ascii_digit() => {
-                    self.bump();
-                    while self.peek().is_some_and(|ch| ch.is_ascii_digit()) {
-                        self.bump();
-                    }
-                    TokenKind::Integer(self.source[start..self.cursor].to_string())
+                ch if ch.is_ascii_digit() => self.number(start)?,
+                '.' if self.source[self.cursor + 1..]
+                    .chars()
+                    .next()
+                    .is_some_and(|ch| ch.is_ascii_digit()) =>
+                {
+                    self.number(start)?;
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::InvalidFloat,
+                        Span::new(start, self.cursor),
+                        "a float literal requires digits before the point",
+                    )
+                    .with_help("write 0.5 instead of .5"));
                 }
                 ch if ch.is_ascii_alphabetic() || ch == '_' => {
                     self.bump();
@@ -223,6 +232,68 @@ impl Lexer<'_> {
             span: Span::new(self.cursor, self.cursor),
         });
         Ok(tokens)
+    }
+
+    fn number(&mut self, start: usize) -> Result<TokenKind, Diagnostic> {
+        while self.peek().is_some_and(|ch| ch.is_ascii_digit()) {
+            self.bump();
+        }
+        let mut float = false;
+        if self.peek() == Some('.') {
+            float = true;
+            self.bump();
+            self.decimal_digits(start)?;
+        }
+        if matches!(self.peek(), Some('e' | 'E')) {
+            float = true;
+            self.bump();
+            if matches!(self.peek(), Some('+' | '-')) {
+                self.bump();
+            }
+            self.decimal_digits(start)?;
+        }
+        if float
+            && self
+                .peek()
+                .is_some_and(|ch| ch == '.' || ch == '_' || ch.is_ascii_alphabetic())
+        {
+            while self
+                .peek()
+                .is_some_and(|ch| ch == '.' || ch == '_' || ch.is_ascii_alphanumeric())
+            {
+                self.bump();
+            }
+            return Err(Diagnostic::new(
+                DiagnosticKind::InvalidFloat,
+                Span::new(start, self.cursor),
+                "unexpected suffix or repeated point/exponent in float literal",
+            )
+            .with_help(
+                "use digits, an optional fractional part, and at most one complete exponent",
+            ));
+        }
+        let digits = self.source[start..self.cursor].to_string();
+        Ok(if float {
+            TokenKind::Float(digits)
+        } else {
+            TokenKind::Integer(digits)
+        })
+    }
+
+    fn decimal_digits(&mut self, start: usize) -> Result<(), Diagnostic> {
+        let digits_start = self.cursor;
+        while self.peek().is_some_and(|ch| ch.is_ascii_digit()) {
+            self.bump();
+        }
+        if self.cursor == digits_start {
+            return Err(Diagnostic::new(
+                DiagnosticKind::InvalidFloat,
+                Span::new(start, self.cursor),
+                "expected decimal digits after the point or exponent",
+            )
+            .with_help("write a complete float such as 1.0, 0.5, or 1e3"));
+        }
+        Ok(())
     }
 
     fn string(&mut self) -> Result<String, Diagnostic> {

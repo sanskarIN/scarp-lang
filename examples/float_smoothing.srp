@@ -1,0 +1,13 @@
+// Exponential smoothing keeps fractional state without implicit conversions.
+pure funcra blend(current: float, sample: float, weight: float = 0.25) -> float
+    needs weight >= 0.0 and weight <= 1.0;
+{
+    return current * (1.0 - weight) + sample * weight;
+}
+
+var estimate = 20.0;
+repeat 4 as iteration {
+    estimate = blend(estimate, sample: 28.0);
+}
+print("smoothed", estimate);
+print("balanced", blend(10.0, 14.0, 0.5));

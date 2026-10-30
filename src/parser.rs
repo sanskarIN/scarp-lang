@@ -8,7 +8,7 @@ use crate::{
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
-    value::ValueType,
+    value::{FiniteFloat, ValueType},
 };
 
 /// Maximum nested expression parentheses, excluding the output call itself.
@@ -398,6 +398,7 @@ impl Parser<'_> {
         let (name, span) = self.identifier()?;
         match name.as_str() {
             "integer" => Ok(ValueType::Integer),
+            "float" => Ok(ValueType::Float),
             "boolean" => Ok(ValueType::Boolean),
             "string" => Ok(ValueType::String),
             "unit" if result => Ok(ValueType::Unit),
@@ -414,7 +415,7 @@ impl Parser<'_> {
                     if result { "result" } else { "parameter" }
                 ),
             )
-            .with_help("use integer, boolean, string, or unit for a result")),
+            .with_help("use integer, float, boolean, string, or unit for a result")),
         }
     }
 
@@ -521,6 +522,7 @@ impl Parser<'_> {
                         self.current().map(|token| &token.kind),
                         Some(
                             TokenKind::Integer(_)
+                                | TokenKind::Float(_)
                                 | TokenKind::String(_)
                                 | TokenKind::Identifier(_)
                                 | TokenKind::Minus
@@ -799,6 +801,25 @@ impl Parser<'_> {
         depth: usize,
     ) -> Result<usize, Diagnostic> {
         match self.current() {
+            Some(Token {
+                kind: TokenKind::Float(digits),
+                span,
+            }) => {
+                let value = digits
+                    .parse::<f64>()
+                    .ok()
+                    .and_then(FiniteFloat::new)
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::InvalidFloat,
+                            *span,
+                            "float literal is not a finite binary64 value",
+                        )
+                    })?;
+                let span = *span;
+                self.cursor += 1;
+                Ok(push(nodes, ExpressionKind::Float(value), span))
+            }
             Some(Token {
                 kind: TokenKind::String(value),
                 span,

@@ -106,6 +106,8 @@ pub enum DiagnosticKind {
     CallLimit,
     FunctionUnsupported,
     CaptureLimit,
+    InvalidFloat,
+    NonFiniteNumber,
 }
 
 impl DiagnosticKind {
@@ -140,6 +142,8 @@ impl DiagnosticKind {
             Self::CallLimit => "E0027",
             Self::FunctionUnsupported => "E0028",
             Self::CaptureLimit => "E0029",
+            Self::InvalidFloat => "E0030",
+            Self::NonFiniteNumber => "E0031",
         }
     }
 }

@@ -775,9 +775,66 @@ fn current_main_keeps_unintegrated_commands_and_syntax_out() {
             .unwrap();
         assert_eq!(result.status.code(), Some(2));
     }
-    for source in ["println(1.25);", "println([1,2]);"] {
+    for source in ["println(1.2.3);", "println([1,2]);"] {
         assert!(scarp::compile(source).is_err(), "{source}");
     }
+}
+
+#[test]
+fn float_calls_and_both_streams_use_existing_cli_commands() {
+    let fixture = Fixture::new();
+    let path = fixture.file("float.srp", "pure funcra half(n: float=1.0) -> float { return n/2.0; } print(half(), half(n:2.5)); eprint(-0.0);");
+    let result = command()
+        .args(["run", "--max-calls", "2"])
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(result.status.success());
+    assert_eq!(result.stdout, b"0.5 1.25\n");
+    assert_eq!(result.stderr, b"-0.0\n");
+    let result = command().arg("check").arg(&path).output().unwrap();
+    assert!(result.status.success() && result.stdout.is_empty() && result.stderr.is_empty());
+}
+
+#[test]
+fn float_cli_errors_are_source_linked_and_discard_both_pending_streams() {
+    let fixture = Fixture::new();
+    for (expression, code) in [
+        ("1e309", "E0030"),
+        ("1.2.3", "E0030"),
+        ("1e308*2.0", "E0031"),
+        ("1.0/-0.0", "E0008"),
+        ("1.0+1", "E0015"),
+    ] {
+        let path = fixture.file(
+            "float-error.srp",
+            format!("// café 🌍\r\nprint(\"OUT\"); eprint(\"ERR\"); print({expression});"),
+        );
+        for verb in ["run", "check"] {
+            let result = command().arg(verb).arg(&path).output().unwrap();
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            let error = stderr(&result);
+            assert!(
+                error.starts_with(&format!("error[{code}]"))
+                    && error.contains("float-error.srp:2:")
+            );
+            assert!(!error.contains("OUT\n") && !error.contains("ERR\n"));
+        }
+    }
+}
+
+#[test]
+fn float_tokens_keep_original_spelling_without_range_evaluation() {
+    let fixture = Fixture::new();
+    let path = fixture.file("float-tokens.srp", "print(1e9999, 2.5E-4);");
+    let result = command().arg("tokens").arg(&path).output().unwrap();
+    assert!(result.status.success() && result.stderr.is_empty());
+    let text = String::from_utf8(result.stdout).unwrap();
+    assert!(text.contains("float(1e9999)") && text.contains("float(2.5E-4)"));
+    let result = command().arg("check").arg(&path).output().unwrap();
+    assert_eq!(result.status.code(), Some(1));
+    assert!(stderr(&result).contains("E0030"));
 }
 
 #[test]
