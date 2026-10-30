@@ -1,6 +1,7 @@
 # Functions with funcra
 
-This guide describes typed functions in `0.0.3-beta.3` and current main.
+This guide describes typed functions from `0.0.3-beta.3`, extended with finite
+floats in the `0.0.4-alpha.1` candidate on current main.
 Earlier v0.0.3-beta.2 binaries do not contain functions. The
 declaration keyword is exactly `funcra`; calls use the function name. Parameter
 and result types are mandatory, while local bindings keep inferred types.
