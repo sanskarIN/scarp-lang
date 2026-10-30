@@ -1,7 +1,7 @@
 # Finite binary64 scalar contract
 
 Status: contract specified before implementation; integrated into main through
-[PR #45](https://github.com/sanskarIN/scarp-lang/pull/45) for the 0.0.4-alpha.1 candidate.
+[PR #45](https://github.com/sanskarIN/scarp-lang/pull/45) for 0.0.4-alpha.1.
 The canonical type name is `float`, consistent with the earlier scalar proposal.
 It means finite IEEE-754 binary64, not exact decimal arithmetic.
 

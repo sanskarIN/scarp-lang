@@ -75,4 +75,23 @@ and rustdoc. The 33 release-tool tests, 50 Scarp documentation blocks, seven
 compiled/executed Rust hosts and 190 relative links also passed before release
 preparation. The local Windows MSVC archive passed native float smoke tests.
 These results establish the feature baseline; release metadata/tooling changes
-require their own fresh validation. No alpha publication has been authorized.
+require their own fresh validation. At that preparation stage no alpha
+publication had been authorized.
+
+## Publication authorization
+
+On 2026-10-30 the maintainer explicitly authorized tagging and prerelease
+publication of v0.0.4-alpha.1. The accepted preparation baseline is
+`eb863a4f1fae3e090d5b19cb91ad72d43770f346` from
+[PR #46](https://github.com/sanskarIN/scarp-lang/pull/46), whose
+[source checks](https://github.com/sanskarIN/scarp-lang/actions/runs/41018777916)
+and [native packages](https://github.com/sanskarIN/scarp-lang/actions/runs/41018777914)
+passed all seven jobs. All seven downloaded candidate files were verified;
+the extracted Windows binary also passed all 20 examples and silent checks.
+
+A fresh alpha request records this authorization without beta.3 recovery fields.
+Its final main revision must pass its own source/package gates and archive
+verification before the existing publisher creates a new annotated tag and
+prerelease. It verifies draft downloads before publication and public downloads
+afterward. This note records authorization, not a claim of completed publication;
+the release page and publisher summary provide that confirmation.

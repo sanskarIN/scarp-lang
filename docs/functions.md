@@ -1,7 +1,7 @@
 # Functions with funcra
 
 This guide describes typed functions from `0.0.3-beta.3`, extended with finite
-floats in the `0.0.4-alpha.1` candidate on current main.
+floats in `0.0.4-alpha.1` on current main.
 Earlier v0.0.3-beta.2 binaries do not contain functions. The
 declaration keyword is exactly `funcra`; calls use the function name. Parameter
 and result types are mandatory, while local bindings keep inferred types.
@@ -21,7 +21,7 @@ inside functions. See [the executable examples](../examples/functions.srp).
 
 ## Types, names, and return paths
 
-The alpha candidate adds `float` parameters/results/defaults to the beta.3
+The alpha adds `float` parameters/results/defaults to the beta.3
 `integer`, `boolean`, and `string` types. See [finite floats](floats.md). There are no implicit
 conversions. Results may also be `unit`:
 

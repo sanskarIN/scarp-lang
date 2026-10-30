@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4-alpha.1 — release candidate, prepared 2026-10-30
+## 0.0.4-alpha.1 — 2026-10-30 — prerelease
 
 - Finite binary64 float scalars with decimal/scientific literals, same-type
   arithmetic/comparisons, checked nonfinite results and signed-zero divisors.
@@ -10,8 +10,8 @@
   boundary, rounding, source-span, concurrency and native-package regressions.
 - No vectors, native backend, CLI rename, or third-party dependencies.
 - Require float guides/example fixtures in native archives and retire the
-  completed beta.3 recovery request. Publication remains disabled pending
-  explicit alpha authorization. See [candidate notes](docs/releases/v0.0.4-alpha.1.md).
+  completed beta.3 recovery request. Publication uses a fresh, explicitly
+  authorized request and exact-main gates. See [release notes](docs/releases/v0.0.4-alpha.1.md).
 
 ## 0.0.3-beta.3 — 2026-10-29 — prerelease
 
