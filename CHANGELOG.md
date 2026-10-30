@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.4-alpha.1 — in development
+
+- Finite binary64 float scalars with decimal/scientific literals, same-type
+  arithmetic/comparisons, checked nonfinite results and signed-zero divisors.
+- Float parameters/defaults/results use existing funcra frames, purity/contracts,
+  all six budgets, atomic streams and value snapshots without implicit coercion.
+- Append E0030/E0031 without changing existing codes; add numeric examples and
+  boundary, rounding, source-span, concurrency and native-package regressions.
+- No vectors, native backend, CLI rename, or third-party dependencies.
+
 ## 0.0.3-beta.3 — 2026-10-29 — prerelease
 
 - Adapt typed file-level `funcra` functions onto beta.2 main without importing

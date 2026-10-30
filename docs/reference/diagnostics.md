@@ -41,6 +41,8 @@ from earlier beta.2 binaries.
 | `E0027` | Function resource limit | Check the named CLI flag or ExecutionOptions field and recursion/frame size |
 | `E0028` | Unsupported function form | Use file-level named functions without captures |
 | `E0029` | Output snapshot limit | Reduce selected output or change max_capture_bytes |
+| `E0030` | Malformed or nonfinite float literal (alpha) | Use complete finite decimal/scientific spelling |
+| `E0031` | Nonfinite float result (alpha) | Reduce intermediate magnitude; operands/results must remain finite |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

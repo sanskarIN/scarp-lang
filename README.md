@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-contains **0.0.3-beta.3**, the typed-function prerelease, with a lexer, parser,
+contains the beta.3 function baseline plus the finite-float alpha candidate, with a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -25,6 +25,11 @@ Hello from Scarp!
 The [documentation hub](docs/README.md) provides setup, tutorials, command and
 diagnostic references, Rust embedding, testing, troubleshooting, and compatibility
 guides. Start there for a reading path matched to your task.
+
+The [finite-float guide](docs/floats.md) describes the alpha candidate in this
+checkout: decimal/scientific literals, checked finite arithmetic, and float
+function parameters/results. Published beta.3 binaries remain integer/string/
+Boolean only. This source change does not publish an alpha release.
 
 ## Build and run
 
@@ -122,7 +127,7 @@ with the same type, and printed. Concatenation and mixed string/integer arithmet
 are unsupported.
 
 Booleans use `true` and `false`. Comparisons support same-type `==` and `!=`,
-and integer `<`, `<=`, `>`, `>=`. Readable `not`, `and`, and `or` operators require
+and same-type numeric `<`, `<=`, `>`, `>=`. Readable `not`, `and`, and `or` operators require
 booleans; `and` and `or` short-circuit at runtime while all operands are checked
 for names and types during compilation. See the
 [boolean design](docs/proposals/0004-boolean-expressions.md).
@@ -169,7 +174,7 @@ The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
 `compile` validates syntax and resolves names into an immutable `ResolvedProgram`.
 `check` and `interpreter::validate` also evaluate without an output destination.
 `evaluator::evaluate` preserves an integer result, while `evaluate_value` returns
-an integer/string/boolean `Value`. `execute` and `run` validate all
+an integer/float/string/boolean `Value`. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
 
@@ -209,7 +214,7 @@ code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. Functions are interpreted using heap call frames.
-It has no floating-point values, user-defined types, imports, standard library,
+It has no collections, user-defined types, imports, standard library,
 package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
@@ -221,7 +226,7 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Decimal values and numerical collections.
+1. Finite float stabilization, then numerical collections.
 2. Function tooling and further diagnostic improvements.
 3. User-defined types and callable values.
 4. A compiler backend.

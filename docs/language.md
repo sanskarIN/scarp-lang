@@ -1,6 +1,7 @@
 # Scarp prototype language reference
 
-This source reference describes Scarp 0.0.3-beta.3 and current main.
+This source reference includes the finite-float alpha candidate on top of
+the Scarp 0.0.3-beta.3 baseline. Published beta.3 does not include floats.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
@@ -79,7 +80,7 @@ comparison      = sum, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), sum ] ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
 unary           = [ "-" ], primary ;
-primary         = INTEGER | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
+primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
 ```
 
 `"print"` denotes an identifier with that exact value, not a substring of a
@@ -124,13 +125,24 @@ and postorder within each expression, stopping at the first arithmetic error.
 Grouping is limited to 64 nested pairs of parentheses, excluding the `print`
 call itself. Greater depth produces `E0009`. Flat operator chains have no fixed
 language limit and are processed without recursive evaluation or destruction.
-Available memory still limits the size of a program. Floats, numeric separators,
+Available memory still limits the size of a program. Numeric separators,
 base prefixes, strings as arithmetic operands, and string concatenation are unsupported.
+
+## Finite floats (alpha candidate)
+
+FLOAT follows `digits "." digits [exponent]` or `digits exponent`, with an
+exponent of `e`/`E`, optional sign, and required digits. `1.`, `.5`, `1e`, suffixes,
+and repeated points/exponents are E0030. Plain digits retain i64 semantics.
+Literals must parse to finite binary64. Unary minus and same-type arithmetic/
+comparisons support floats without conversions. Operations producing nonfinite
+results are E0031; either signed-zero divisor is E0008. Subnormal underflow is
+allowed, including signed zero. See [floats](floats.md) for rounding, exact
+formatting rules, host invariants, examples, and budget behavior.
 
 ## Execution
 
 Booleans are explicit `true`/`false` values, with no integer/string truthiness.
-Equality requires matching primitive kinds; ordering requires integers. `not`
+Equality requires matching primitive kinds; ordering requires same-type numeric operands. `not`
 binds after comparisons, followed by `and`, then `or`. All operands resolve and
 type-check during compilation. Runtime `and` skips its right operand when false;
 `or` skips it when true. Chained comparisons need explicit `and` composition.
@@ -154,7 +166,7 @@ Braces are mandatory and use the existing block-depth limit. See the
 [decisions tutorial](tutorials/decisions.md).
 
 Line output appends one LF; raw output appends none. Strings, signed decimal
-integers, and lowercase booleans use their normal display form. One ASCII space
+integers, finite floats, and lowercase booleans use their documented display form. One ASCII space
 separates arguments. `eprint` and `ewrite` target the explicit stderr writer.
 Strings containing `\n` can therefore write several lines.
 Statements execute in source order. Empty programs write nothing.
@@ -198,6 +210,8 @@ Carets cover the first affected line and remain visible for empty spans at EOF.
 | `E0017` | Execution work limit exceeded |
 | `E0018` | Selected output-statement limit exceeded |
 | `E0019` | Negative repeat count |
+| `E0030` | Malformed or nonfinite float literal |
+| `E0031` | Nonfinite float arithmetic result |
 
 Diagnostic wording and library types are experimental. Codes are intended to be
 more useful for tests than full platform-dependent file-error strings. Read

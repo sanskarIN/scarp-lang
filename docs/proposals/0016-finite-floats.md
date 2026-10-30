@@ -1,6 +1,7 @@
 # Finite binary64 scalar contract
 
-Status: specified before implementation for the 0.0.4-alpha.1 candidate.
+Status: contract specified before implementation; implemented on the finite-float
+feature branch for the 0.0.4-alpha.1 candidate.
 The canonical type name is `float`, consistent with the earlier scalar proposal.
 It means finite IEEE-754 binary64, not exact decimal arithmetic.
 
@@ -31,8 +32,8 @@ No Hash/Ord contract is introduced.
 
 Bindings infer float from the initializer and retain that type. Parameters,
 defaults and results may explicitly use float. Unary minus and same-type
-arithmetic/comparisons work. Integer/float mixtures are E0015, including equality,
-arguments, returns and compound assignment. No implicit or explicit conversions
+arithmetic/comparisons work. Integer/float mixtures are E0015 for operands, equality, arguments, defaults
+and assignment. Invalid function return types retain E0021. No implicit or explicit conversions
 are added. Repeat counts remain integer and conditions/contracts remain Boolean.
 
 Every literal and arithmetic result must be finite. Overflow-to-infinity is a

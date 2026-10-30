@@ -36,7 +36,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
 | `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
-| `value` | Integer/string/boolean values, immutable string storage, primitive type names |
+| `value` | Integer/finite-float/string/boolean values, immutable string storage, primitive type names |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
@@ -95,8 +95,8 @@ order, avoiding repeated prefix scans on large single-line files.
 
 Prototype APIs and error wording may change. Keep new semantics in the library
 and new process behavior in the CLI. Direct string literal prints retain a fast
-path. General expressions infer an integer, string, or boolean type; arithmetic and
-compound assignment stay integer-only. The resolver fixes each slot's type,
+path. General expressions infer an integer, float, string, or boolean type; numeric
+operators require matching numeric kinds. The resolver fixes each slot's type,
 and strings share immutable storage so snapshots survive later reassignment.
 Boolean logic traverses only the required operands at runtime. Both operands
 still participate in static name and type checks. No runtime traversal recurses
@@ -157,3 +157,13 @@ current frame's stage instead of relying on Rust unwinding.
 The outer interpreter module owns stream replay and I/O failures. Output snapshot
 and frame caps are logical accounting, including during silent validation; they
 are not a general allocation sandbox. See [functions](functions.md).
+
+## Finite scalar invariant
+
+The alpha candidate stores float values in a private checked FiniteFloat wrapper.
+Literal parsing and every arithmetic result enforce finiteness. Numeric Eq is
+valid without NaN; signed zero is retained in bits/output but compares equal.
+No raw mutable f64 reference is exposed. Float literals retain their source
+spelling in tokens and become finite scalar AST nodes. Existing expression tasks,
+heap frames, result slots, contracts, and output snapshots handle the scalar
+without additional recursion or dependencies. See [the contract](proposals/0016-finite-floats.md).
