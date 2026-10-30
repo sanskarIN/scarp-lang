@@ -141,8 +141,8 @@ def main():
         return
     request = json.loads(request_path.read_text(encoding="utf-8"))
     version = request["version"]
-    if not re.fullmatch(r"\d+\.\d+\.\d+-beta\.\d+", version):
-        raise ValueError("only an explicitly requested beta version may be published")
+    if not re.fullmatch(r"\d+\.\d+\.\d+-(?:alpha|beta)\.\d+", version):
+        raise ValueError("only an explicitly requested alpha or beta version may be published")
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     if head != os.environ["SCARP_SOURCE_SHA"]:
         raise ValueError("checkout does not match the triggering source commit")
@@ -216,7 +216,7 @@ def main():
             notes = root / "release-notes.md"
             notes.write_text(notes_text, encoding="utf-8", newline="\n")
             gh("release", "create", tag, "--repo", repository, "--verify-tag", "--draft",
-               "--prerelease", "--latest=false", "--title", f"Scarp {tag} — Typed Functions",
+               "--prerelease", "--latest=false", "--title", f"Scarp {tag}",
                "--notes-file", str(notes), *(str(path) for path in files.values()))
             existing = release_from_list(api(f"{endpoint}/releases?per_page=100"), tag)
             if existing is None:

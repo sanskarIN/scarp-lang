@@ -52,25 +52,32 @@ class ReleaseAssets(unittest.TestCase):
                 f"docs/releases/v{version}.md", "examples/bindings.srp",
                 "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             ) if name != omit}
-            if (version.startswith("0.0.3-") or version == "0.0.4-dev"):
+            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1")):
                 for name in ("loops", "repeat", "control_escapes"):
                     for extension in ("srp", "stdout"):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev"):
+            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1"):
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.3-beta.3", "0.0.4-dev"):
+            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1"):
                 for member in (
                     "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
                     "examples/function_contracts.srp", "examples/function_contracts.stdout",
                     "examples/function_recursion.srp", "examples/function_recursion.stdout",
                     "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
+                ):
+                    if member != omit:
+                        files[member] = b"fixture"
+            if version == "0.0.4-alpha.1":
+                for member in (
+                    "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
+                    "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
@@ -199,6 +206,39 @@ class ReleaseAssets(unittest.TestCase):
         ], check=True)
         commit = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
         return source, commit, files
+
+    def test_float_alpha_requires_numeric_and_inherited_function_contents(self):
+        for member in (
+            "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
+            "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
+            "docs/functions.md", "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
+            "docs/syntax-migration.md", "examples/repeat.srp", "examples/output.stdout",
+            "examples/function_contracts.srp", "docs/releases/v0.0.4-alpha.1.md",
+        ):
+            with self.subTest(member=member):
+                self.build(version="0.0.4-alpha.1", omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, "0.0.4-alpha.1", COMMIT)
+
+    def test_complete_float_alpha_matches_exact_source_and_sorted_checksums(self):
+        source, commit, files = self.source_fixture()
+        files["docs/floats.md"] = b"finite binary64 guide\n"
+        path = source / "docs/floats.md"
+        path.write_bytes(files["docs/floats.md"])
+        subprocess.run(["git", "-C", str(source), "add", "docs/floats.md"], check=True)
+        subprocess.run([
+            "git", "-C", str(source), "-c", "user.name=Release Fixture",
+            "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "float guide",
+        ], check=True)
+        commit = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+        self.build(version="0.0.4-alpha.1", commit=commit, extra_files=files)
+        entries = verifier.verify(self.directory, "0.0.4-alpha.1", commit, source).splitlines()
+        self.assertEqual(len(entries), 3)
+        self.assertEqual(entries, sorted(entries))
+        files["docs/floats.md"] = b"stale float guide with a valid archive checksum"
+        self.build(version="0.0.4-alpha.1", commit=commit, extra_files=files)
+        with self.assertRaisesRegex(ValueError, "source differs.*docs/floats.md"):
+            verifier.verify(self.directory, "0.0.4-alpha.1", commit, source)
 
     def test_packages_match_exact_git_source_in_all_three_archives(self):
         source, commit, files = self.source_fixture()

@@ -18,6 +18,40 @@ COMMIT = "a" * 40
 
 
 class PublicationGates(unittest.TestCase):
+    def test_absent_request_never_reads_identity_runs_git_or_contacts_github(self):
+        with patch.object(Path, "exists", return_value=False), \
+             patch.object(Path, "read_text") as read_request, \
+             patch.object(publisher.subprocess, "check_output") as git_call, \
+             patch.object(publisher, "api") as api_call, \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            publisher.main()
+        self.assertIn("nothing to publish", output.getvalue())
+        read_request.assert_not_called()
+        git_call.assert_not_called()
+        api_call.assert_not_called()
+
+    def test_unrequested_version_forms_fail_before_git_or_network(self):
+        for version in ("0.0.4", "0.0.4-dev", "v0.0.4-alpha.1", "0.0.4-alpha", "0.0.4-alpha.1.dev", "0.0.4-rc.1"):
+            with self.subTest(version=version), \
+                 patch.object(Path, "exists", return_value=True), \
+                 patch.object(Path, "read_text", return_value=json.dumps(dict(version=version))), \
+                 patch.object(publisher.subprocess, "check_output") as git_call, \
+                 patch.object(publisher, "api") as api_call:
+                with self.assertRaisesRegex(ValueError, "explicitly requested alpha or beta"):
+                    publisher.main()
+                git_call.assert_not_called()
+                api_call.assert_not_called()
+
+    def test_alpha_request_cannot_skip_exact_checkout_gate(self):
+        with patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "read_text", return_value=json.dumps(dict(version="0.0.4-alpha.1"))), \
+             patch.object(publisher.subprocess, "check_output", return_value="b" * 40 + "\n"), \
+             patch.dict(os.environ, SCARP_SOURCE_SHA=COMMIT), \
+             patch.object(publisher, "api") as api_call:
+            with self.assertRaisesRegex(ValueError, "checkout does not match"):
+                publisher.main()
+            api_call.assert_not_called()
+
     def recovery_fixture(self):
         request = dict(version="0.0.3-beta.3", resume_commit=COMMIT, resume_release_id=42,
                        tagger_name="Maintainer", tagger_email="maintainer@example.invalid")

@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Verify and publish requested beta
+    name: Verify and publish requested prerelease
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
