@@ -1,8 +1,8 @@
 # Numerical vectors
 
-The 0.0.4-alpha.2 source candidate adds immutable, one-dimensional finite
+The 0.0.4-alpha.2 implementation adds immutable, one-dimensional finite
 binary64 vectors. Published alpha.1 supports scalar floats but not vectors.
-Alpha.2 is not tagged or published. See [candidate notes](releases/v0.0.4-alpha.2.md)
+See [release notes](releases/v0.0.4-alpha.2.md) for the planned publication
 and the [integration audit](development/numerical-vectors-audit.md).
 
 ## Construct, inspect and replace

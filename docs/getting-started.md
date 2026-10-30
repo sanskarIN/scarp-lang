@@ -8,7 +8,7 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the vector guides | This checkout (0.0.4-alpha.2 candidate) | Immutable vectors, pure kernels and vector functions; not published |
+| Follow the vector guides | This checkout (0.0.4-alpha.2) | Immutable vectors, pure kernels and vector functions; check the release page for downloads |
 | Follow the float guides | Current `main` or the v0.0.4-alpha.1 prerelease | Finite binary64 scalars integrated with typed functions and six resource budgets |
 | Reproduce the function beta | v0.0.3-beta.3 | Typed functions, contracts, bind/var, output streams, loops; no floats |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
@@ -16,13 +16,13 @@ you are running matches the documentation. Start with
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-This source candidate identifies as `0.0.4-alpha.2` and adds [vectors](vectors.md).
-It is not tagged or published. Published alpha.1 includes scalar floats and typed
-functions without vectors. The [alpha.2 notes](releases/v0.0.4-alpha.2.md) describe
-candidate scope; the [alpha.1 page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
-provides the existing public downloads.
+This source identifies as `0.0.4-alpha.2` and adds [vectors](vectors.md).
+The [alpha.2 notes](releases/v0.0.4-alpha.2.md) describe the implementation and
+planned publication; its release page records when downloads become available.
+Published alpha.1 includes scalar floats and typed functions without vectors.
 Syntax and APIs remain subject to change. Published packages retain their
 original syntax. Tensors, backends, project tooling, and CLI redesign remain separate.
+Follow [your first numerical program](tutorials/numerical-program.md) after setup.
 
 ## Build the development checkout
 
