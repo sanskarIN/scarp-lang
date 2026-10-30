@@ -66,15 +66,17 @@ fn median(repetitions: usize, samples: usize, mut action: impl FnMut()) -> f64 {
 }
 
 fn main() {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let quick = match args.as_slice() {
-        [] => false,
-        [flag] if flag == "--quick" => true,
-        _ => {
-            eprintln!("usage: cargo bench --bench numerics -- [--quick]");
-            std::process::exit(2);
+    let mut quick = false;
+    for argument in std::env::args().skip(1) {
+        match argument.as_str() {
+            "--quick" => quick = true,
+            "--bench" => {} // Cargo also supplies this for harness=false.
+            _ => {
+                eprintln!("usage: cargo bench --bench numerics -- [--quick]");
+                std::process::exit(2);
+            }
         }
-    };
+    }
     let samples = if quick { 3 } else { 7 };
     let options = ExecutionOptions {
         limits: ExecutionLimits {
