@@ -840,7 +840,11 @@ impl Parser<'_> {
                 while !self.at(&TokenKind::RightBracket) {
                     let element = self.logical_or(nodes, depth + 1)?;
                     if elements.len() == MAX_VECTOR_LENGTH {
-                        return Err(crate::numeric::length_error(nodes[element].span));
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::VectorLength,
+                            nodes[element].span,
+                            "vector literal exceeds 65536 elements",
+                        ));
                     }
                     elements.push(element);
                     if !self.at(&TokenKind::Comma) {

@@ -133,6 +133,11 @@ fn mean(values: &NumericVector, span: Span) -> Result<f64, Diagnostic> {
     if let Ok(sum) = compensated(floats().map(Ok), span) {
         return Ok(sum / values.len() as f64);
     }
+    // Average terms before summing to retain tiny cancellation residuals that
+    // maximum-magnitude normalization could underflow away.
+    if let Ok(average) = compensated(floats().map(|value| Ok(value / values.len() as f64)), span) {
+        return Ok(average);
+    }
     // Preserve the compensated fast path for cancellation/subnormals, but avoid
     // overflowing a sum when only its finite mean was requested.
     let scale = floats().map(f64::abs).fold(0.0, f64::max);

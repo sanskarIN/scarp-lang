@@ -10,12 +10,14 @@ use crate::{
 };
 
 /// Evaluate a standalone integer expression, preserving the v0.0.1 return type.
-/// Use `evaluate_value` when any primitive result is allowed.
+/// Use `evaluate_value` when any value result is allowed.
 pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
     evaluate_value(expression)?.require_integer(expression.nodes()[expression.root()].span)
 }
 
-/// Evaluate a standalone primitive expression without a variable environment.
+/// Evaluate a standalone expression without a variable environment. This legacy
+/// helper has an unbounded work allowance; capped program/native APIs are
+/// preferable for controlled execution of numerical workloads.
 pub fn evaluate_value(expression: &Expression) -> Result<Value, Diagnostic> {
     Workspace::default().evaluate(
         &resolver::resolve_standalone(expression)?,

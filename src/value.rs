@@ -1,4 +1,4 @@
-//! Primitive runtime values and their inferred binding types.
+//! Runtime values, finite numerical storage and inferred binding types.
 
 use std::{fmt, sync::Arc};
 

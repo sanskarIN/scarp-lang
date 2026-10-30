@@ -40,8 +40,8 @@ Kernel calls do not consume user-call depth/count or add user call-graph edges.
 
 Sum and dot use ordered Neumaier compensation, checking products, running sum,
 correction and result; a nonfinite intermediate is an error even if later terms
-could cancel. Mean first attempts compensated sum/division and falls back to a
-maximum-magnitude scaled mean on overflow. MSE scales differences by their
+could cancel. Mean first attempts compensated sum/division, then compensated
+termwise averaging and finally maximum-magnitude scaling on overflow. MSE scales differences by their
 maximum magnitude before squaring and averages before rescaling, avoiding a
 needless overflowing square when the mean is representable. Rounded binary64
 results are not exact or arbitrary precision. Zero underflow/subnormals remain

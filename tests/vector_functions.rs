@@ -266,6 +266,19 @@ fn stable_mean_and_mse_avoid_unnecessary_intermediate_overflow() {
         scalar(Builtin::Mean, &[vector(&[f64::MAX, f64::MAX])]),
         f64::MAX
     );
+    assert_eq!(
+        scalar(
+            Builtin::Mean,
+            &[vector(&[f64::MAX, f64::MAX, -f64::MAX, -f64::MAX, 1e-300])]
+        ),
+        1e-300 / 5.0
+    );
+    for count in [3, 7, 31, 65_536] {
+        assert_eq!(
+            scalar(Builtin::Mean, &[vector(&vec![f64::MAX; count])]),
+            f64::MAX
+        );
+    }
     assert_eq!(scalar(Builtin::Mean, &[vector(&[1e308, 3.0, -1e308])]), 1.0);
     let subnormal = f64::from_bits(1);
     assert_eq!(
