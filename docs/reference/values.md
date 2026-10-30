@@ -10,6 +10,7 @@ bindings and string-valued expressions require the development stack.
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
 | Float (alpha) | `0.5`, `1e3`, `-0.0` | Finite binary64; no integer coercion |
+| Vector (alpha.2 candidate) | `[1.0, -0.0]`, `[]` | Immutable finite floats, at most 65,536 elements |
 | Boolean | `true`, `false` | v0.0.2 and later; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text; v0.0.3 adds tab/CR to the three older escapes |
 
@@ -18,7 +19,8 @@ must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
 The [alpha](../floats.md) adds finite binary64 float values.
-Collections and user-defined values remain unavailable.
+The alpha.2 candidate adds [numerical vectors](../vectors.md); general collections
+and user-defined values remain unavailable.
 Local type annotations and explicit conversions are not implemented. On the
 [function system in beta.3](../functions.md), parameter and result types are
 mandatory; they do not change primitive value or operator rules.
@@ -28,6 +30,7 @@ mandatory; they do not change primitive value or operator rules.
 | Order, strongest first | Syntax | Behavior |
 | --- | --- | --- |
 | Grouping | `(expression)` | Evaluate the grouped expression |
+| Indexing | `expression[index]` | Zero-based checked vector access before unary minus |
 | Unary minus | `-primary` | Integer checked negation or float sign change |
 | Multiplication/division | `*`, `/` | Left-associative same-type numeric arithmetic |
 | Addition/subtraction | `+`, `-` | Left-associative same-type numeric arithmetic |

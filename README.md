@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-targets the 0.0.4-alpha.1 prerelease, with finite binary64 floats, a lexer, parser,
+targets the 0.0.4-alpha.2 numerical-vector candidate, with finite binary64 values, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -32,6 +32,11 @@ function parameters/results. Published beta.3 binaries remain integer/string/
 Boolean only. The [alpha release notes](docs/releases/v0.0.4-alpha.1.md)
 describe the new scope. The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
 records publication status and provides verified native downloads after publication.
+
+The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
+indexing, ten pure kernels, typed functions and resource accounting. These are
+new alpha.2 features, absent from published alpha.1. See
+[alpha.2 candidate notes](docs/releases/v0.0.4-alpha.2.md); alpha.2 is untagged and unpublished.
 
 ## Build and run
 
@@ -237,11 +242,11 @@ Future work is **planned**, in this order:
 
 The remaining capabilities require separate milestones. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
-Integer, finite float, string, and boolean bindings are implemented on main. Read the
+Integer, finite float, vector, string, and boolean bindings are implemented in this checkout. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
 The [v0.0.4-alpha.1 notes](docs/releases/v0.0.4-alpha.1.md) describe the integrated
-scalar milestones, downloads, and limitations. Vectors and native backends remain
-separate PRs and require an explicit integration decision.
+scalar milestones, downloads, and limitations. This candidate adds numerical
+vectors; tensors and native backends require separate integration decisions.
 
 The [function integration in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)
 integrated typed calls, defaults, contracts, and bounded heap frames into main.

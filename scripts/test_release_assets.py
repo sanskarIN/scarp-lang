@@ -52,20 +52,20 @@ class ReleaseAssets(unittest.TestCase):
                 f"docs/releases/v{version}.md", "examples/bindings.srp",
                 "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             ) if name != omit}
-            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1")):
+            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2")):
                 for name in ("loops", "repeat", "control_escapes"):
                     for extension in ("srp", "stdout"):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1"):
+            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2"):
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1"):
+            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2"):
                 for member in (
                     "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
                     "examples/function_contracts.srp", "examples/function_contracts.stdout",
@@ -74,10 +74,18 @@ class ReleaseAssets(unittest.TestCase):
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version == "0.0.4-alpha.1":
+            if version in ("0.0.4-alpha.1", "0.0.4-alpha.2"):
                 for member in (
                     "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
                     "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
+                ):
+                    if member != omit:
+                        files[member] = b"fixture"
+            if version == "0.0.4-alpha.2":
+                for member in (
+                    "docs/vectors.md", "examples/vectors.srp", "examples/vectors.stdout",
+                    "examples/vector_probabilities.srp", "examples/vector_probabilities.stdout",
+                    "examples/coefficient_fit.srp", "examples/coefficient_fit.stdout",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
@@ -206,6 +214,29 @@ class ReleaseAssets(unittest.TestCase):
         ], check=True)
         commit = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
         return source, commit, files
+
+    def test_vector_candidate_requires_new_and_inherited_guides_and_fixtures(self):
+        for member in (
+            "docs/vectors.md", "examples/vectors.srp", "examples/vectors.stdout",
+            "examples/vector_probabilities.srp", "examples/vector_probabilities.stdout",
+            "examples/coefficient_fit.srp", "examples/coefficient_fit.stdout",
+            "docs/floats.md", "examples/float_refinement.srp", "docs/functions.md",
+            "docs/budgets.md", "docs/embedding.md", "docs/syntax-migration.md",
+            "examples/repeat.srp", "examples/output.stdout", "docs/releases/v0.0.4-alpha.2.md",
+        ):
+            with self.subTest(member=member):
+                self.build(version="0.0.4-alpha.2", omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, "0.0.4-alpha.2", COMMIT)
+
+    def test_complete_vector_candidate_and_stale_version_record(self):
+        self.build(version="0.0.4-alpha.2")
+        manifest = verifier.verify(self.directory, "0.0.4-alpha.2", COMMIT)
+        self.assertEqual(len(manifest.splitlines()), 3)
+        self.assertEqual(manifest.splitlines(), sorted(manifest.splitlines()))
+        self.build(version="0.0.4-alpha.2", record_version="0.0.4-alpha.1")
+        with self.assertRaisesRegex(ValueError, "unexpected version"):
+            verifier.verify(self.directory, "0.0.4-alpha.2", COMMIT)
 
     def test_float_alpha_requires_numeric_and_inherited_function_contents(self):
         for member in (

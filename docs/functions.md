@@ -1,7 +1,7 @@
 # Functions with funcra
 
 This guide describes typed functions from `0.0.3-beta.3`, extended with finite
-floats in `0.0.4-alpha.1` on current main.
+floats in `0.0.4-alpha.1` and vectors in the `0.0.4-alpha.2` source candidate.
 Earlier v0.0.3-beta.2 binaries do not contain functions. The
 declaration keyword is exactly `funcra`; calls use the function name. Parameter
 and result types are mandatory, while local bindings keep inferred types.
@@ -32,6 +32,11 @@ funcra greet(name: string) -> unit {
 }
 greet("Scarp");
 ```
+
+The alpha.2 candidate additionally accepts `vector` for parameters, results and
+defaults. All numerical kernels are pure and work in defaults and contracts.
+User functions named after a new kernel retain precedence; kernel calls do not
+add user-call depth/count or call-graph edges. See [vectors](vectors.md).
 
 Unit functions may fall through or use a bare return. They cannot return a value.
 A unit call is legal only as a standalone statement, never an initializer,

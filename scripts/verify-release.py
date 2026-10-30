@@ -93,26 +93,31 @@ def verify(directory, version, commit, source_directory=None):
             "examples/loops.srp", "examples/loops.stdout",
             "examples/repeat.srp", "examples/repeat.stdout",
             "examples/control_escapes.srp", "examples/control_escapes.stdout",
-        ) if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1")) else ()
+        ) if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2")) else ()
         syntax_migration_files = (
             "examples/output.srp", "examples/output.stdout",
             "docs/output.md", "docs/syntax-migration.md",
-        ) if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1") else ()
+        ) if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2") else ()
         function_files = (
             "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
             "examples/function_contracts.srp", "examples/function_contracts.stdout",
             "examples/function_recursion.srp", "examples/function_recursion.stdout",
             "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
-        ) if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1") else ()
+        ) if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2") else ()
         float_files = (
             "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
             "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
-        ) if version == "0.0.4-alpha.1" else ()
+        ) if version in ("0.0.4-alpha.1", "0.0.4-alpha.2") else ()
+        vector_files = (
+            "docs/vectors.md", "examples/vectors.srp", "examples/vectors.stdout",
+            "examples/vector_probabilities.srp", "examples/vector_probabilities.stdout",
+            "examples/coefficient_fit.srp", "examples/coefficient_fit.stdout",
+        ) if version == "0.0.4-alpha.2" else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",
             "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
-            *iteration_examples, *syntax_migration_files, *function_files, *float_files,
+            *iteration_examples, *syntax_migration_files, *function_files, *float_files, *vector_files,
         ):
             if root + "/" + member not in paths:
                 raise ValueError(f"{name}: missing {member}")

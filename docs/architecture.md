@@ -167,3 +167,24 @@ No raw mutable f64 reference is exposed. Float literals retain their source
 spelling in tokens and become finite scalar AST nodes. Existing expression tasks,
 heap frames, result slots, contracts, and output snapshots handle the scalar
 without additional recursion or dependencies. See [the contract](proposals/0016-finite-floats.md).
+
+## Numerical vector layer
+
+The alpha.2 candidate uses NumericVector with private Arc<Vec<FiniteFloat>>
+storage. Elements are contiguous and immutable; clones share storage and moving
+an owned buffer into Arc avoids a second element copy. No rank/stride abstraction
+is added before tensors have their own reviewed design.
+
+The flat AST gains vector/index nodes. Generic call syntax resolves to a private
+User/Builtin call identity, preserving old user names and keeping kernels out of
+the user call graph. Resumable expression tasks evaluate arguments/elements in
+source order and survive nested user calls. Existing heap frames/defaults/results
+need no vector-specific frame representation.
+
+numeric.rs owns signatures, checked kernels, compensated/scaled reductions and
+fallible buffers; value.rs owns finite storage and host access. Work is prepaid
+before element loops/allocations. At least one step per allocated element bounds
+cumulative runtime vector payload by 8 * max_steps bytes, excluding container,
+task, parser and host memory. Snapshots account 64 + 8n bytes per value even when
+shared; output preparation charges n in both run/check. No new option field or
+hidden mutable global state is introduced. See [the contract](proposals/0017-numerical-vectors.md).

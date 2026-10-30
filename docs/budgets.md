@@ -87,3 +87,18 @@ This is a logical storage budget, not an exact encoded-output or process-memory
 measurement. Parser allocations are outside these execution caps. See
 [functions](functions.md) for evaluation order and [embedding](embedding.md)
 for reusable immutable plans and caller-selected options.
+
+## Vector work and allocation in alpha.2
+
+Native kernels and literal materialization prepay deterministic element work
+before looping or allocating. Each allocated element costs at least one step;
+cumulative runtime vector payload allocation is bounded by 8 * max_steps bytes,
+excluding container/task overhead. Each vector additionally has a 65,536-element
+cap and a fallible buffer reservation. Raising work limits raises this bound;
+it does not introduce a total parser/host/process-memory cap.
+
+Vector equality prepays the larger length, and selected vector output prepays
+its length. Every vector snapshot costs 64 + 8n logical bytes, even if Arc shares
+the elements. Check applies identical costs without retaining/formatting output.
+The existing frame-slot and user-call limits keep their meanings; native kernels
+consume work but no user-call depth/count. See [the full cost table](proposals/0017-numerical-vectors.md).

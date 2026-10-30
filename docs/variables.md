@@ -187,3 +187,17 @@ library evaluation also checks operand types when called without compilation.
 This is primitive-value validation, not a general type system with user-defined
 types, annotations, generics, or function inference. The optional extension is
 recorded in [the string binding design](proposals/0003-string-bindings.md).
+
+## Vector bindings in alpha.2
+
+```scarp
+var values = [1.0, 2.0];
+bind copy = values;
+values = fill(0.5, 3);
+print(copy, values);
+```
+
+Vectors infer a fixed kind but a mutable binding can replace its whole value
+with another length. Copies and pending output retain shared immutable elements.
+`values[0]` reads a float; element assignment and compound vector arithmetic are
+not supported. Use [numerical kernels](vectors.md) to construct a new value.

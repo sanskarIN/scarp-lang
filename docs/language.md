@@ -1,6 +1,6 @@
 # Scarp prototype language reference
 
-This source reference targets the 0.0.4-alpha.1 prerelease on top of
+This source reference targets the 0.0.4-alpha.2 source candidate on top of
 the Scarp 0.0.3-beta.3 baseline. Published beta.3 does not include floats.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
@@ -19,7 +19,7 @@ Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms us
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
-Punctuation tokens are `(`, `)`, `{`, `}`, `,`, `;`, and `=`. Compound assignment tokens use
+Punctuation tokens are `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;`, and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Comparison tokens use longest match: `==`, `!=`, `<`, `<=`, `>`,
 and `>=`. Integers contain one or more ASCII decimal digits; leading zeros
@@ -79,8 +79,10 @@ logical_not     = { "not" }, comparison ;
 comparison      = sum, [ ("==" | "!=" | "<" | "<=" | ">" | ">="), sum ] ;
 sum             = product, { ("+" | "-"), product } ;
 product         = unary, { ("*" | "/"), unary } ;
-unary           = [ "-" ], primary ;
-primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER | "(", expression, ")" ;
+unary           = [ "-" ], postfix ;
+postfix         = primary, { "[", expression, "]" } ;
+primary         = INTEGER | FLOAT | STRING | "true" | "false" | IDENTIFIER | vector | "(", expression, ")" ;
+vector          = "[", [ argument_list ], "]" ;
 ```
 
 `"print"` denotes an identifier with that exact value, not a substring of a
@@ -261,3 +263,18 @@ and the same work/print budgets as while; it does not allocate an index array.
 `repeat` and `as` are contextual identifiers: existing bindings keep working,
 including assignment to a variable named repeat. Same-scope index redeclaration
 is E0011; explicit inner scopes may shadow it. See [the repeat design](proposals/0007-counted-repeat.md).
+
+## Numerical vectors (alpha.2 candidate)
+
+`[1.0, 2.0]` and `[]` infer vector. Only float elements are accepted; a vector
+has at most 65,536 elements. `expression[integer]` returns a float or E0033,
+with no negative/reverse indices. Postfix indexing binds before unary minus.
+Vector elements, call arguments, indices and groups share the 64-level nesting
+limit; flat nodes and postfix chains do not use recursive destruction.
+
+Typed function signatures accept vector. User functions keep precedence over
+new builtin names. All ten positional kernels are pure; their shape/domain,
+finite-result and work checks execute only on selected paths. Static type checks
+still inspect unused bodies. Whole-vector var replacement is allowed, while
+element mutation, broadcasting and vector arithmetic operators are not.
+See [vectors](vectors.md) for signatures, algorithms, resource costs and examples.

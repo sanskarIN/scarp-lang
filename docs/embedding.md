@@ -212,3 +212,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 Use `Value::as_float()` to inspect a float result, and `evaluate_value` for
 standalone float expressions. The integer evaluate helper intentionally rejects
 float results. Both streams use identical scalar formatting. See [floats](floats.md).
+
+## Numerical vector values and capped kernels (alpha.2 candidate)
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use scarp::{numeric::{self, Builtin}, value::{NumericVector, Value}};
+    let values = Value::Vector(NumericVector::new(&[1.0, 2.0, 3.0]).unwrap());
+    let sum = numeric::evaluate(Builtin::Sum, std::slice::from_ref(&values), 3)?;
+    assert_eq!(sum.as_float(), Some(6.0));
+    assert!(numeric::evaluate(Builtin::Sum, &[values], 2).is_err());
+    assert!(NumericVector::new(&[f64::NAN]).is_none());
+    let mut output = Vec::new();
+    scarp::run("pure funcra twice(v: vector)->vector{return scale(v,2.0);} print(twice([0.5]));", &mut output)?;
+    assert_eq!(output, b"[1.0]\n");
+    Ok(())
+}
+```
+
+`new(&[f64])` checks finite elements/length and reserves fallibly. `from_finite`
+consumes an owned checked buffer without copying it. `as_slice()` returns only
+immutable FiniteFloat elements; `Value::as_vector()` borrows the wrapper. Inputs
+are not injected into source bindings, and clones share immutable storage.
+The host kernel API validates arity/types and uses an explicit work cap, excluding
+language dispatch tasks; its diagnostics have an empty source span. Compiled
+program APIs apply all six limits. Legacy evaluate_value has unbounded standalone
+work, so prefer capped program/kernel APIs for controlled execution.

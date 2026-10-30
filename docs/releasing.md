@@ -9,7 +9,8 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-requested version and tag are `0.0.4-alpha.1` and `v0.0.4-alpha.1`.
+candidate version is `0.0.4-alpha.2`; its tag is not authorized. Published alpha.1
+remains unchanged.
 The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
 records publication status; a version in source alone does not prove publication.
 Earlier published tags/assets must remain unchanged. For a future
@@ -85,27 +86,17 @@ to a package registry; `publish = false` remains set in `Cargo.toml`.
 
 `.github/workflows/publish.yml` listens for completion of the Rust/package
 workflows on main; it also supports a maintainer dispatch. It executes only
-trusted main push revisions and checks out the triggering SHA. The maintainer
-explicitly authorized **v0.0.4-alpha.1** tagging and prerelease publication on
-2026-10-30. The fresh request names only that version and the maintainer's
-tagger identity. The completed beta.3 recovery request has been retired; its
-release ID and original source are not reused. A different release requires a
-new explicit authorization and reviewed request matching Cargo and versioned
-notes. Only three-part `alpha.N` or `beta.N` prerelease versions are accepted;
-stable, dev, and unrecognized suffixes are rejected. The active request is:
+trusted main push revisions and checks out the triggering SHA. There is currently
+**no request file**: alpha.2 development and artifact preparation are authorized,
+while tagging/publication are explicitly withheld. The completed alpha.1 request
+has been removed without changing its public tag or assets. An alpha.2 request
+requires a later explicit instruction for that exact release, matching Cargo,
+versioned notes and the maintainer identity. Do not reuse beta.3 recovery fields.
+Only three-part alpha.N or beta.N prerelease versions are accepted.
 
-```json
-{
-  "version": "0.0.4-alpha.1",
-  "tagger_name": "Sanskar",
-  "tagger_email": "sanskarin@outlook.in"
-}
-```
-
-Removing `.github/release-request.json` disables publication before any Git or
-API call. Do not copy beta.3's one-time recovery ID/source into a new request.
-A request PR itself changes main: wait for all seven checks and reverify
-packages from that new exact final revision.
+Without a request the publisher exits before any Git/API action. A later request
+PR changes main and must pass all seven fresh checks and package verification
+for its new exact final source. Preparation or a package version is not approval.
 An already published release is left unchanged. A draft requires an explicit
 `resume_release_id` and full `resume_commit` in the reviewed request. An orphaned
 tag or unmatched draft stops the job for inspection.

@@ -89,3 +89,45 @@ Sample ranges remain wide on this shared host; the CSV's 5th/95th sample
 percentiles describe timing variation, not confidence intervals. These results
 apply to these workloads, snapshots, compiler, and machine. They do not establish
 relative performance against C, C++, Rust, or other language implementations.
+
+## Numerical vector measurements
+
+`cargo bench --locked --offline --bench numerics` measures indexed scalar dot
+loops, native kernel calls, 64 repeated typed calls and a 32-stage allocation
+pipeline. Small/large dot inputs have 16/32,768 elements. Every workload verifies
+the same expected result before timing. Compilation, validation, replay and
+native Rust API phases are measured separately; native includes fresh input
+buffers and checked kernels, while Scarp validation excludes output formatting.
+The native API has no parser/frame dispatch. All work uses an explicit 10M-step
+allowance. Default kernel algorithms and owned-buffer sharing are retained.
+
+Measured 2026-10-30 on Windows x64 MSVC, Intel Core i5-1235U (10 cores/12 threads),
+rustc 1.99.1 / LLVM 23.1.1, source
+`b62b6648706e9bbe4176d5244de007383d8ccc17`, clean at measurement start.
+The integration package still identified as alpha.1 at that revision; published
+alpha.1 does not contain this feature. Seven samples use two warmups and 500
+small / 10 other repetitions. There is no CPU pinning, controlled power state
+or claim of isolated background load. Times are microseconds per validation:
+
+| Workload | Full run 1 | Full run 2 |
+| --- | ---: | ---: |
+| Indexed dot, 16 | 14.627 | 14.333 |
+| Kernel dot, 16 | 2.479 | 2.758 |
+| Indexed dot, 32768 | 22048.370 | 18931.330 |
+| Kernel dot, 32768 | 628.900 | 652.970 |
+| Repeated funcra, 1024 | 895.510 | 1134.260 |
+| Allocation pipeline, 1024 | 272.160 | 823.680 |
+
+Raw [run 1](benchmarks/2026-10-30-numerical-vectors-1.csv) and
+[run 2](benchmarks/2026-10-30-numerical-vectors-2.csv) also include compilation,
+replay, native baselines, counts and source sizes. The same-machine kernel/indexed
+validation ratios were 5.2–5.9x for small and 29.0–35.1x for large dot inputs.
+These observations show removed interpreter dispatch for these workloads, not
+general performance parity with compiled languages. Absolute and cross-phase
+timings vary substantially, especially repeated calls and allocations; even
+native/Scarp phase ordering changes. Do not infer broad speedups from those rows.
+
+Owned buffers move into Arc without payload copying; argument, binding and
+snapshot clones share storage. No buffer pool, SIMD promise, unchecked fast-math
+or benchmark-driven numerical relaxation is introduced. Timing thresholds are
+not CI correctness gates. Re-run on the target system before further tuning.
