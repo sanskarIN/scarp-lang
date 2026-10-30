@@ -160,7 +160,7 @@ are not a general allocation sandbox. See [functions](functions.md).
 
 ## Finite scalar invariant
 
-The alpha candidate stores float values in a private checked FiniteFloat wrapper.
+The alpha stores float values in a private checked FiniteFloat wrapper.
 Literal parsing and every arithmetic result enforce finiteness. Numeric Eq is
 valid without NaN; signed zero is retained in bits/output but compares equal.
 No raw mutable f64 reference is exposed. Float literals retain their source

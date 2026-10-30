@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-is the 0.0.4-alpha.1 release candidate, with finite binary64 floats, a lexer, parser,
+targets the 0.0.4-alpha.1 prerelease, with finite binary64 floats, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -26,17 +26,18 @@ The [documentation hub](docs/README.md) provides setup, tutorials, command and
 diagnostic references, Rust embedding, testing, troubleshooting, and compatibility
 guides. Start there for a reading path matched to your task.
 
-The [finite-float guide](docs/floats.md) describes the alpha candidate in this
+The [finite-float guide](docs/floats.md) describes the alpha implementation in this
 checkout: decimal/scientific literals, checked finite arithmetic, and float
 function parameters/results. Published beta.3 binaries remain integer/string/
-Boolean only. The [alpha candidate notes](docs/releases/v0.0.4-alpha.1.md)
-describe the new scope; no public alpha tag or release is created by preparation.
+Boolean only. The [alpha release notes](docs/releases/v0.0.4-alpha.1.md)
+describe the new scope. The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
+records publication status and provides verified native downloads after publication.
 
 ## Build and run
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[v0.0.3-beta.3 notes](docs/releases/v0.0.3-beta.3.md) for platform support, verification, and
+[v0.0.4-alpha.1 notes](docs/releases/v0.0.4-alpha.1.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:

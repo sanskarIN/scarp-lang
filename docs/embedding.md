@@ -195,7 +195,7 @@ live-slot limits count all active frames, including their saved repeat counts,
 indices, and result slots. See [functions](functions.md) for precise budgets and
 `check_with_options`, `run_with_options`, and dual-stream options entry points.
 
-## Finite float values (alpha candidate)
+## Finite float values (alpha)
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {

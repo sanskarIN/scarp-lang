@@ -6,8 +6,8 @@ Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
 v0.0.3-beta.1, beta.2, and beta.3 snapshots. Beta.3 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
-Current main is the `0.0.4-alpha.1` candidate with finite floats; it is not yet
-a published snapshot. See [candidate notes](releases/v0.0.4-alpha.1.md).
+Current main targets `0.0.4-alpha.1` with finite floats. See
+[alpha release notes](releases/v0.0.4-alpha.1.md) for package scope and publication status.
 
 ## Identify the code you are running
 
@@ -146,7 +146,7 @@ Unknown call names now report E0023 instead of E0005. The newly reserved words
 `funcra`, `pure`, `return`, `needs`, `ensures` may require binding renames.
 `repeat`/`as` bindings remain compatible; `repeat` cannot be a function name.
 
-## Finite-float alpha candidate
+## Finite-float alpha
 
 This source checkout extends beta.3 with [finite binary64 scalars](floats.md).
 Published beta.3 and earlier tags keep their original integer/string/Boolean

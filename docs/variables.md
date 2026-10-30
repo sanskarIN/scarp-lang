@@ -175,8 +175,8 @@ can shadow an outer binding with a different type because their slots are distin
 
 Strings preserve Unicode, escapes, and empty values. Their storage is shared
 immutably; replacing a binding never changes earlier copies or pending prints.
-Arithmetic, negation, and compound assignment accept integers and, in the alpha
-candidate, finite floats. Binary numeric operands must have the same type.
+Arithmetic, negation, and compound assignment accept integers and, in the alpha,
+finite floats. Binary numeric operands must have the same type.
 There is no implicit conversion or string concatenation, including with `+=`.
 
 Name resolution and primitive type inference complete before arithmetic

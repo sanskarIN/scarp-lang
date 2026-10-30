@@ -17,7 +17,7 @@ Development bindings infer their kind from the initializer. Mutable assignment
 must preserve that kind. Strings do not automatically convert to integers, and
 integers do not automatically become strings for arithmetic.
 
-The [alpha candidate](../floats.md) adds finite binary64 float values.
+The [alpha](../floats.md) adds finite binary64 float values.
 Collections and user-defined values remain unavailable.
 Local type annotations and explicit conversions are not implemented. On the
 [function system in beta.3](../functions.md), parameter and result types are

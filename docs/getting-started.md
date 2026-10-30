@@ -8,15 +8,16 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the float guides | Current `main` (0.0.4-alpha.1 candidate) | Finite binary64 scalars integrated with typed functions and six resource budgets |
-| Use the latest published snapshot | v0.0.3-beta.3 | Typed functions, contracts, bind/var, output streams, loops; no floats |
+| Follow the float guides | Current `main` or the v0.0.4-alpha.1 prerelease | Finite binary64 scalars integrated with typed functions and six resource budgets |
+| Reproduce the function beta | v0.0.3-beta.3 | Typed functions, contracts, bind/var, output streams, loops; no floats |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
 | Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-Current main identifies as `0.0.4-alpha.1`; it is a release candidate awaiting
-explicit publication authorization. It includes [finite floats](floats.md) and
+Current main identifies as `0.0.4-alpha.1`. The
+[prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
+records publication status and downloads. It includes [finite floats](floats.md) and
 [typed functions](functions.md). Published beta.3 identifies as `0.0.3-beta.3`
 and includes functions without floats. The temporary `0.0.4-dev` integration
 identifier was never published.
@@ -86,7 +87,7 @@ development, `cargo run -- ...` selects the current checkout explicitly.
 
 Downloaded release archives already contain an executable and do not require
 Rust for running programs. Their platform and checksum instructions are in the
-[v0.0.3-beta.3 release notes](releases/v0.0.3-beta.3.md). Select Windows x64 MSVC,
+[v0.0.4-alpha.1 release notes](releases/v0.0.4-alpha.1.md). Select Windows x64 MSVC,
 Linux x64 GNU, or Apple Silicon macOS to match the host. Verify the archive's
 SHA-256 against its companion checksum before extracting, keep the supplied
 `examples/` and `docs/` directories, and run commands from the extracted root.
