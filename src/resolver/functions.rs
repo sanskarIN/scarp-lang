@@ -171,8 +171,10 @@ pub(super) fn build_call_graph(program: &mut ResolvedProgram) {
         let mut callees = Vec::new();
         for expression in expressions {
             for call in expression.calls.iter().flatten() {
-                graph[id].push(call.function);
-                callees.push(program.metadata[call.function].name.clone());
+                if let super::ResolvedCall::User { function, .. } = call {
+                    graph[id].push(*function);
+                    callees.push(program.metadata[*function].name.clone());
+                }
             }
         }
         graph[id].sort_unstable();

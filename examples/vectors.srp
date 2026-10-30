@@ -1,0 +1,12 @@
+bind values = [1.0, 2.0, 3.0, 4.0];
+print(values, len(values), values[0]);
+var weights = [0.2, 0.3, 0.5];
+bind snapshot = weights;
+weights = scale(weights, 2.0);
+print(snapshot);
+print(weights);
+print(sum(values), mean(values));
+print(dot(values, [2.0, -1.0, 0.5, 2.0]));
+print(mse([1.0, 2.0], [1.0, 4.0]));
+print(clamp([-2.0, 0.5, 3.0], 0.0, 1.0));
+print(fill(1.5, 3));

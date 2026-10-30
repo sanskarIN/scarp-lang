@@ -8,7 +8,7 @@ use crate::{
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
-    value::{FiniteFloat, ValueType},
+    value::{FiniteFloat, ValueType, MAX_VECTOR_LENGTH},
 };
 
 /// Maximum nested expression parentheses, excluding the output call itself.
@@ -399,6 +399,7 @@ impl Parser<'_> {
         match name.as_str() {
             "integer" => Ok(ValueType::Integer),
             "float" => Ok(ValueType::Float),
+            "vector" => Ok(ValueType::Vector),
             "boolean" => Ok(ValueType::Boolean),
             "string" => Ok(ValueType::String),
             "unit" if result => Ok(ValueType::Unit),
@@ -415,7 +416,7 @@ impl Parser<'_> {
                     if result { "result" } else { "parameter" }
                 ),
             )
-            .with_help("use integer, float, boolean, string, or unit for a result")),
+            .with_help("use integer, float, vector, boolean, string, or unit for a result")),
         }
     }
 
@@ -527,6 +528,7 @@ impl Parser<'_> {
                                 | TokenKind::Identifier(_)
                                 | TokenKind::Minus
                                 | TokenKind::LeftParen
+                                | TokenKind::LeftBracket
                         )
                     ) {
                         return Err(self.expected("a string literal or value expression"));
@@ -769,7 +771,7 @@ impl Parser<'_> {
                     return Ok(push(nodes, ExpressionKind::Integer(i64::MIN), span));
                 }
             }
-            let operand = self.primary(nodes, depth)?;
+            let operand = self.postfix(nodes, depth)?;
             let span = Span::new(operator_span.start, nodes[operand].span.end);
             Ok(push(
                 nodes,
@@ -780,7 +782,7 @@ impl Parser<'_> {
                 span,
             ))
         } else {
-            self.primary(nodes, depth)
+            self.postfix(nodes, depth)
         }
     }
 
@@ -795,12 +797,64 @@ impl Parser<'_> {
         Ok(())
     }
 
+    fn postfix(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, Diagnostic> {
+        let mut vector = self.primary(nodes, depth)?;
+        while self.at(&TokenKind::LeftBracket) {
+            let opening = self.current().unwrap().span;
+            self.expression_depth(depth, opening)?;
+            self.cursor += 1;
+            let index = self.logical_or(nodes, depth + 1)?;
+            let end = self.punctuation(TokenKind::RightBracket, "']'")?.end;
+            let span = Span::new(nodes[vector].span.start, end);
+            vector = push(
+                nodes,
+                ExpressionKind::Index {
+                    vector,
+                    index,
+                    operator_span: Span::new(opening.start, end),
+                },
+                span,
+            );
+        }
+        Ok(vector)
+    }
+
     fn primary(
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
     ) -> Result<usize, Diagnostic> {
         match self.current() {
+            Some(Token {
+                kind: TokenKind::LeftBracket,
+                span,
+            }) => {
+                let opening = *span;
+                self.expression_depth(depth, opening)?;
+                self.cursor += 1;
+                let mut elements = Vec::new();
+                while !self.at(&TokenKind::RightBracket) {
+                    let element = self.logical_or(nodes, depth + 1)?;
+                    if elements.len() == MAX_VECTOR_LENGTH {
+                        return Err(crate::numeric::length_error(nodes[element].span));
+                    }
+                    elements.push(element);
+                    if !self.at(&TokenKind::Comma) {
+                        break;
+                    }
+                    self.cursor += 1;
+                }
+                let end = self.punctuation(TokenKind::RightBracket, "']'")?.end;
+                Ok(push(
+                    nodes,
+                    ExpressionKind::Vector { elements },
+                    Span::new(opening.start, end),
+                ))
+            }
             Some(Token {
                 kind: TokenKind::Float(digits),
                 span,

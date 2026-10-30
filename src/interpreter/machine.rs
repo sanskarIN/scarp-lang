@@ -6,7 +6,8 @@ use crate::{
     evaluator::{self, Evaluation, Workspace},
     limits::{Budget, ExecutionOptions},
     resolver::{
-        ResolvedArgument, ResolvedExpression, ResolvedOperation, ResolvedProgram, ResolvedStatement,
+        ResolvedArgument, ResolvedCall, ResolvedExpression, ResolvedOperation, ResolvedProgram,
+        ResolvedStatement,
     },
     value::Value,
 };
@@ -121,7 +122,14 @@ pub(super) fn prepare(
                         let call = expression.calls[node]
                             .as_ref()
                             .expect("resolved call identity");
-                        let function = &program.functions[call.function];
+                        let ResolvedCall::User {
+                            function: id,
+                            parameters,
+                        } = call
+                        else {
+                            unreachable!("native kernels complete in the expression workspace")
+                        };
+                        let function = &program.functions[*id];
                         if depth > options.max_call_depth {
                             return Err(limit(
                                 span,
@@ -152,12 +160,12 @@ pub(super) fn prepare(
                         live_slots += function.slots;
                         let mut environment = vec![Value::Unit; function.slots];
                         let mut supplied = vec![false; function.defaults.len()];
-                        for (parameter, value) in call.parameters.iter().zip(arguments) {
+                        for (parameter, value) in parameters.iter().zip(arguments) {
                             environment[*parameter] = value;
                             supplied[*parameter] = true;
                         }
                         frames.push(Frame {
-                            function: Some(call.function),
+                            function: Some(*id),
                             call_span: span,
                             operations: &function.statements,
                             environment,
@@ -216,6 +224,12 @@ pub(super) fn prepare(
                                 }
                             }
                             Completion::Output => {
+                                if let Some(vector) = value.as_vector() {
+                                    budget.charge(
+                                        vector.len() as u64,
+                                        frame.output.as_ref().unwrap().span,
+                                    )?;
+                                }
                                 let output = frame.output.as_mut().unwrap();
                                 let value = PrintValue::Value(value);
                                 charge_capture(&value, &mut captured, options, output.span)?;
@@ -494,6 +508,7 @@ fn charge_capture(
     let payload = match value {
         PrintValue::String(text) => text.len(),
         PrintValue::Value(Value::String(text)) => text.len(),
+        PrintValue::Value(Value::Vector(vector)) => vector.len().saturating_mul(8),
         _ => 8,
     };
     let amount = payload.saturating_add(64);

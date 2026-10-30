@@ -11,6 +11,7 @@ use crate::{
         OutputTarget, PrintArgument, Program, Statement,
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
+    numeric::Builtin,
     parser::MAX_BLOCK_DEPTH,
     value::{type_mismatch, ValueType},
 };
@@ -117,10 +118,13 @@ pub(crate) struct ResolvedExpression {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ResolvedCall {
-    pub function: usize,
-    /// Parameter indices in the original explicit-argument order.
-    pub parameters: Vec<usize>,
+pub(crate) enum ResolvedCall {
+    User {
+        function: usize,
+        /// Parameter indices in the original explicit-argument order.
+        parameters: Vec<usize>,
+    },
+    Builtin(Builtin),
 }
 
 /// Static function signature and call-graph information. Spans are source bytes.
@@ -810,11 +814,61 @@ fn resolve_expression(
     for node in syntax.nodes() {
         let mut call = None;
         let (kind, slot) = match &node.kind {
+            ExpressionKind::Vector { elements } => {
+                for &element in elements {
+                    require_type(
+                        types[element],
+                        ValueType::Float,
+                        syntax.nodes()[element].span,
+                    )?;
+                }
+                (ValueType::Vector, None)
+            }
+            ExpressionKind::Index {
+                vector,
+                index,
+                operator_span,
+            } => {
+                require_type(types[*vector], ValueType::Vector, *operator_span)?;
+                require_type(
+                    types[*index],
+                    ValueType::Integer,
+                    syntax.nodes()[*index].span,
+                )?;
+                (ValueType::Float, None)
+            }
             ExpressionKind::UserCall {
                 name,
                 arguments,
                 function_span,
             } => {
+                // Preserve existing user function names; kernels occupy call
+                // position only when no user declaration has this name.
+                if let Some(builtin) =
+                    Builtin::from_name(name).filter(|_| !names.contains_key(name))
+                {
+                    let parameters = builtin.parameter_types();
+                    if arguments.len() != parameters.len()
+                        || arguments.iter().any(|a| a.label.is_some())
+                    {
+                        return Err(Diagnostic::new(
+                            DiagnosticKind::CallArguments,
+                            *function_span,
+                            format!("{name} requires {} positional arguments", parameters.len()),
+                        ));
+                    }
+                    for (argument, &expected) in arguments.iter().zip(parameters) {
+                        require_type(
+                            types[argument.expression],
+                            expected,
+                            syntax.nodes()[argument.expression].span,
+                        )?;
+                    }
+                    slots.push(None);
+                    calls.push(Some(ResolvedCall::Builtin(builtin)));
+                    types.push(builtin.result_type());
+                    continue;
+                }
                 let &id = names.get(name).ok_or_else(|| {
                     Diagnostic::new(
                         DiagnosticKind::UnknownFunction,
@@ -890,7 +944,7 @@ fn resolve_expression(
                         ));
                     }
                 }
-                call = Some(ResolvedCall {
+                call = Some(ResolvedCall::User {
                     function: id,
                     parameters,
                 });

@@ -239,6 +239,10 @@ fn expression_nodes_preserve_spans_and_postorder_invariants() {
                     assert!(argument.expression < id);
                 }
             }
+            ExpressionKind::Vector { elements } => {
+                assert!(elements.iter().all(|element| *element < id))
+            }
+            ExpressionKind::Index { vector, index, .. } => assert!(*vector < id && *index < id),
             ExpressionKind::Integer(_) => {}
             ExpressionKind::Float(_)
             | ExpressionKind::Name(_)

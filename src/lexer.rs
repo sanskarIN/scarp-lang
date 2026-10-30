@@ -6,6 +6,8 @@ use crate::diagnostics::{Diagnostic, DiagnosticKind, Span};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
+    LeftBracket,
+    RightBracket,
     Identifier(String),
     String(String),
     Integer(String),
@@ -39,6 +41,8 @@ pub enum TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::LeftBracket => f.write_str("["),
+            Self::RightBracket => f.write_str("]"),
             Self::Identifier(name) => write!(f, "identifier({name})"),
             Self::String(value) => write!(f, "string({value:?})"),
             Self::Integer(digits) => write!(f, "integer({digits})"),
@@ -188,6 +192,14 @@ impl Lexer<'_> {
                             _ => TokenKind::Slash,
                         }
                     }
+                }
+                '[' => {
+                    self.bump();
+                    TokenKind::LeftBracket
+                }
+                ']' => {
+                    self.bump();
+                    TokenKind::RightBracket
                 }
                 ch if ch.is_ascii_digit() => self.number(start)?,
                 '.' if self.source[self.cursor + 1..]

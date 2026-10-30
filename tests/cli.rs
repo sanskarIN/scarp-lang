@@ -797,6 +797,61 @@ fn float_calls_and_both_streams_use_existing_cli_commands() {
 }
 
 #[test]
+fn numerical_vector_calls_keep_cli_streams_and_silent_checks() {
+    let fixture = Fixture::new();
+    let path=fixture.file("vectors.srp","pure funcra f(v: vector=fill(0.5,2)) -> vector { return add(v,v); } print(f()); eprint(dot(f(),[2.0,3.0]));");
+    let result = command().arg("run").arg(&path).output().unwrap();
+    assert!(result.status.success());
+    assert_eq!(result.stdout, b"[1.0, 1.0]\n");
+    assert_eq!(result.stderr, b"5.0\n");
+    let result = command().arg("check").arg(&path).output().unwrap();
+    assert!(result.status.success());
+    assert!(result.stdout.is_empty() && result.stderr.is_empty());
+    let result = command().arg("tokens").arg(&path).output().unwrap();
+    assert!(result.status.success());
+    assert!(String::from_utf8_lossy(&result.stdout).contains("float(0.5)"));
+}
+
+#[test]
+fn numerical_errors_and_vector_budget_failures_discard_both_cli_streams() {
+    let fixture = Fixture::new();
+    for (expression, code) in [
+        ("dot([], [1.0])", "E0032"),
+        ("[1.0][-1]", "E0033"),
+        ("mean([])", "E0034"),
+        ("scale([1e308],2.0)", "E0031"),
+        ("[1]", "E0015"),
+    ] {
+        let source=format!("// café 🌍\nfuncra f() -> unit {{ print({expression}); }} print(\"OUT\");eprint(\"ERR\");f();");
+        let path = fixture.file("failure.srp", &source);
+        let expected = format!(
+            "{}\n",
+            scarp::check(&source)
+                .unwrap_err()
+                .render(&path.to_string_lossy(), &source)
+        );
+        for verb in ["run", "check"] {
+            let result = command().arg(verb).arg(&path).output().unwrap();
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            assert!(stderr(&result).starts_with(&format!("error[{code}]")));
+            assert_eq!(stderr(&result), expected);
+        }
+    }
+    let path = fixture.file("budget.srp", "print([1.0,2.0]); eprint([3.0]);");
+    for verb in ["run", "check"] {
+        let result = command()
+            .args([verb, "--max-capture-bytes", "79"])
+            .arg(&path)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(stderr(&result).starts_with("error[E0029]"));
+    }
+}
+
+#[test]
 fn float_cli_errors_are_source_linked_and_discard_both_pending_streams() {
     let fixture = Fixture::new();
     for (expression, code) in [
