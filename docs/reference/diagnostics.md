@@ -43,6 +43,10 @@ from earlier beta.2 binaries.
 | `E0029` | Output snapshot limit | Reduce selected output or change max_capture_bytes |
 | `E0030` | Malformed or nonfinite float literal (alpha) | Use complete finite decimal/scientific spelling |
 | `E0031` | Nonfinite float result (alpha) | Reduce intermediate magnitude; operands/results must remain finite |
+| `E0032` | Invalid/excessive vector length or mismatched kernel shapes | Use equal lengths within 0..65536 |
+| `E0033` | Vector index outside bounds | Use an integer from zero through length minus one |
+| `E0034` | Numerical domain error | Supply nonempty input where required and ordered clamp bounds |
+| `E0035` | Vector buffer reservation failed | The bounded payload could not be reserved |
 
 File-read failures, invalid UTF-8, and output I/O failures are process errors
 without source error codes. They still use stderr and exit code `1`. Invalid

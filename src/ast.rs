@@ -182,6 +182,14 @@ pub struct ExpressionNode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionKind {
+    Vector {
+        elements: Vec<usize>,
+    },
+    Index {
+        vector: usize,
+        index: usize,
+        operator_span: Span,
+    },
     UserCall {
         name: String,
         arguments: Vec<CallArgument>,

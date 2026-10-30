@@ -1,6 +1,6 @@
 [package]
 name = "scarp"
-version = "0.0.4-alpha.1"
+version = "0.0.4-alpha.2"
 edition = "2021"
 rust-version = "1.74"
 description = "The Scarp programming language prototype"
@@ -18,6 +18,10 @@ path = "src/main.rs"
 
 [[bench]]
 name = "runtime"
+harness = false
+
+[[bench]]
+name = "numerics"
 harness = false
 
 [lints.rust]

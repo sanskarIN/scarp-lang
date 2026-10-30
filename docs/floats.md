@@ -2,8 +2,9 @@
 
 This source checkout adds the scalar float foundation for 0.0.4-alpha.1.
 Published beta.3 does not support floats. The implementation uses finite IEEE-754
-binary64, not exact decimal arithmetic. No numerical vectors or conversions are
-included. See [the design](proposals/0016-finite-floats.md) and
+binary64, not exact decimal arithmetic. This guide covers scalars; the alpha.2
+candidate adds [vectors](vectors.md). Implicit conversions remain unavailable.
+See [the design](proposals/0016-finite-floats.md) and
 [integration audit](development/finite-floats-audit.md).
 
 ## Literals and types

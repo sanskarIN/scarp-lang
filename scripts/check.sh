@@ -44,3 +44,7 @@ cargo run --locked -- run examples/escapes.srp
 cargo run --locked -- check examples/escapes.srp
 cargo run --locked -- run examples/control_escapes.srp
 cargo run --locked -- check examples/control_escapes.srp
+for example in vectors vector_probabilities coefficient_fit; do
+    cargo run --locked -- run "examples/$example.srp"
+    cargo run --locked -- check "examples/$example.srp"
+done

@@ -3,13 +3,13 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Choose a guide by the task you want to complete. Current tutorials target the
-0.0.4-alpha.1 prerelease on current main. They include variables, strings,
+0.0.4-alpha.2 source candidate. They include variables, strings,
 booleans, conditionals, bounded while/repeat loops, five string escapes, and
 [output statements](output.md). Release notes describe fixed snapshots;
 beta.3 added [typed funcra functions](functions.md) and CLI resource controls.
-The alpha adds [finite floats](floats.md). Vectors, native backends,
-and CLI redesign remain separate. See [release notes](releases/v0.0.4-alpha.1.md)
-for publication status and compatibility.
+Alpha.1 added [finite floats](floats.md); this candidate adds [vectors](vectors.md).
+Tensors, native backends and CLI redesign remain separate. See
+[candidate notes](releases/v0.0.4-alpha.2.md); published alpha.1 has no vectors.
 
 ## Guides and what each adds
 
@@ -18,6 +18,7 @@ for publication status and compatibility.
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
 | [Finite floats](floats.md) | Use the alpha's binary64 scalars, numeric diagnostics, and function integration |
+| [Numerical vectors](vectors.md) | Use immutable numerical data, pure kernels, typed vector calls and bounded allocation |
 | [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources in beta.3 |
 | [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |

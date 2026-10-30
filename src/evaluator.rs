@@ -4,17 +4,20 @@ use crate::{
     ast::{BinaryOperator, Expression, ExpressionKind, LogicalOperator},
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     limits::Budget,
-    resolver::{self, ResolvedExpression},
-    value::{type_mismatch, FiniteFloat, Value, ValueType},
+    numeric::{self, Builtin},
+    resolver::{self, ResolvedCall, ResolvedExpression},
+    value::{finite_number, type_mismatch, Value, ValueType},
 };
 
 /// Evaluate a standalone integer expression, preserving the v0.0.1 return type.
-/// Use `evaluate_value` when any primitive result is allowed.
+/// Use `evaluate_value` when any value result is allowed.
 pub fn evaluate(expression: &Expression) -> Result<i64, Diagnostic> {
     evaluate_value(expression)?.require_integer(expression.nodes()[expression.root()].span)
 }
 
-/// Evaluate a standalone primitive expression without a variable environment.
+/// Evaluate a standalone expression without a variable environment. This legacy
+/// helper has an unbounded work allowance; capped program/native APIs are
+/// preferable for controlled execution of numerical workloads.
 pub fn evaluate_value(expression: &Expression) -> Result<Value, Diagnostic> {
     Workspace::default().evaluate(
         &resolver::resolve_standalone(expression)?,
@@ -31,6 +34,9 @@ pub(crate) struct Workspace {
 }
 
 enum Task {
+    Vector(usize, Span),
+    Index(Span),
+    Builtin(Builtin, usize, Span),
     UserCall(usize, usize, Span),
     Visit(usize),
     Negate(Span),
@@ -88,6 +94,9 @@ impl Workspace {
             let span = match &task {
                 Task::Visit(index) => expression.syntax.nodes()[*index].span,
                 Task::UserCall(_, _, span)
+                | Task::Vector(_, span)
+                | Task::Index(span)
+                | Task::Builtin(_, _, span)
                 | Task::Negate(span)
                 | Task::Not(span)
                 | Task::Boolean(span)
@@ -100,10 +109,30 @@ impl Workspace {
                     let node = &expression.syntax.nodes()[index];
                     match &node.kind {
                         ExpressionKind::UserCall { arguments, .. } => {
-                            tasks.push(Task::UserCall(index, arguments.len(), node.span));
+                            tasks.push(match &expression.calls[index] {
+                                Some(ResolvedCall::Builtin(builtin)) => {
+                                    Task::Builtin(*builtin, arguments.len(), node.span)
+                                }
+                                _ => Task::UserCall(index, arguments.len(), node.span),
+                            });
                             for argument in arguments.iter().rev() {
                                 tasks.push(Task::Visit(argument.expression));
                             }
+                        }
+                        ExpressionKind::Vector { elements } => {
+                            tasks.push(Task::Vector(elements.len(), node.span));
+                            for &element in elements.iter().rev() {
+                                tasks.push(Task::Visit(element));
+                            }
+                        }
+                        ExpressionKind::Index {
+                            vector,
+                            index,
+                            operator_span,
+                        } => {
+                            tasks.push(Task::Index(*operator_span));
+                            tasks.push(Task::Visit(*index));
+                            tasks.push(Task::Visit(*vector));
                         }
                         ExpressionKind::Integer(value) => values.push(Value::Integer(*value)),
                         ExpressionKind::Float(value) => values.push(Value::Float(*value)),
@@ -154,6 +183,39 @@ impl Workspace {
                         }
                     }
                 }
+                Task::Vector(count, span) => {
+                    budget.charge(count as u64, span)?;
+                    let start = values.len() - count;
+                    let mut elements = numeric::buffer(count, span)?;
+                    for value in &values[start..] {
+                        elements.push(finite_number(value.require_float(span)?, span)?);
+                    }
+                    values.truncate(start);
+                    values.push(numeric::vector(elements, span)?);
+                }
+                Task::Index(span) => {
+                    let index = values.pop().unwrap().require_integer(span)?;
+                    let value = values.pop().unwrap();
+                    let vector = value.require_vector(span)?;
+                    let element = usize::try_from(index)
+                        .ok()
+                        .and_then(|i| vector.as_slice().get(i))
+                        .ok_or_else(|| {
+                            Diagnostic::new(
+                                DiagnosticKind::VectorIndex,
+                                span,
+                                format!("index {index} is outside vector length {}", vector.len()),
+                            )
+                        })?;
+                    values.push(Value::Float(*element));
+                }
+                Task::Builtin(builtin, count, span) => {
+                    let start = values.len() - count;
+                    let value =
+                        numeric::evaluate_with_budget(builtin, &values[start..], budget, span)?;
+                    values.truncate(start);
+                    values.push(value);
+                }
                 Task::UserCall(node, count, span) => {
                     let arguments = values.split_off(values.len() - count);
                     return Ok(Evaluation::Call {
@@ -185,6 +247,9 @@ impl Workspace {
                 Task::Binary(operator, span) => {
                     let right = values.pop().unwrap();
                     let left = values.pop().unwrap();
+                    if let (Some(a), Some(b)) = (left.as_vector(), right.as_vector()) {
+                        budget.charge(a.len().max(b.len()) as u64, span)?;
+                    }
                     values.push(apply_binary(operator, &left, &right, span)?);
                 }
                 Task::Logical(operator, right, span) => {
@@ -287,12 +352,5 @@ fn overflow(span: Span) -> Diagnostic {
 }
 
 pub(crate) fn finite(value: f64, span: Span) -> Result<Value, Diagnostic> {
-    FiniteFloat::new(value).map(Value::Float).ok_or_else(|| {
-        Diagnostic::new(
-            DiagnosticKind::NonFiniteNumber,
-            span,
-            "numeric operation produced a non-finite result",
-        )
-        .with_help("keep every intermediate result finite")
-    })
+    finite_number(value, span).map(Value::Float)
 }

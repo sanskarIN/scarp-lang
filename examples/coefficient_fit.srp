@@ -1,0 +1,18 @@
+// Fit y = coefficient * x using an explicitly written squared-error gradient.
+pure funcra loss(inputs: vector, targets: vector, coefficient: float) -> float
+    needs len(inputs) > 0;
+    needs len(inputs) == len(targets);
+{
+    return mse(scale(inputs, coefficient), targets);
+}
+
+bind inputs = [1.0, 2.0, 3.0];
+bind targets = [2.0, 4.0, 6.0];
+var coefficient = 0.0;
+repeat 40 as iteration {
+    bind residuals = add(scale(inputs, coefficient), scale(targets, -1.0));
+    bind gradient = 2.0 * dot(inputs, residuals) / 3.0;
+    coefficient -= 0.05 * gradient;
+}
+print(coefficient > 1.999999999 and coefficient < 2.000000001);
+print(loss(coefficient: coefficient, targets: targets, inputs: inputs) < 1e-18);

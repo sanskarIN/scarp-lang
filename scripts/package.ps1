@@ -200,6 +200,33 @@ try {
             }
         }
     }
+    $vectorSource = Join-Path $stagingRoot 'vector-smoke.srp'
+    [System.IO.File]::WriteAllText($vectorSource, 'pure funcra f(v: vector=fill(0.5,2)) -> vector { return add(v,v); } print(f()); eprint(dot(f(),[2.0,3.0]));')
+    $vectorFlags = @('--max-steps','200','--max-prints','2','--max-call-depth','1','--max-calls','2','--max-live-slots','2','--max-capture-bytes','152')
+    $vectorRun = Invoke-ScarpProcess -Executable $executable -Arguments (@('run') + $vectorFlags + @($vectorSource))
+    if ($vectorRun.ExitCode -ne 0 -or [System.Text.Encoding]::UTF8.GetString($vectorRun.Stdout) -cne "[1.0, 1.0]`n" -or [System.Text.Encoding]::UTF8.GetString($vectorRun.Stderr) -cne "5.0`n") {
+        throw 'Packaged vector calls or exact streams failed'
+    }
+    $vectorCheck = Invoke-ScarpProcess -Executable $executable -Arguments (@('check') + $vectorFlags + @($vectorSource))
+    if ($vectorCheck.ExitCode -ne 0 -or $vectorCheck.Stdout.Length -ne 0 -or $vectorCheck.Stderr.Length -ne 0) {
+        throw 'Packaged vector check must be silent'
+    }
+    foreach ($case in @(@('dot([], [1.0])','E0032'), @('[1.0][-1]','E0033'), @('mean([])','E0034'), @('scale([1e308],2.0)','E0031'))) {
+        [System.IO.File]::WriteAllText($vectorSource, ('print("OUT"); eprint("ERR"); print(' + $case[0] + ');'))
+        foreach ($verb in @('run','check')) {
+            $failed = Invoke-ScarpProcess -Executable $executable -Arguments @($verb,$vectorSource)
+            if ($failed.ExitCode -ne 1 -or $failed.Stdout.Length -ne 0 -or -not [System.Text.Encoding]::UTF8.GetString($failed.Stderr).StartsWith(('error[' + $case[1] + ']'))) {
+                throw 'Packaged vector diagnostic or atomicity failed'
+            }
+        }
+    }
+    [System.IO.File]::WriteAllText($vectorSource, 'print([1.0,2.0]); eprint([3.0]);')
+    foreach ($verb in @('run','check')) {
+        $limited = Invoke-ScarpProcess -Executable $executable -Arguments @($verb,'--max-capture-bytes','79',$vectorSource)
+        if ($limited.ExitCode -ne 1 -or $limited.Stdout.Length -ne 0 -or -not [System.Text.Encoding]::UTF8.GetString($limited.Stderr).StartsWith('error[E0029]')) {
+            throw 'Packaged vector snapshots must obey the capture cap'
+        }
+    }
     $tokens = & $executable tokens (Join-Path $extractedPackage 'examples/arithmetic.srp')
     if ($LASTEXITCODE -ne 0 -or -not ($tokens -match 'integer\(1\)')) {
         throw 'Packaged token inspection failed'

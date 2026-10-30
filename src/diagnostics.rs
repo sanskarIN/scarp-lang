@@ -108,6 +108,10 @@ pub enum DiagnosticKind {
     CaptureLimit,
     InvalidFloat,
     NonFiniteNumber,
+    VectorLength,
+    VectorIndex,
+    NumericDomain,
+    VectorAllocation,
 }
 
 impl DiagnosticKind {
@@ -144,6 +148,10 @@ impl DiagnosticKind {
             Self::CaptureLimit => "E0029",
             Self::InvalidFloat => "E0030",
             Self::NonFiniteNumber => "E0031",
+            Self::VectorLength => "E0032",
+            Self::VectorIndex => "E0033",
+            Self::NumericDomain => "E0034",
+            Self::VectorAllocation => "E0035",
         }
     }
 }

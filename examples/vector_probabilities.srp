@@ -1,0 +1,15 @@
+pure funcra normalize_weights(values: vector) -> vector
+    needs len(values) > 0;
+    needs values == clamp(values, 0.0, 1e308);
+    needs sum(values) > 0.0;
+    ensures sum(result) > 0.999999999999 and sum(result) < 1.000000000001;
+{
+    return scale(values, 1.0 / sum(values));
+}
+
+print(normalize_weights([2.0, 3.0, 5.0]));
+print(softmax([1000.0, 1000.0, 1000.0, 1000.0]));
+print(softmax([-1e308, 1e308]));
+bind probabilities = softmax([1.0, 2.0, 3.0]);
+print(sum(probabilities) > 0.999999999999 and sum(probabilities) < 1.000000000001);
+print(probabilities[0] < probabilities[1] and probabilities[1] < probabilities[2]);

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.4-alpha.2 — release candidate, prepared 2026-10-30
+
+- Immutable finite vectors, literals/indexing, whole-value assignment and typed
+  funcra defaults/arguments/results/contracts with shared snapshots.
+- Ten pure kernels with compensated reductions, scaled mean/MSE and shifted
+  softmax. Preserve user-defined kernel names; fill uses value then count.
+- Prepay native work and payload allocations; account vector equality, output
+  preparation and snapshot bytes under the unchanged six execution controls.
+- Add E0032–E0035 without changing established codes, independent numerical
+  references, adversarial/function/CLI tests and three exact-output examples.
+- Record numerical benchmark results and require native vector smoke tests.
+- Prepare source/lockfile/notes with publication disabled. No alpha.2 tag or
+  release is authorized. See [candidate notes](docs/releases/v0.0.4-alpha.2.md).
+
 ## 0.0.4-alpha.1 — 2026-10-30 — prerelease
 
 - Finite binary64 float scalars with decimal/scientific literals, same-type

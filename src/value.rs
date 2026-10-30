@@ -1,4 +1,4 @@
-//! Primitive runtime values and their inferred binding types.
+//! Runtime values, finite numerical storage and inferred binding types.
 
 use std::{fmt, sync::Arc};
 
@@ -10,6 +10,7 @@ pub enum ValueType {
     Unit,
     Integer,
     Float,
+    Vector,
     Boolean,
     String,
 }
@@ -20,6 +21,7 @@ impl fmt::Display for ValueType {
             Self::Unit => "unit",
             Self::Integer => "integer",
             Self::Float => "float",
+            Self::Vector => "vector",
             Self::Boolean => "boolean",
             Self::String => "string",
         })
@@ -66,6 +68,68 @@ impl fmt::Display for FiniteFloat {
     }
 }
 
+/// Maximum elements in either a source-created or host-created numeric vector.
+pub const MAX_VECTOR_LENGTH: usize = 65_536;
+
+/// Shared contiguous immutable finite elements. Moving an owned buffer into
+/// this wrapper does not copy its payload; cloning only shares the Arc.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NumericVector(Arc<Vec<FiniteFloat>>);
+
+impl NumericVector {
+    /// Reject oversized/nonfinite input or failed buffer reservation.
+    pub fn new(values: &[f64]) -> Option<Self> {
+        if values.len() > MAX_VECTOR_LENGTH {
+            return None;
+        }
+        let mut finite = Vec::new();
+        finite.try_reserve_exact(values.len()).ok()?;
+        for &value in values {
+            finite.push(FiniteFloat::new(value)?);
+        }
+        Self::from_finite(finite)
+    }
+
+    /// Consume an already checked finite buffer without copying its elements.
+    pub fn from_finite(values: Vec<FiniteFloat>) -> Option<Self> {
+        (values.len() <= MAX_VECTOR_LENGTH).then(|| Self(Arc::new(values)))
+    }
+
+    pub fn as_slice(&self) -> &[FiniteFloat] {
+        self.0.as_slice()
+    }
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl fmt::Display for NumericVector {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("[")?;
+        for (index, value) in self.as_slice().iter().enumerate() {
+            if index > 0 {
+                f.write_str(", ")?;
+            }
+            value.fmt(f)?;
+        }
+        f.write_str("]")
+    }
+}
+
+pub(crate) fn finite_number(value: f64, span: Span) -> Result<FiniteFloat, Diagnostic> {
+    FiniteFloat::new(value).ok_or_else(|| {
+        Diagnostic::new(
+            DiagnosticKind::NonFiniteNumber,
+            span,
+            "numeric operation produced a non-finite result",
+        )
+        .with_help("keep every intermediate result finite")
+    })
+}
+
 /// Strings share immutable storage. Reassignment replaces a value and cannot
 /// mutate its copies or values already captured for output.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +138,7 @@ pub enum Value {
     Unit,
     Integer(i64),
     Float(FiniteFloat),
+    Vector(NumericVector),
     Boolean(bool),
     String(Arc<str>),
 }
@@ -84,6 +149,7 @@ impl Value {
             Self::Unit => ValueType::Unit,
             Self::Integer(_) => ValueType::Integer,
             Self::Float(_) => ValueType::Float,
+            Self::Vector(_) => ValueType::Vector,
             Self::Boolean(_) => ValueType::Boolean,
             Self::String(_) => ValueType::String,
         }
@@ -101,6 +167,18 @@ impl Value {
             Self::Float(value) => Some(value.get()),
             _ => None,
         }
+    }
+
+    pub fn as_vector(&self) -> Option<&NumericVector> {
+        match self {
+            Self::Vector(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn require_vector(&self, span: Span) -> Result<&NumericVector, Diagnostic> {
+        self.as_vector()
+            .ok_or_else(|| type_mismatch(span, ValueType::Vector, self.kind()))
     }
 
     pub(crate) fn require_float(&self, span: Span) -> Result<f64, Diagnostic> {
@@ -151,6 +229,7 @@ impl fmt::Display for Value {
             Self::Unit => f.write_str("unit"),
             Self::Integer(value) => value.fmt(f),
             Self::Float(value) => value.fmt(f),
+            Self::Vector(value) => value.fmt(f),
             Self::Boolean(value) => value.fmt(f),
             Self::String(value) => f.write_str(value),
         }

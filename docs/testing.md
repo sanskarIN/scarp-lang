@@ -138,3 +138,26 @@ checked on CI, including minimum Rust. Timing thresholds are not correctness tes
 The v0.0.2 example manifest locks all 22 original source/output files to their
 published bytes. The Python release-verifier suite checks those digests; Cargo
 and package discovery execute every example, including comments/unicode samples.
+
+## Numerical vector validation
+
+The vector suites test literals/indexing, finite host invariants, immutable
+sharing, every kernel, malformed/deep/Unicode source, recursive/named/default
+calls, purity/contracts, concurrent reuse and all six exact resource boundaries.
+Fraction-model reductions use independently accumulated integer numerators.
+`tests/fixtures/softmax-reference.csv` contains 37 probability cases generated
+with Python Decimal.exp at precision 60; Rust tests use numerical tolerances.
+Mean/MSE regressions cover representable results whose naive intermediates
+overflow, plus cancellation, signed zero, subnormals and underflow.
+Maximum block/group/call combinations additionally parse on an explicit 512 KiB
+thread and resolve/execute on the normal worker, preserving existing depth tests.
+
+```sh
+cargo test --locked --offline --test vectors --test vector_functions
+cargo bench --locked --offline --bench numerics -- --quick
+```
+
+The new benchmark smoke workloads run on stable native hosts and Rust 1.74,
+with outputs verified before timing. Full performance records and raw repeated
+runs are in [performance](performance.md#numerical-vector-measurements).
+Native archives run all 23 exact-output examples and vector stream/failure probes.

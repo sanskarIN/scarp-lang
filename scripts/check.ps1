@@ -48,6 +48,10 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/escapes.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/control_escapes.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/control_escapes.srp')
+    foreach ($example in @('vectors', 'vector_probabilities', 'coefficient_fit')) {
+        Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', "examples/$example.srp")
+        Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', "examples/$example.srp")
+    }
 }
 finally {
     $env:CARGO_INCREMENTAL = $previousIncremental

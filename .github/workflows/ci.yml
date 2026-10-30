@@ -40,7 +40,9 @@ jobs:
         shell: bash
         run: sh scripts/check.sh --offline
       - name: Smoke-test benchmark workloads
-        run: cargo bench --locked --offline --bench runtime -- --quick
+        run: |
+          cargo bench --locked --offline --bench runtime -- --quick
+          cargo bench --locked --offline --bench numerics -- --quick
       - name: Verify release asset validation
         if: runner.os == 'Linux'
         run: python3 -m unittest discover -s scripts -p 'test_*release*.py'
@@ -69,4 +71,6 @@ jobs:
       - name: Test release mode on minimum Rust
         run: cargo test --locked --offline --release
       - name: Smoke-test benchmark on minimum Rust
-        run: cargo bench --locked --offline --bench runtime -- --quick
+        run: |
+          cargo bench --locked --offline --bench runtime -- --quick
+          cargo bench --locked --offline --bench numerics -- --quick

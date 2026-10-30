@@ -8,7 +8,7 @@ use crate::{
     },
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     lexer::{Token, TokenKind},
-    value::{FiniteFloat, ValueType},
+    value::{FiniteFloat, ValueType, MAX_VECTOR_LENGTH},
 };
 
 /// Maximum nested expression parentheses, excluding the output call itself.
@@ -19,7 +19,23 @@ pub const MAX_BLOCK_DEPTH: usize = 64;
 
 /// Parse a token stream. An omitted EOF token is treated as the end of input.
 pub fn parse(tokens: &[Token]) -> Result<Program, Diagnostic> {
-    Parser { tokens, cursor: 0 }.program()
+    Parser { tokens, cursor: 0 }
+        .program()
+        .map_err(|error| *error.0)
+}
+
+// Keep recursive success paths' Result values small. Public diagnostics retain
+// their original representation; only failures allocate this internal box.
+#[derive(Debug)]
+struct ParseError(Box<Diagnostic>);
+
+impl ParseError {
+    fn new(kind: DiagnosticKind, span: Span, message: impl Into<String>) -> Self {
+        Self(Box::new(Diagnostic::new(kind, span, message)))
+    }
+    fn with_help(self, help: impl Into<String>) -> Self {
+        Self(Box::new((*self.0).with_help(help)))
+    }
 }
 
 struct Parser<'a> {
@@ -32,7 +48,7 @@ impl Parser<'_> {
         self.tokens.get(self.cursor)
     }
 
-    fn expected(&self, expected: &str) -> Diagnostic {
+    fn expected(&self, expected: &str) -> ParseError {
         let (found, span) = self.current().map_or_else(
             || {
                 let end = self.tokens.last().map_or(0, |token| token.span.end);
@@ -40,7 +56,7 @@ impl Parser<'_> {
             },
             |token| (token.kind.to_string(), token.span),
         );
-        Diagnostic::new(
+        ParseError::new(
             DiagnosticKind::UnexpectedToken,
             span,
             format!("expected {expected}, found {found}"),
@@ -48,7 +64,7 @@ impl Parser<'_> {
         .with_help("use print(\"text\"); or print(1 + 2);")
     }
 
-    fn punctuation(&mut self, kind: TokenKind, label: &str) -> Result<Span, Diagnostic> {
+    fn punctuation(&mut self, kind: TokenKind, label: &str) -> Result<Span, ParseError> {
         if let Some(token) = self.current() {
             if token.kind == kind {
                 let span = token.span;
@@ -59,17 +75,19 @@ impl Parser<'_> {
         Err(self.expected(label))
     }
 
-    fn program(mut self) -> Result<Program, Diagnostic> {
+    fn program(mut self) -> Result<Program, ParseError> {
         Ok(Program {
             statements: self.statement_list(0, false)?,
         })
     }
 
+    // Only compact container state survives recursive block parsing. Leaf
+    // declarations/output have larger temporaries and finish in a separate call.
     fn statement_list(
         &mut self,
         depth: usize,
         in_block: bool,
-    ) -> Result<Vec<Statement>, Diagnostic> {
+    ) -> Result<Vec<Statement>, ParseError> {
         let mut statements = Vec::new();
         while let Some(token) = self.current() {
             match &token.kind {
@@ -85,16 +103,146 @@ impl Parser<'_> {
                     break;
                 }
                 TokenKind::RightBrace if in_block => break,
-                TokenKind::Identifier(name) if name == "funcra" || name == "pure" => {
-                    if in_block {
-                        return Err(Diagnostic::new(
-                            DiagnosticKind::FunctionUnsupported,
-                            token.span,
-                            "nested function declarations are not supported",
-                        ));
-                    }
-                    statements.push(Statement::Function(self.function()?));
+                _ if self.container_start() => {
+                    statements.push(self.container_statement(depth, in_block)?)
                 }
+                _ => self.leaf_statements(in_block, &mut statements)?,
+            }
+        }
+        if in_block && self.current().is_none() {
+            return Err(self
+                .expected("'}'")
+                .with_help("close the statement block with '}'"));
+        }
+        Ok(statements)
+    }
+
+    fn container_start(&self) -> bool {
+        match self.current().map(|token| &token.kind) {
+            Some(TokenKind::LeftBrace) => true,
+            Some(TokenKind::Identifier(name)) => match name.as_str() {
+                "funcra" | "pure" | "if" | "while" => true,
+                "repeat" => !self
+                    .tokens
+                    .get(self.cursor + 1)
+                    .is_some_and(|token| assignment_operator(&token.kind).is_some()),
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    fn container_statement(
+        &mut self,
+        depth: usize,
+        in_block: bool,
+    ) -> Result<Statement, ParseError> {
+        match &self.current().expect("container start").kind {
+            TokenKind::LeftBrace => {
+                let (statements, span) = self.block(depth)?;
+                Ok(Statement::Block { statements, span })
+            }
+            TokenKind::Identifier(name) if name == "funcra" || name == "pure" => {
+                if in_block {
+                    return Err(ParseError::new(
+                        DiagnosticKind::FunctionUnsupported,
+                        self.current().unwrap().span,
+                        "nested function declarations are not supported",
+                    ));
+                }
+                Ok(Statement::Function(self.function()?))
+            }
+            TokenKind::Identifier(name) if name == "if" => self.conditional(depth),
+            TokenKind::Identifier(name) if name == "repeat" => self.repeat_loop(depth),
+            TokenKind::Identifier(name) if name == "while" => self.while_loop(depth),
+            _ => unreachable!("checked container start"),
+        }
+    }
+
+    fn repeat_loop(&mut self, depth: usize) -> Result<Statement, ParseError> {
+        let start = self.current().unwrap().span.start;
+        self.cursor += 1;
+        let mut nodes = Vec::new();
+        let root = self.logical_or(&mut nodes, 0)?;
+        if !self.keyword("as") {
+            return Err(self
+                .expected("as followed by an index name")
+                .with_help("use repeat count as index { statements }"));
+        }
+        self.cursor += 1;
+        let (index, index_span) = match self.current() {
+            Some(Token {
+                kind: TokenKind::Identifier(name),
+                span,
+            }) => (name.clone(), *span),
+            _ => {
+                return Err(self
+                    .expected("an immutable repeat index name")
+                    .with_help("use repeat count as index { statements }"))
+            }
+        };
+        self.cursor += 1;
+        if !matches!(self.current().map(|t| &t.kind), Some(TokenKind::LeftBrace)) {
+            return Err(self.expected("'{'").with_help(
+                "enclose the repeat body in braces: repeat count as index { statements }",
+            ));
+        }
+        let (body, body_span) = self.block(depth)?;
+        Ok(Statement::Repeat {
+            count: Expression { nodes, root },
+            index,
+            index_span,
+            statements: body,
+            span: Span::new(start, body_span.end),
+        })
+    }
+
+    fn while_loop(&mut self, depth: usize) -> Result<Statement, ParseError> {
+        let start = self.current().unwrap().span.start;
+        self.cursor += 1;
+        let mut nodes = Vec::new();
+        let root = self.logical_or(&mut nodes, 0).map_err(|error| {
+            if error.0.kind == DiagnosticKind::UnexpectedToken {
+                error.with_help("use while boolean_condition { statements }")
+            } else {
+                error
+            }
+        })?;
+        if !matches!(self.current().map(|t| &t.kind), Some(TokenKind::LeftBrace)) {
+            return Err(self
+                .expected("'{'")
+                .with_help("enclose the while body in braces: while condition { statements }"));
+        }
+        let (body, span) = self.block(depth)?;
+        Ok(Statement::While {
+            condition: Expression { nodes, root },
+            statements: body,
+            span: Span::new(start, span.end),
+        })
+    }
+
+    fn leaf_statements(
+        &mut self,
+        in_block: bool,
+        statements: &mut Vec<Statement>,
+    ) -> Result<(), ParseError> {
+        while let Some(token) = self.current() {
+            if self.container_start() {
+                break;
+            }
+            match &token.kind {
+                TokenKind::Eof => {
+                    if in_block {
+                        return Err(self
+                            .expected("'}'")
+                            .with_help("close the statement block with '}'"));
+                    }
+                    if self.cursor + 1 != self.tokens.len() {
+                        return Err(self.expected("the end of the token stream"));
+                    }
+                    break;
+                }
+                TokenKind::RightBrace if in_block => break,
                 TokenKind::Identifier(name) if name == "return" => {
                     let start = token.span.start;
                     self.cursor += 1;
@@ -107,80 +255,6 @@ impl Parser<'_> {
                     statements.push(Statement::Return {
                         value,
                         span: Span::new(start, end),
-                    });
-                }
-                TokenKind::LeftBrace => {
-                    let (inner, span) = self.block(depth)?;
-                    statements.push(Statement::Block {
-                        statements: inner,
-                        span,
-                    });
-                }
-                TokenKind::Identifier(name) if name == "if" => {
-                    statements.push(self.conditional(depth)?);
-                }
-                TokenKind::Identifier(name)
-                    if name == "repeat"
-                        && !self
-                            .tokens
-                            .get(self.cursor + 1)
-                            .is_some_and(|token| assignment_operator(&token.kind).is_some()) =>
-                {
-                    let start = token.span.start;
-                    self.cursor += 1;
-                    let mut nodes = Vec::new();
-                    let root = self.logical_or(&mut nodes, 0)?;
-                    if !self.keyword("as") {
-                        return Err(self
-                            .expected("as followed by an index name")
-                            .with_help("use repeat count as index { statements }"));
-                    }
-                    self.cursor += 1;
-                    let (index, index_span) = match self.current() {
-                        Some(Token {
-                            kind: TokenKind::Identifier(name),
-                            span,
-                        }) => (name.clone(), *span),
-                        _ => {
-                            return Err(self
-                                .expected("an immutable repeat index name")
-                                .with_help("use repeat count as index { statements }"))
-                        }
-                    };
-                    self.cursor += 1;
-                    if !matches!(self.current().map(|t| &t.kind), Some(TokenKind::LeftBrace)) {
-                        return Err(self.expected("'{'").with_help("enclose the repeat body in braces: repeat count as index { statements }"));
-                    }
-                    let (body, body_span) = self.block(depth)?;
-                    statements.push(Statement::Repeat {
-                        count: Expression { nodes, root },
-                        index,
-                        index_span,
-                        statements: body,
-                        span: Span::new(start, body_span.end),
-                    });
-                }
-                TokenKind::Identifier(name) if name == "while" => {
-                    let start = token.span.start;
-                    self.cursor += 1;
-                    let mut nodes = Vec::new();
-                    let root = self.logical_or(&mut nodes, 0).map_err(|error| {
-                        if error.kind == DiagnosticKind::UnexpectedToken {
-                            error.with_help("use while boolean_condition { statements }")
-                        } else {
-                            error
-                        }
-                    })?;
-                    if !matches!(self.current().map(|t| &t.kind), Some(TokenKind::LeftBrace)) {
-                        return Err(self.expected("'{'").with_help(
-                            "enclose the while body in braces: while condition { statements }",
-                        ));
-                    }
-                    let (body, span) = self.block(depth)?;
-                    statements.push(Statement::While {
-                        condition: Expression { nodes, root },
-                        statements: body,
-                        span: Span::new(start, span.end),
                     });
                 }
                 TokenKind::Identifier(name) if name == "break" || name == "continue" => {
@@ -216,7 +290,7 @@ impl Parser<'_> {
                     } else {
                         (token.span, "let", "bind")
                     };
-                    return Err(Diagnostic::new(
+                    return Err(ParseError::new(
                         DiagnosticKind::UnknownStatement,
                         span,
                         format!("legacy declaration {old:?} is not supported"),
@@ -258,7 +332,7 @@ impl Parser<'_> {
                         statements.push(self.assignment(operator)?);
                         continue;
                     }
-                    return Err(Diagnostic::new(
+                    return Err(ParseError::new(
                         DiagnosticKind::UnknownStatement,
                         token.span,
                         format!("unknown statement {name:?}"),
@@ -275,11 +349,11 @@ impl Parser<'_> {
                 .expected("'}'")
                 .with_help("close the statement block with '}'"));
         }
-        Ok(statements)
+        Ok(())
     }
 
     // Keep declaration temporaries out of recursive statement-list frames.
-    fn declaration(&mut self) -> Result<Statement, Diagnostic> {
+    fn declaration(&mut self) -> Result<Statement, ParseError> {
         let token = self.current().expect("declaration keyword is present");
         let TokenKind::Identifier(name) = &token.kind else {
             unreachable!()
@@ -314,7 +388,7 @@ impl Parser<'_> {
             error.with_help("declarations require an initializer: bind name = expression; or var name = expression;"))?;
         let mut nodes = Vec::new();
         let root = self.logical_or(&mut nodes, 0).map_err(|error| {
-            if error.kind == DiagnosticKind::UnexpectedToken {
+            if error.0.kind == DiagnosticKind::UnexpectedToken {
                 error.with_help(format!(
                     "provide an initializer after '=': {keyword} name = expression;"
                 ))
@@ -335,7 +409,7 @@ impl Parser<'_> {
         })
     }
 
-    fn assignment(&mut self, operator: AssignmentOperator) -> Result<Statement, Diagnostic> {
+    fn assignment(&mut self, operator: AssignmentOperator) -> Result<Statement, ParseError> {
         let token = self.current().expect("assignment name is present");
         let TokenKind::Identifier(name) = &token.kind else {
             unreachable!()
@@ -346,7 +420,7 @@ impl Parser<'_> {
         self.cursor += 2;
         let mut nodes = Vec::new();
         let root = self.logical_or(&mut nodes, 0).map_err(|error| {
-            if error.kind == DiagnosticKind::UnexpectedToken {
+            if error.0.kind == DiagnosticKind::UnexpectedToken {
                 error.with_help("provide a value expression after the assignment operator")
             } else {
                 error
@@ -374,13 +448,13 @@ impl Parser<'_> {
         self.current().is_some_and(|token| &token.kind == kind)
     }
 
-    fn expression(&mut self) -> Result<Expression, Diagnostic> {
+    fn expression(&mut self) -> Result<Expression, ParseError> {
         let mut nodes = Vec::new();
         let root = self.logical_or(&mut nodes, 0)?;
         Ok(Expression { nodes, root })
     }
 
-    fn identifier(&mut self) -> Result<(String, Span), Diagnostic> {
+    fn identifier(&mut self) -> Result<(String, Span), ParseError> {
         match self.current() {
             Some(Token {
                 kind: TokenKind::Identifier(name),
@@ -394,20 +468,21 @@ impl Parser<'_> {
         }
     }
 
-    fn value_type(&mut self, result: bool) -> Result<ValueType, Diagnostic> {
+    fn value_type(&mut self, result: bool) -> Result<ValueType, ParseError> {
         let (name, span) = self.identifier()?;
         match name.as_str() {
             "integer" => Ok(ValueType::Integer),
             "float" => Ok(ValueType::Float),
+            "vector" => Ok(ValueType::Vector),
             "boolean" => Ok(ValueType::Boolean),
             "string" => Ok(ValueType::String),
             "unit" if result => Ok(ValueType::Unit),
-            "funcra" | "pure" => Err(Diagnostic::new(
+            "funcra" | "pure" => Err(ParseError::new(
                 DiagnosticKind::FunctionUnsupported,
                 span,
                 "function types and first-class functions are not supported yet",
             )),
-            _ => Err(Diagnostic::new(
+            _ => Err(ParseError::new(
                 DiagnosticKind::FunctionDefinition,
                 span,
                 format!(
@@ -415,11 +490,11 @@ impl Parser<'_> {
                     if result { "result" } else { "parameter" }
                 ),
             )
-            .with_help("use integer, float, boolean, string, or unit for a result")),
+            .with_help("use integer, float, vector, boolean, string, or unit for a result")),
         }
     }
 
-    fn function(&mut self) -> Result<FunctionDeclaration, Diagnostic> {
+    fn function(&mut self) -> Result<FunctionDeclaration, ParseError> {
         let start = self.current().unwrap().span.start;
         let pure = self.keyword("pure");
         if pure {
@@ -484,7 +559,7 @@ impl Parser<'_> {
         })
     }
 
-    fn output_statement(&mut self) -> Result<Statement, Diagnostic> {
+    fn output_statement(&mut self) -> Result<Statement, ParseError> {
         let token = self.current().expect("output keyword is present");
         let TokenKind::Identifier(name) = &token.kind else {
             unreachable!()
@@ -527,6 +602,7 @@ impl Parser<'_> {
                                 | TokenKind::Identifier(_)
                                 | TokenKind::Minus
                                 | TokenKind::LeftParen
+                                | TokenKind::LeftBracket
                         )
                     ) {
                         return Err(self.expected("a string literal or value expression"));
@@ -577,10 +653,10 @@ impl Parser<'_> {
         })
     }
 
-    fn block(&mut self, depth: usize) -> Result<(Vec<Statement>, Span), Diagnostic> {
+    fn block(&mut self, depth: usize) -> Result<(Vec<Statement>, Span), ParseError> {
         let opening = self.punctuation(TokenKind::LeftBrace, "'{'")?;
         if depth >= MAX_BLOCK_DEPTH {
-            return Err(Diagnostic::new(
+            return Err(ParseError::new(
                 DiagnosticKind::BlockNesting,
                 opening,
                 format!("block nesting exceeds {MAX_BLOCK_DEPTH} levels"),
@@ -592,7 +668,7 @@ impl Parser<'_> {
         Ok((inner, Span::new(opening.start, end)))
     }
 
-    fn conditional(&mut self, depth: usize) -> Result<Statement, Diagnostic> {
+    fn conditional(&mut self, depth: usize) -> Result<Statement, ParseError> {
         let start = self.current().unwrap().span.start;
         let mut branches = Vec::new();
         let mut end;
@@ -630,7 +706,7 @@ impl Parser<'_> {
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
         let mut left = self.logical_and(nodes, depth)?;
         while self.keyword("or") {
             let operator_span = self.current().unwrap().span;
@@ -645,7 +721,7 @@ impl Parser<'_> {
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
         let mut left = self.logical_not(nodes, depth)?;
         while self.keyword("and") {
             let operator_span = self.current().unwrap().span;
@@ -660,7 +736,7 @@ impl Parser<'_> {
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
         let mut operators = Vec::new();
         while self.keyword("not") {
             operators.push(self.current().unwrap().span);
@@ -685,7 +761,7 @@ impl Parser<'_> {
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
         let left = self.sum(nodes, depth)?;
         if let Some(operator) = self
             .current()
@@ -708,7 +784,7 @@ impl Parser<'_> {
         Ok(left)
     }
 
-    fn sum(&mut self, nodes: &mut Vec<ExpressionNode>, depth: usize) -> Result<usize, Diagnostic> {
+    fn sum(&mut self, nodes: &mut Vec<ExpressionNode>, depth: usize) -> Result<usize, ParseError> {
         let mut left = self.product(nodes, depth)?;
         while let Some(token) = self.current() {
             let operator = match token.kind {
@@ -728,7 +804,7 @@ impl Parser<'_> {
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
         let mut left = self.unary(nodes, depth)?;
         while let Some(token) = self.current() {
             let operator = match token.kind {
@@ -748,7 +824,7 @@ impl Parser<'_> {
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
         if let Some(Token {
             kind: TokenKind::Minus,
             span,
@@ -769,7 +845,7 @@ impl Parser<'_> {
                     return Ok(push(nodes, ExpressionKind::Integer(i64::MIN), span));
                 }
             }
-            let operand = self.primary(nodes, depth)?;
+            let operand = self.postfix(nodes, depth)?;
             let span = Span::new(operator_span.start, nodes[operand].span.end);
             Ok(push(
                 nodes,
@@ -780,13 +856,13 @@ impl Parser<'_> {
                 span,
             ))
         } else {
-            self.primary(nodes, depth)
+            self.postfix(nodes, depth)
         }
     }
 
-    fn expression_depth(&self, depth: usize, span: Span) -> Result<(), Diagnostic> {
+    fn expression_depth(&self, depth: usize, span: Span) -> Result<(), ParseError> {
         if depth >= MAX_EXPRESSION_DEPTH {
-            return Err(Diagnostic::new(
+            return Err(ParseError::new(
                 DiagnosticKind::ExpressionNesting,
                 span,
                 "expression nesting exceeds 64 levels",
@@ -795,11 +871,153 @@ impl Parser<'_> {
         Ok(())
     }
 
+    fn postfix(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, ParseError> {
+        let mut vector = self.primary(nodes, depth)?;
+        while self.at(&TokenKind::LeftBracket) {
+            let opening = self.current().unwrap().span;
+            self.expression_depth(depth, opening)?;
+            self.cursor += 1;
+            let index = self.logical_or(nodes, depth + 1)?;
+            let end = self.punctuation(TokenKind::RightBracket, "']'")?.end;
+            let span = Span::new(nodes[vector].span.start, end);
+            vector = push(
+                nodes,
+                ExpressionKind::Index {
+                    vector,
+                    index,
+                    operator_span: Span::new(opening.start, end),
+                },
+                span,
+            );
+        }
+        Ok(vector)
+    }
+
+    // Keep list/call buffers out of every parenthesized primary's debug frame.
+    // Combined block/expression limits must also fit small native thread stacks.
+    fn vector_literal(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, ParseError> {
+        let opening = self.punctuation(TokenKind::LeftBracket, "'['")?;
+        self.expression_depth(depth, opening)?;
+        let mut elements = Vec::new();
+        while !self.at(&TokenKind::RightBracket) {
+            let element = self.logical_or(nodes, depth + 1)?;
+            if elements.len() == MAX_VECTOR_LENGTH {
+                return Err(ParseError::new(
+                    DiagnosticKind::VectorLength,
+                    nodes[element].span,
+                    "vector literal exceeds 65536 elements",
+                ));
+            }
+            elements.push(element);
+            if !self.at(&TokenKind::Comma) {
+                break;
+            }
+            self.cursor += 1;
+        }
+        let end = self.punctuation(TokenKind::RightBracket, "']'")?.end;
+        Ok(push(
+            nodes,
+            ExpressionKind::Vector { elements },
+            Span::new(opening.start, end),
+        ))
+    }
+
+    fn call_expression(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, ParseError> {
+        let (name, function_span) = self.identifier()?;
+        let opening = self.punctuation(TokenKind::LeftParen, "'('")?;
+        self.expression_depth(depth, opening)?;
+        let mut arguments = Vec::new();
+        while !self.at(&TokenKind::RightParen) {
+            let label = if self
+                .tokens
+                .get(self.cursor + 1)
+                .is_some_and(|t| t.kind == TokenKind::Colon)
+            {
+                let label = self.identifier()?;
+                self.cursor += 1;
+                Some(label)
+            } else {
+                None
+            };
+            let expression = self.logical_or(nodes, depth + 1)?;
+            arguments.push(CallArgument { label, expression });
+            if !self.at(&TokenKind::Comma) {
+                break;
+            }
+            self.cursor += 1;
+        }
+        let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
+        Ok(push(
+            nodes,
+            ExpressionKind::UserCall {
+                name,
+                arguments,
+                function_span,
+            },
+            Span::new(function_span.start, end),
+        ))
+    }
+
     fn primary(
         &mut self,
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
-    ) -> Result<usize, Diagnostic> {
+    ) -> Result<usize, ParseError> {
+        match self.current().map(|token| &token.kind) {
+            Some(TokenKind::LeftBracket) => self.vector_literal(nodes, depth),
+            Some(TokenKind::LeftParen) => self.group_expression(nodes, depth),
+            Some(TokenKind::Identifier(name))
+                if !matches!(
+                    name.as_str(),
+                    "funcra" | "pure" | "print" | "println" | "write" | "eprint" | "ewrite"
+                ) && self
+                    .tokens
+                    .get(self.cursor + 1)
+                    .is_some_and(|t| t.kind == TokenKind::LeftParen) =>
+            {
+                self.call_expression(nodes, depth)
+            }
+            _ => self.atom(nodes),
+        }
+    }
+
+    fn group_expression(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, ParseError> {
+        let opening = self.current().unwrap().span;
+        if depth >= MAX_EXPRESSION_DEPTH {
+            return Err(ParseError::new(
+                DiagnosticKind::ExpressionNesting,
+                opening,
+                format!("expression nesting exceeds {MAX_EXPRESSION_DEPTH} levels"),
+            )
+            .with_help("reduce the number of nested parentheses"));
+        }
+        self.cursor += 1;
+        let expression = self.logical_or(nodes, depth + 1)?;
+        let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
+        Ok(push(
+            nodes,
+            ExpressionKind::Group { expression },
+            Span::new(opening.start, end),
+        ))
+    }
+
+    fn atom(&mut self, nodes: &mut Vec<ExpressionNode>) -> Result<usize, ParseError> {
         match self.current() {
             Some(Token {
                 kind: TokenKind::Float(digits),
@@ -810,7 +1028,7 @@ impl Parser<'_> {
                     .ok()
                     .and_then(FiniteFloat::new)
                     .ok_or_else(|| {
-                        Diagnostic::new(
+                        ParseError::new(
                             DiagnosticKind::InvalidFloat,
                             *span,
                             "float literal is not a finite binary64 value",
@@ -834,52 +1052,11 @@ impl Parser<'_> {
                 span,
             }) => {
                 if name == "funcra" || name == "pure" {
-                    return Err(Diagnostic::new(
+                    return Err(ParseError::new(
                         DiagnosticKind::FunctionUnsupported,
                         *span,
                         "anonymous funcra expressions are not supported yet",
                     ));
-                }
-                if !matches!(
-                    name.as_str(),
-                    "print" | "println" | "write" | "eprint" | "ewrite"
-                ) && self
-                    .tokens
-                    .get(self.cursor + 1)
-                    .is_some_and(|token| token.kind == TokenKind::LeftParen)
-                {
-                    let function_span = *span;
-                    let name = name.clone();
-                    self.cursor += 1;
-                    let opening = self.punctuation(TokenKind::LeftParen, "'('")?;
-                    self.expression_depth(depth, opening)?;
-                    let mut arguments = Vec::new();
-                    while !self.at(&TokenKind::RightParen) {
-                        let label = if self
-                            .tokens
-                            .get(self.cursor + 1)
-                            .is_some_and(|t| t.kind == TokenKind::Colon)
-                        {
-                            let label = self.identifier()?;
-                            self.cursor += 1;
-                            Some(label)
-                        } else {
-                            None
-                        };
-                        let expression = self.logical_or(nodes, depth + 1)?;
-                        arguments.push(CallArgument { label, expression });
-                        if !self.at(&TokenKind::Comma) {
-                            break;
-                        }
-                        self.cursor += 1;
-                    }
-                    let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
-                    let kind = ExpressionKind::UserCall {
-                        name,
-                        arguments,
-                        function_span,
-                    };
-                    return Ok(push(nodes, kind, Span::new(function_span.start, end)));
                 }
                 let kind = match name.as_str() {
                     "true" => ExpressionKind::Boolean(true),
@@ -896,7 +1073,7 @@ impl Parser<'_> {
             }) => {
                 let span = *span;
                 let value = digits.parse::<i64>().map_err(|_| {
-                    Diagnostic::new(
+                    ParseError::new(
                         DiagnosticKind::InvalidInteger,
                         span,
                         "integer literal is outside the signed 64-bit range",
@@ -905,28 +1082,6 @@ impl Parser<'_> {
                 })?;
                 self.cursor += 1;
                 Ok(push(nodes, ExpressionKind::Integer(value), span))
-            }
-            Some(Token {
-                kind: TokenKind::LeftParen,
-                span,
-            }) => {
-                let start = span.start;
-                if depth >= MAX_EXPRESSION_DEPTH {
-                    return Err(Diagnostic::new(
-                        DiagnosticKind::ExpressionNesting,
-                        *span,
-                        format!("expression nesting exceeds {MAX_EXPRESSION_DEPTH} levels"),
-                    )
-                    .with_help("reduce the number of nested parentheses"));
-                }
-                self.cursor += 1;
-                let expression = self.logical_or(nodes, depth + 1)?;
-                let end = self.punctuation(TokenKind::RightParen, "')'")?.end;
-                Ok(push(
-                    nodes,
-                    ExpressionKind::Group { expression },
-                    Span::new(start, end),
-                ))
             }
             _ => Err(self.expected("a literal, variable name, or '('")),
         }
