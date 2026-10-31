@@ -1,0 +1,6 @@
+// Zero-copy selection and checked re-materialization from visible ranges.
+bind values = [10.0, 20.0, 30.0, 40.0];
+bind middle = window(values, 1, 2);
+print(middle);
+print(stitch(middle, [50.0]));
+print(window(middle, 2, 0));

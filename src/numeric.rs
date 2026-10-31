@@ -30,6 +30,8 @@ pub enum Builtin {
     CrossEntropy,
     LossGrad,
     OneHot,
+    Window,
+    Stitch,
 }
 
 impl Builtin {
@@ -57,6 +59,8 @@ impl Builtin {
             "crossentropy" => Self::CrossEntropy,
             "lossgrad" => Self::LossGrad,
             "onehot" => Self::OneHot,
+            "window" => Self::Window,
+            "stitch" => Self::Stitch,
             _ => return None,
         })
     }
@@ -76,7 +80,8 @@ impl Builtin {
             | Self::ArgMin
             | Self::MaxValue
             | Self::MinValue => &[Vector],
-            Self::Dot | Self::Mse | Self::Add => &[Vector, Vector],
+            Self::Dot | Self::Mse | Self::Add | Self::Stitch => &[Vector, Vector],
+            Self::Window => &[Vector, Integer, Integer],
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
             Self::Fill => &[Float, Integer],
@@ -141,6 +146,14 @@ pub(crate) fn length_error(span: Span) -> Diagnostic {
         DiagnosticKind::VectorLength,
         span,
         "vector lengths must match and stay within 0..65536 elements",
+    )
+}
+
+fn window_bounds(span: Span) -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticKind::VectorIndex,
+        span,
+        "window start/count exceed the visible vector bounds",
     )
 }
 
@@ -346,6 +359,36 @@ pub(crate) fn evaluate_with_budget(
         return vector(values, span);
     }
     let left = args[0].require_vector(span)?;
+    if function == Builtin::Window {
+        let start =
+            usize::try_from(args[1].require_integer(span)?).map_err(|_| window_bounds(span))?;
+        let count = usize::try_from(args[2].require_integer(span)?)
+            .ok()
+            .filter(|&count| count <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        // A window only shares an Arc and adjusts a visible range:
+        // constant native work, no newly reserved numerical element buffer.
+        budget.charge(1, span)?;
+        return left
+            .window(start, count)
+            .map(Value::Vector)
+            .ok_or_else(|| window_bounds(span));
+    }
+    if function == Builtin::Stitch {
+        let right = args[1].require_vector(span)?;
+        let count = left
+            .len()
+            .checked_add(right.len())
+            .filter(|&count| count <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        // Copy only the visible slices, not the complete backing buffers.
+        // Work and cumulative payload are both charged before allocation.
+        budget.charge(count as u64, span)?;
+        let mut values = buffer(count, budget, span)?;
+        values.extend_from_slice(left.as_slice());
+        values.extend_from_slice(right.as_slice());
+        return vector(values, span);
+    }
     if function == Builtin::Length {
         return Ok(Value::Integer(left.len() as i64));
     }
@@ -577,7 +620,7 @@ pub(crate) fn evaluate_with_budget(
             }
             vector(values, span)
         }
-        Builtin::Length | Builtin::Fill | Builtin::OneHot => {
+        Builtin::Length | Builtin::Fill | Builtin::OneHot | Builtin::Window | Builtin::Stitch => {
             unreachable!("handled before vector kernels")
         }
     }
