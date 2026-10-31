@@ -59,6 +59,13 @@ frame-slot and output-snapshot limits, and does not claim to bound the
 entire process's resident memory. This feature is included in the alpha.3 release candidate but not
 available in published alpha.2.
 
+## Upcoming numerical features
+
+[Proposal 0024](proposals/0024-bounded-log-space-kernels.md) specifies
+the development-only `logsumexp` and `logsoftmax` operations for
+large finite model logits. They are bounded by existing work/memory
+budgets and **not included in published alpha.3**.
+
 ## Upcoming deterministic selection
 
 [Proposal 0025](proposals/0025-stable-vector-selection.md) defines

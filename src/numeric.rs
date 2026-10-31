@@ -20,6 +20,8 @@ pub enum Builtin {
     Softmax,
     Norm,
     Normalize,
+    LogSumExp,
+    LogSoftmax,
     ArgMax,
     ArgMin,
     MaxValue,
@@ -41,6 +43,8 @@ impl Builtin {
             "softmax" => Self::Softmax,
             "norm" => Self::Norm,
             "normalize" => Self::Normalize,
+            "logsumexp" => Self::LogSumExp,
+            "logsoftmax" => Self::LogSoftmax,
             "argmax" => Self::ArgMax,
             "argmin" => Self::ArgMin,
             "maxval" => Self::MaxValue,
@@ -58,6 +62,8 @@ impl Builtin {
             | Self::Softmax
             | Self::Norm
             | Self::Normalize
+            | Self::LogSumExp
+            | Self::LogSoftmax
             | Self::ArgMax
             | Self::ArgMin
             | Self::MaxValue
@@ -77,6 +83,7 @@ impl Builtin {
             | Self::Dot
             | Self::Mse
             | Self::Norm
+            | Self::LogSumExp
             | Self::MaxValue
             | Self::MinValue => ValueType::Float,
             _ => ValueType::Vector,
@@ -241,6 +248,30 @@ fn scaled_l2(values: &NumericVector, span: Span) -> Result<(f64, f64), Diagnosti
     Ok((scale, compensated(squares, span)?.sqrt()))
 }
 
+// Maximum-shifted log normalization keeps the exponential sum finite and
+// nonzero without materializing a second vector. For a finite input vector,
+// shifted terms are <= 0; a negatively overflowing difference represents a
+// negligible contribution (exp(-infinity) = 0), not a nonfinite stored value.
+// Log outputs are individually checked at the call site.
+fn log_partition(values: &NumericVector, span: Span) -> Result<(f64, f64), Diagnostic> {
+    let maximum = values
+        .as_slice()
+        .iter()
+        .map(|value| value.get())
+        .fold(f64::NEG_INFINITY, f64::max);
+    let terms = values.as_slice().iter().map(|value| {
+        let shifted = value.get() - maximum;
+        Ok(if shifted.is_finite() {
+            shifted.exp()
+        } else {
+            0.0
+        })
+    });
+    let sum = compensated(terms, span)?;
+    // The maximum always contributes 1.0, so sum is in [1, vector length].
+    Ok((maximum, sum.ln()))
+}
+
 pub(crate) fn evaluate_with_budget(
     function: Builtin,
     args: &[Value],
@@ -290,6 +321,8 @@ pub(crate) fn evaluate_with_budget(
             | Builtin::Mse
             | Builtin::Softmax
             | Builtin::Normalize
+            | Builtin::LogSumExp
+            | Builtin::LogSoftmax
             | Builtin::ArgMax
             | Builtin::ArgMin
             | Builtin::MaxValue
@@ -302,7 +335,13 @@ pub(crate) fn evaluate_with_budget(
         ));
     }
     let work = match function {
-        Builtin::Mean | Builtin::Mse | Builtin::Softmax | Builtin::Norm | Builtin::Normalize => 4,
+        Builtin::Mean
+        | Builtin::Mse
+        | Builtin::Softmax
+        | Builtin::Norm
+        | Builtin::Normalize
+        | Builtin::LogSumExp
+        | Builtin::LogSoftmax => 4,
         Builtin::Dot => 2,
         _ => 1,
     };
@@ -330,6 +369,19 @@ pub(crate) fn evaluate_with_budget(
             } else {
                 Ok(Value::Float(left.as_slice()[chosen]))
             }
+        }
+        Builtin::LogSumExp | Builtin::LogSoftmax => {
+            let (maximum, log_sum) = log_partition(left, span)?;
+            if function == Builtin::LogSumExp {
+                return finite_number(maximum + log_sum, span).map(Value::Float);
+            }
+            let mut values = buffer(left.len(), budget, span)?;
+            for value in floats() {
+                // The exact log probability can be too negative to fit in
+                // binary64; reject it instead of silently storing -infinity.
+                values.push(finite_number((value - maximum) - log_sum, span)?);
+            }
+            vector(values, span)
         }
         Builtin::Norm | Builtin::Normalize => {
             let (scale, magnitude) = scaled_l2(left, span)?;

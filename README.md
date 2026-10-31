@@ -41,6 +41,10 @@ These are **not** present in the published alpha.2 binaries.
 See [alpha.3 notes](docs/releases/v0.0.4-alpha.3.md) for release status
 and [branch conventions](docs/branches.md) for the repository workflow.
 
+The [log-space numerical proposal](docs/proposals/0024-bounded-log-space-kernels.md)
+tracks development-only `logsumexp` and `logsoftmax` for finite model
+logits. Published alpha.3 binaries do not contain these functions.
+
 The [stable selection proposal](docs/proposals/0025-stable-vector-selection.md)
 tracks development-only `argmax`, `argmin`, `maxval`, and `minval`
 for deterministic model score decoding. Published alpha.3 binaries do
