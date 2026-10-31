@@ -74,7 +74,12 @@ impl<'a> Frame<'a> {
             // locals in blocks bypassed by an early return.
             let parameter_count = program.functions()[id].parameters.len();
             let result_slot = program.functions[id].result_slot;
-            for (index, slot) in self.environment.iter_mut().enumerate().skip(parameter_count) {
+            for (index, slot) in self
+                .environment
+                .iter_mut()
+                .enumerate()
+                .skip(parameter_count)
+            {
                 if Some(index) != result_slot {
                     *slot = Value::Unit;
                 }
@@ -548,4 +553,45 @@ fn charge_capture(
     }
     *used += amount;
     Ok(())
+}
+
+#[cfg(test)]
+mod retirement_runtime_tests {
+    use super::{Completion, Frame, Stage, Workspace};
+    use crate::{diagnostics::Span, value::Value};
+    use std::sync::Arc;
+
+    #[test]
+    fn function_completion_releases_payloads_but_preserves_contract_inputs() {
+        let program = crate::compile(
+            "funcra example(s: string) -> string ensures result == s; { bind temporary = \"local\"; return s; }",
+        )
+        .unwrap();
+        let function = &program.functions[0];
+        let owned_local: Arc<str> = Arc::from("retired value");
+        let mut environment = vec![Value::Unit; function.slots];
+        environment[0] = Value::from("parameter");
+        environment[2] = Value::String(owned_local.clone());
+        let mut frame = Frame {
+            function: Some(0),
+            call_span: Span::default(),
+            operations: &function.statements,
+            environment,
+            supplied: vec![true],
+            pc: 0,
+            stage: Stage::Body,
+            expression: None,
+            completion: Completion::Discard,
+            workspace: Workspace::default(),
+            output: None,
+            result: Value::Unit,
+        };
+        assert_eq!(Arc::strong_count(&owned_local), 2);
+        frame.finish(&program, Value::from("parameter"));
+        assert_eq!(Arc::strong_count(&owned_local), 1);
+        assert_eq!(frame.environment[0].as_str(), Some("parameter"));
+        assert_eq!(frame.environment[1].as_str(), Some("parameter"));
+        assert_eq!(frame.environment[2], Value::Unit);
+        assert!(matches!(frame.stage, Stage::Ensures(0)));
+    }
 }
