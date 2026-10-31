@@ -59,6 +59,12 @@ frame-slot and output-snapshot limits, and does not claim to bound the
 entire process's resident memory. This feature is included in the alpha.3 release candidate but not
 available in published alpha.2.
 
+## Upcoming deterministic selection
+
+[Proposal 0025](proposals/0025-stable-vector-selection.md) defines
+`argmax`, `argmin`, `maxval` and `minval` for bounded, tie-stable
+score decoding. These operations are experimental and not in alpha.3.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
