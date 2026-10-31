@@ -107,7 +107,8 @@ fn each_native_buffer_allocates_under_the_same_quota() {
 fn scalar_kernels_and_empty_vector_kernels_do_not_require_payload_bytes() {
     let vector = Value::Vector(NumericVector::new(&[1.0, 2.0]).unwrap());
     let result =
-        numeric::evaluate_with_vector_limit(Builtin::Sum, &[vector.clone()], 100, 0).unwrap();
+        numeric::evaluate_with_vector_limit(Builtin::Sum, std::slice::from_ref(&vector), 100, 0)
+            .unwrap();
     assert_eq!(result.as_float(), Some(3.0));
     let result = numeric::evaluate_with_vector_limit(
         Builtin::Add,
