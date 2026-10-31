@@ -167,6 +167,19 @@ See [proposal 0024](proposals/0024-bounded-log-space-kernels.md) for the
 exact numerical and diagnostic contract. These functions are **not** in
 the released alpha.3 binaries.
 
+## Development-only stable score selection
+
+Four pure selectors return a vector's first greatest/least index or its
+original finite scalar value: `argmax(v)`, `argmin(v)` (integer) and
+`maxval(v)`, `minval(v)` (float). They require nonempty input (E0034).
+Equal scores always retain the **first** matching index, including signed
+zero ties; returned float values preserve the original selected zero sign.
+
+Each selector prepays `n` work steps and creates no vector payload, so
+it does not charge additional `--max-vector-bytes`. They are useful
+for deterministic score decoding, but are **not in published alpha.3**.
+See [proposal 0025](proposals/0025-stable-vector-selection.md).
+
 ## Examples and host use
 
 [Basic vectors](../examples/vectors.srp) cover indexing, snapshots and kernels.

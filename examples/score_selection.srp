@@ -1,0 +1,4 @@
+// A stable, first-match score winner.
+bind scores = [1.0, 3.0, 3.0];
+print(argmax(scores), maxval(scores));
+print(argmin(scores), minval(scores));

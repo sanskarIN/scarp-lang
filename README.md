@@ -45,6 +45,11 @@ The [log-space numerical proposal](docs/proposals/0024-bounded-log-space-kernels
 tracks development-only `logsumexp` and `logsoftmax` for finite model
 logits. Published alpha.3 binaries do not contain these functions.
 
+The [stable selection proposal](docs/proposals/0025-stable-vector-selection.md)
+tracks development-only `argmax`, `argmin`, `maxval`, and `minval`
+for deterministic model score decoding. Published alpha.3 binaries do
+not include these functions.
+
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See

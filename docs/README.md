@@ -66,6 +66,12 @@ the development-only `logsumexp` and `logsoftmax` operations for
 large finite model logits. They are bounded by existing work/memory
 budgets and **not included in published alpha.3**.
 
+## Upcoming deterministic selection
+
+[Proposal 0025](proposals/0025-stable-vector-selection.md) defines
+`argmax`, `argmin`, `maxval` and `minval` for bounded, tie-stable
+score decoding. These operations are experimental and not in alpha.3.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
