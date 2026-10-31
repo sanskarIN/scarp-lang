@@ -58,9 +58,7 @@ fn visible_slices_determine_equality_and_numeric_operations() {
         "true true\n6.0 2.0 14.0\n[2.0, 4.0, 6.0]\n[1.0, 2.0, 3.0, 1.0, 2.0, 3.0]\n"
     );
     assert_eq!(
-        output(
-            "bind x = window([-0.0, 2.0, -0.0], 2, 1); print(x); print(x == [0.0]);"
-        ),
+        output("bind x = window([-0.0, 2.0, -0.0], 2, 1); print(x); print(x == [0.0]);"),
         "[-0.0]\ntrue\n"
     );
 }
@@ -93,7 +91,10 @@ fn original_and_nested_windows_share_storage_without_exposing_mutation() {
     )
     .unwrap();
     let combined = combined.as_vector().unwrap();
-    assert_eq!(combined, &NumericVector::new(&[20.0, 30.0, 40.0, 30.0]).unwrap());
+    assert_eq!(
+        combined,
+        &NumericVector::new(&[20.0, 30.0, 40.0, 30.0]).unwrap()
+    );
     assert!(!std::ptr::eq(
         combined.as_slice().as_ptr(),
         middle.as_slice().as_ptr()
@@ -149,15 +150,16 @@ fn wrong_types_arity_and_ranges_have_precise_diagnostics() {
     ] {
         error(source, Kind::CallArguments);
     }
-    error("print(\"before\"); print(window([1.0], 1, 1));", Kind::VectorIndex);
+    error(
+        "print(\"before\"); print(window([1.0], 1, 1));",
+        Kind::VectorIndex,
+    );
 }
 
 #[test]
 fn user_functions_take_precedence_and_bindings_remain_separate() {
     assert_eq!(
-        output(
-            "pure funcra window(x: integer) -> integer { return x + 1; } print(window(4));"
-        ),
+        output("pure funcra window(x: integer) -> integer { return x + 1; } print(window(4));"),
         "5\n"
     );
     assert_eq!(
@@ -189,11 +191,15 @@ fn each_native_kernel_prepays_actual_work() {
     );
     numeric::evaluate(Builtin::Stitch, &[vector(&[]), vector(&[])], 0).unwrap();
     assert_eq!(
-        numeric::evaluate(Builtin::Window, &[values, Value::Integer(3), Value::Integer(0)], 1)
-            .unwrap()
-            .as_vector()
-            .unwrap()
-            .len(),
+        numeric::evaluate(
+            Builtin::Window,
+            &[values, Value::Integer(3), Value::Integer(0)],
+            1
+        )
+        .unwrap()
+        .as_vector()
+        .unwrap()
+        .len(),
         0
     );
 }
@@ -209,7 +215,11 @@ fn large_bounded_windows_and_stitches_preserve_the_vector_cap() {
     let full_value = Value::Vector(full);
     let selected = numeric::evaluate(
         Builtin::Window,
-        &[full_value.clone(), Value::Integer(0), Value::Integer(65_536)],
+        &[
+            full_value.clone(),
+            Value::Integer(0),
+            Value::Integer(65_536),
+        ],
         1,
     )
     .unwrap();
@@ -239,8 +249,8 @@ fn windows_and_stitches_preserve_execution_atomicity_under_quota_failure() {
     let expected = scarp::check_with_limits(source, limit).unwrap_err();
     assert_eq!(expected.kind, Kind::ExecutionLimit);
     let mut bytes = Vec::new();
-    let RunError::Diagnostic(actual) = scarp::run_with_limits(source, &mut bytes, limit)
-        .unwrap_err()
+    let RunError::Diagnostic(actual) =
+        scarp::run_with_limits(source, &mut bytes, limit).unwrap_err()
     else {
         panic!("expected bounded failure");
     };
