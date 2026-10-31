@@ -230,8 +230,8 @@ mod tests {
         audit(&program).unwrap();
         // The caller cannot construct a default that reads the future result.
         let mut invalid = program.clone();
-        invalid.functions[0].defaults[1] =
-            Some(invalid.functions[0].contracts[0].expression.clone());
+        let result_reference = invalid.functions[0].contracts[0].expression.clone();
+        invalid.functions[0].defaults[1] = Some(result_reference);
         assert!(audit(&invalid)
             .unwrap_err()
             .contains("default 1: read from uninitialized"));
