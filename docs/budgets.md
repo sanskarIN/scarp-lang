@@ -48,7 +48,9 @@ Dual-stream hosts can use `run_with_io_and_limits` or
 
 ## Function and snapshot options (beta.3)
 
-All six options are available on both `run` and `check`, before the file path.
+Seven options are available on both `run` and `check`, before the file path on
+this unreleased development branch. The published alpha.2 has six; the seventh
+is the independent cumulative vector-allocation limit.
 Each takes unsigned decimal digits, allows zero, and may occur once. Options
 may appear in any order. Missing, negative, signed, nondecimal, overflowing, or
 duplicate counts produce usage status 2 before the file is read. `tokens`
@@ -62,6 +64,7 @@ rejects execution options; `--` ends option parsing for a dash-prefixed path.
 | `--max-calls` | 100,000 | `max_calls` | Cumulative selected calls, including defaults/contracts |
 | `--max-live-slots` | 1,000,000 | `max_live_slots` | Slots across live file/function frames and saved loop state |
 | `--max-capture-bytes` | 16,777,216 | `max_capture_bytes` | Cumulative logical output snapshot storage |
+| `--max-vector-bytes` | 8,388,608 | `max_vector_bytes` | Cumulative newly allocated finite-vector element payload, draft only |
 
 ```sh
 scarp run --max-call-depth 512 --max-calls 200000 examples/function_recursion.srp
@@ -71,7 +74,7 @@ scarp check --max-live-slots 10000 --max-capture-bytes 1048576 examples/function
 `ExecutionOptions` is additive: existing two-field `ExecutionLimits` literals
 remain valid and old entry points use the additional defaults. Both run and
 check enforce all caps, even for programs without functions. An empty program
-succeeds with all six limits at zero. A call with zero depth/call allowance or
+succeeds with all configured limits at zero. A call with zero depth/call allowance or
 a selected output value with insufficient snapshot allowance fails with status 1.
 
 E0027 identifies the exhausted call/depth/slot budget and its CLI/API control.
@@ -87,6 +90,30 @@ This is a logical storage budget, not an exact encoded-output or process-memory
 measurement. Parser allocations are outside these execution caps. See
 [functions](functions.md) for evaluation order and [embedding](embedding.md)
 for reusable immutable plans and caller-selected options.
+
+## Independent cumulative vector allocation quota (unreleased draft)
+
+The development-only `--max-vector-bytes N` option limits cumulative
+newly materialized numerical-element payload, separate from the step budget.
+Each finite element costs 8 bytes. This cap is prepaid before reserving a
+vector literal or a fresh buffer for fill/add/scale/clamp/softmax. Clones,
+function argument binding and read-only numerical kernels do not charge a
+new allocation. Empty vectors cost zero. Allocations in nested functions and
+loops all share the same ledger; dropping or replacing a value **does not
+refund** an earlier charge.
+
+```sh
+scarp run --max-vector-bytes 16 examples/vectors.srp
+scarp check --max-vector-bytes 8388608 examples/vectors.srp
+```
+
+Exceeding it reports **E0036**, with the configured byte cap and a source
+location, before output is committed. The cap does not measure `Arc`,
+`Vec` overhead, host allocations, parser memory, task stacks or resident
+process memory. It is not a complete sandbox or a cap on peak live bytes.
+The previous output snapshot and frame-slot limits remain independent. See
+[the design](proposals/0023-vector-allocation-ledger.md). This option is
+**not present in published alpha.2**.
 
 ## Vector work and allocation in alpha.2
 
