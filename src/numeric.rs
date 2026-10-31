@@ -26,6 +26,8 @@ pub enum Builtin {
     ArgMin,
     MaxValue,
     MinValue,
+    LogProb,
+    CrossEntropy,
 }
 
 impl Builtin {
@@ -49,6 +51,8 @@ impl Builtin {
             "argmin" => Self::ArgMin,
             "maxval" => Self::MaxValue,
             "minval" => Self::MinValue,
+            "logprob" => Self::LogProb,
+            "crossentropy" => Self::CrossEntropy,
             _ => return None,
         })
     }
@@ -72,6 +76,7 @@ impl Builtin {
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
             Self::Fill => &[Float, Integer],
+            Self::LogProb | Self::CrossEntropy => &[Vector, Integer],
         }
     }
 
@@ -85,7 +90,9 @@ impl Builtin {
             | Self::Norm
             | Self::LogSumExp
             | Self::MaxValue
-            | Self::MinValue => ValueType::Float,
+            | Self::MinValue
+            | Self::LogProb
+            | Self::CrossEntropy => ValueType::Float,
             _ => ValueType::Vector,
         }
     }
@@ -327,6 +334,8 @@ pub(crate) fn evaluate_with_budget(
             | Builtin::ArgMin
             | Builtin::MaxValue
             | Builtin::MinValue
+            | Builtin::LogProb
+            | Builtin::CrossEntropy
     ) && left.is_empty()
     {
         return Err(domain(
@@ -334,6 +343,26 @@ pub(crate) fn evaluate_with_budget(
             "this numerical kernel requires a nonempty vector",
         ));
     }
+    // A label is an index, never a probability or a float. Validate its
+    // bounds before the numerical scan so no invalid label reaches the
+    // target lookup. A negative index is invalid, not Python-style indexing.
+    let target = if matches!(function, Builtin::LogProb | Builtin::CrossEntropy) {
+        let index = args[1].require_integer(span)?;
+        let chosen = usize::try_from(index).ok().filter(|&i| i < left.len());
+        Some(chosen.ok_or_else(|| {
+            Diagnostic::new(
+                DiagnosticKind::VectorIndex,
+                span,
+                format!(
+                    "target index {index} is outside the vector length {}",
+                    left.len()
+                ),
+            )
+            .with_help("provide a zero-based target index within the logits vector")
+        })?)
+    } else {
+        None
+    };
     let work = match function {
         Builtin::Mean
         | Builtin::Mse
@@ -341,13 +370,36 @@ pub(crate) fn evaluate_with_budget(
         | Builtin::Norm
         | Builtin::Normalize
         | Builtin::LogSumExp
-        | Builtin::LogSoftmax => 4,
+        | Builtin::LogSoftmax
+        | Builtin::LogProb
+        | Builtin::CrossEntropy => 4,
         Builtin::Dot => 2,
         _ => 1,
     };
     budget.charge(left.len() as u64 * work, span)?;
     let floats = || left.as_slice().iter().map(|value| value.get());
     match function {
+        Builtin::LogProb | Builtin::CrossEntropy => {
+            let (maximum, log_sum) = log_partition(left, span)?;
+            let target_score = left.as_slice()[target.unwrap()].get();
+            // Subtract the target from the maximum *before* adding the log
+            // partition. Computing logsumexp(logits) - target directly loses
+            // tiny but meaningful losses when scores are very large.
+            //
+            // Both differences and the final output must be finite. A true
+            // real loss larger than f64::MAX is deliberately E0031, not +inf.
+            let gap = finite_number(maximum - target_score, span)?.get();
+            let loss = finite_number(gap + log_sum, span)?.get();
+            finite_number(
+                if function == Builtin::LogProb {
+                    -loss
+                } else {
+                    loss
+                },
+                span,
+            )
+            .map(Value::Float)
+        }
         Builtin::ArgMax | Builtin::ArgMin | Builtin::MaxValue | Builtin::MinValue => {
             // Keep the earliest index on equal values, including the two
             // signed zero encodings. No extra buffer, host call or allocation

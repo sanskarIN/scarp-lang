@@ -72,6 +72,13 @@ budgets and **not included in published alpha.3**.
 `argmax`, `argmin`, `maxval` and `minval` for bounded, tie-stable
 score decoding. These operations are experimental and not in alpha.3.
 
+## Upcoming categorical logit loss
+
+[Proposal 0026](proposals/0026-logit-loss.md) covers the typed,
+allocation-free `crossentropy(logits, target)` and
+`logprob(logits, target)` kernels for single-class classification.
+These development kernels are not in published alpha.3.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
