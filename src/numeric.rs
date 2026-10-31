@@ -66,7 +66,9 @@ impl Builtin {
     pub fn result_type(self) -> ValueType {
         match self {
             Self::Length => ValueType::Integer,
-            Self::Sum | Self::Mean | Self::Dot | Self::Mse | Self::Norm | Self::LogSumExp => ValueType::Float,
+            Self::Sum | Self::Mean | Self::Dot | Self::Mse | Self::Norm | Self::LogSumExp => {
+                ValueType::Float
+            }
             _ => ValueType::Vector,
         }
     }
