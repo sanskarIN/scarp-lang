@@ -1,7 +1,4 @@
-use scarp::{
-    diagnostics::DiagnosticKind,
-    ExecutionOptions, RunError,
-};
+use scarp::{diagnostics::DiagnosticKind, ExecutionOptions, RunError};
 
 fn evaluate(source: &str, options: ExecutionOptions) -> Vec<u8> {
     scarp::check_with_options(source, options).unwrap();
@@ -10,7 +7,11 @@ fn evaluate(source: &str, options: ExecutionOptions) -> Vec<u8> {
     output
 }
 
-fn failure(source: &str, options: ExecutionOptions, kind: DiagnosticKind) -> scarp::diagnostics::Diagnostic {
+fn failure(
+    source: &str,
+    options: ExecutionOptions,
+    kind: DiagnosticKind,
+) -> scarp::diagnostics::Diagnostic {
     let expected = scarp::check_with_options(source, options).unwrap_err();
     assert_eq!(expected.kind, kind);
     let mut output = Vec::new();
@@ -58,7 +59,9 @@ fn terminal_calls_still_count_against_total_call_budget() {
         ..ExecutionOptions::default()
     };
     let diagnostic = failure(source, exhausted, DiagnosticKind::CallLimit);
-    assert!(diagnostic.message.contains("total function call limit of 5"));
+    assert!(diagnostic
+        .message
+        .contains("total function call limit of 5"));
     assert_eq!(
         evaluate(
             source,
