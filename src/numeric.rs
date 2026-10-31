@@ -72,7 +72,13 @@ impl Builtin {
     pub fn result_type(self) -> ValueType {
         match self {
             Self::Length | Self::ArgMax | Self::ArgMin => ValueType::Integer,
-            Self::Sum | Self::Mean | Self::Dot | Self::Mse | Self::Norm | Self::MaxValue | Self::MinValue => ValueType::Float,
+            Self::Sum
+            | Self::Mean
+            | Self::Dot
+            | Self::Mse
+            | Self::Norm
+            | Self::MaxValue
+            | Self::MinValue => ValueType::Float,
             _ => ValueType::Vector,
         }
     }
