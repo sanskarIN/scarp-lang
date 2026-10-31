@@ -1,5 +1,5 @@
 use scarp::{
-    diagnostics::{DiagnosticKind as Kind, Span},
+    diagnostics::DiagnosticKind as Kind,
     numeric::{self, Builtin},
     value::{NumericVector, Value},
     ExecutionOptions, RunError,
@@ -116,11 +116,11 @@ fn empty_inputs_and_unrepresentable_log_probabilities_fail_atomically() {
 
 #[test]
 fn native_work_budget_is_prepaid_and_scalar_kernel_never_allocates() {
-    let vector = vector(&[1.0, 2.0]);
+    let input = vector(&[1.0, 2.0]);
     for kernel in [Builtin::LogSumExp, Builtin::LogSoftmax] {
-        numeric::evaluate(kernel, std::slice::from_ref(&vector), 8).unwrap();
+        numeric::evaluate(kernel, std::slice::from_ref(&input), 8).unwrap();
         assert_eq!(
-            numeric::evaluate(kernel, std::slice::from_ref(&vector), 7)
+            numeric::evaluate(kernel, std::slice::from_ref(&input), 7)
                 .unwrap_err()
                 .kind,
             Kind::ExecutionLimit
@@ -134,13 +134,13 @@ fn native_work_budget_is_prepaid_and_scalar_kernel_never_allocates() {
     );
     numeric::evaluate_with_vector_limit(
         Builtin::LogSumExp,
-        std::slice::from_ref(&vector),
+        std::slice::from_ref(&input),
         8,
         0,
     )
     .unwrap();
     let err =
-        numeric::evaluate_with_vector_limit(Builtin::LogSoftmax, &[vector], 8, 15).unwrap_err();
+        numeric::evaluate_with_vector_limit(Builtin::LogSoftmax, &[input], 8, 15).unwrap_err();
     assert_eq!(err.kind, Kind::VectorBudget);
 }
 
@@ -169,5 +169,4 @@ fn program_allocation_limit_covers_logsoftmax_but_not_logsumexp() {
         },
         Kind::VectorBudget,
     );
-    let _ = Span::default();
 }
