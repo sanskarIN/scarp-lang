@@ -3,6 +3,8 @@
 use std::collections::HashMap;
 
 mod functions;
+#[cfg(test)]
+mod retirement_audit;
 use functions::{build_call_graph, resolve_function};
 
 use crate::{
@@ -335,6 +337,10 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
         metadata,
     };
     build_call_graph(&mut result);
+    #[cfg(test)]
+    if let Err(error) = retirement_audit::audit(&result) {
+        panic!("resolved storage plan is invalid: {error}");
+    }
     Ok(result)
 }
 
