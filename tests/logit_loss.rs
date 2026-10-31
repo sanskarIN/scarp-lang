@@ -30,7 +30,10 @@ fn failed(source: &str, options: ExecutionOptions, kind: Kind) -> Diagnostic {
         panic!("expected a language error");
     };
     assert_eq!(diagnostic, run);
-    assert!(stdout.is_empty() && stderr.is_empty(), "failure leaked output");
+    assert!(
+        stdout.is_empty() && stderr.is_empty(),
+        "failure leaked output"
+    );
     diagnostic
 }
 
@@ -53,7 +56,11 @@ fn source_calls_are_typed_pure_and_work_inside_function_contracts() {
         "logprob([1], 0)",
         "logprob([1.0], 0.0)",
     ] {
-        failed(&format!("print({expr});"), ExecutionOptions::default(), Kind::TypeMismatch);
+        failed(
+            &format!("print({expr});"),
+            ExecutionOptions::default(),
+            Kind::TypeMismatch,
+        );
     }
     for expr in [
         "logprob()",
@@ -61,7 +68,11 @@ fn source_calls_are_typed_pure_and_work_inside_function_contracts() {
         "crossentropy([1.0], 0, 1)",
         "logprob(logits: [1.0], index: 0)",
     ] {
-        failed(&format!("print({expr});"), ExecutionOptions::default(), Kind::CallArguments);
+        failed(
+            &format!("print({expr});"),
+            ExecutionOptions::default(),
+            Kind::CallArguments,
+        );
     }
 }
 
