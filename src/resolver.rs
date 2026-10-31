@@ -1180,3 +1180,55 @@ fn loop_control(span: Span) -> Diagnostic {
     )
     .with_help("put break; or continue; inside the while or repeat loop it should control")
 }
+
+#[cfg(test)]
+mod retirement_plan_tests {
+    use super::{ResolvedStatement, ResolvedProgram};
+
+    fn plan(source: &str) -> ResolvedProgram {
+        crate::compile(source).unwrap()
+    }
+
+    #[test]
+    fn nested_scopes_retire_only_their_own_binding_slots() {
+        let program = plan(
+            "bind root = [1.0]; { bind outer = [2.0]; { bind inner = [3.0]; } print(outer); } print(root);",
+        );
+        let retirements: Vec<Vec<usize>> = program
+            .statements
+            .iter()
+            .filter_map(|operation| match &operation.kind {
+                ResolvedStatement::Retire { slots } => Some(slots.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(retirements, vec![vec![2], vec![1]]);
+        // Internal bookkeeping is excluded from observable statement counts.
+        assert_eq!(program.statement_count(), 5);
+    }
+
+    #[test]
+    fn loop_transfers_retire_exited_scopes_but_preserve_repeat_index() {
+        let program = plan(
+            "bind carried = [1.0]; repeat 2 as i { bind body = [2.0]; if i == 0 { bind leaf = [3.0]; continue; } if i == 1 { bind leaf2 = [4.0]; break; } print(i); } print(carried);",
+        );
+        let transfers: Vec<(usize, Vec<usize>)> = program
+            .statements
+            .iter()
+            .filter_map(|operation| match &operation.kind {
+                ResolvedStatement::LoopControl { target, retire } => {
+                    Some((*target, retire.clone()))
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(transfers.len(), 2);
+        assert_eq!(transfers[0].1, vec![3, 4]);
+        assert_eq!(transfers[1].1, vec![3, 5]);
+        assert!(transfers[0].0 != transfers[1].0);
+        // Index slot 2 and outer binding slot 0 must stay live.
+        assert!(transfers
+            .iter()
+            .all(|(_, slots)| !slots.contains(&0) && !slots.contains(&2)));
+    }
+}
