@@ -128,7 +128,7 @@ fn function_budget_flags_enforce_exact_boundaries_in_run_and_check() {
     let fixture = Fixture::new();
     let file = fixture.file(
         "recursion.srp",
-        "pure funcra f(n: integer) -> integer { if n == 0 { return 0; } return f(n - 1); } print(f(4));",
+        "pure funcra f(n: integer) -> integer { if n == 0 { return 0; } return f(n - 1) + 0; } print(f(4));",
     );
     for mode in ["run", "check"] {
         for (flag, accepted, rejected) in [
@@ -166,6 +166,47 @@ fn function_budget_flags_enforce_exact_boundaries_in_run_and_check() {
                 "{diagnostic}"
             );
         }
+    }
+}
+
+#[test]
+fn terminal_self_transfer_respects_cli_call_count_without_growing_frame_depth() {
+    let fixture = Fixture::new();
+    let file = fixture.file(
+        "terminal.srp",
+        "pure funcra descend(n: integer) -> integer { if n == 0 { return 0; } return descend(n - 1); } print(descend(20));",
+    );
+    for mode in ["run", "check"] {
+        for (flag, value) in [("--max-call-depth", "1"), ("--max-live-slots", "2")] {
+            let result = command()
+                .args([mode, flag, value])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert!(result.status.success(), "{flag}: {}", stderr(&result));
+            assert_eq!(
+                result.stdout,
+                if mode == "run" {
+                    b"0\n".as_slice()
+                } else {
+                    b"".as_slice()
+                }
+            );
+        }
+        let allowed = command()
+            .args([mode, "--max-calls", "21"])
+            .arg(&file)
+            .output()
+            .unwrap();
+        assert!(allowed.status.success(), "{}", stderr(&allowed));
+        let rejected = command()
+            .args([mode, "--max-calls", "20"])
+            .arg(&file)
+            .output()
+            .unwrap();
+        assert_eq!(rejected.status.code(), Some(1));
+        assert!(rejected.stdout.is_empty());
+        assert!(stderr(&rejected).contains("total function call limit of 20"));
     }
 }
 

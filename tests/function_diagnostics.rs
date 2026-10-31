@@ -41,7 +41,7 @@ fn default_type_errors_highlight_the_initializer_and_relate_the_parameter() {
 #[test]
 fn depth_and_total_call_limits_name_the_distinct_exhausted_option() {
     for (source, options, expected, field) in [
-        ("print(\"hidden\"); funcra f(n: integer) -> integer { if n==0 {return 0;} return f(n-1); } print(f(1));", ExecutionOptions { max_call_depth: 1, ..ExecutionOptions::default() }, "function call depth limit of 1", "max_call_depth"),
+        ("print(\"hidden\"); funcra f(n: integer) -> integer { if n==0 {return 0;} return f(n-1)+0; } print(f(1));", ExecutionOptions { max_call_depth: 1, ..ExecutionOptions::default() }, "function call depth limit of 1", "max_call_depth"),
         ("eprint(\"hidden\"); funcra f() -> integer {return 1;} print(f(), f());", ExecutionOptions { max_calls: 1, ..ExecutionOptions::default() }, "total function call limit of 1", "max_calls"),
     ] {
         let error = failure(source, options);

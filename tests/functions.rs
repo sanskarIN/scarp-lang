@@ -336,7 +336,7 @@ fn arithmetic_errors_and_left_to_right_short_circuit_keep_existing_kinds() {
 
 #[test]
 fn depth_calls_slots_and_work_limits_are_deterministic() {
-    let source = "pure funcra f(n: integer) -> integer { if n==0 { return 0; } return f(n-1); } print(f(4));";
+    let source = "pure funcra f(n: integer) -> integer { if n==0 { return 0; } return f(n-1)+0; } print(f(4));";
     let mut options = ExecutionOptions {
         max_call_depth: 5,
         max_calls: 5,
