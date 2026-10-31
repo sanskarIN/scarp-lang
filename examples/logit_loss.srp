@@ -1,0 +1,7 @@
+// Stable categorical loss from logits without a softmax vector.
+bind logits = [4.0];
+bind label = 0;
+print(crossentropy(logits, label));
+print(logprob(logits, label));
+// For multiple classes, select a class by its original index:
+print(argmax([1.0, 4.0, 2.0]));
