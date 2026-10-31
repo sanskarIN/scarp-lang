@@ -154,3 +154,15 @@ Rust hosts use checked `NumericVector::new`, consuming `from_finite`, immutable
 moved into Arc without a second element copy. No mutable slice escapes and no
 host variable injection is added. See [embedding](embedding.md) and
 [measured performance](performance.md#numerical-vector-measurements).
+
+## Unreleased next milestone: stable L2 operations
+
+The active `scarp/alpha3-vector-norms` development branch adds `norm(v)`
+(returning a finite float) and `normalize(v)` (returning a new vector).
+**These operations are not present in the published v0.0.4-alpha.2 binaries.**
+They use a maximum-magnitude scaled reduction to avoid unnecessary square
+overflow/underflow, with prepaid 4n work per call, the existing 65,536-element
+bound and unchanged diagnostic codes. Empty/zero vectors cannot be normalized;
+`norm([])` returns 0.0. A nonrepresentable final scalar norm still fails.
+See [proposal 0018](proposals/0018-scaled-l2-norms.md) for precise semantics,
+tests and release criteria. No alpha.3 release is currently authorized.
