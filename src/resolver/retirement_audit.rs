@@ -7,7 +7,9 @@
 //! This is deliberately a test/debug audit rather than runtime tracing, and
 //! never influences the program's memory semantics or execution budget.
 
-use super::{ResolvedArgument, ResolvedExpression, ResolvedOperation, ResolvedProgram, ResolvedStatement};
+use super::{
+    ResolvedArgument, ResolvedExpression, ResolvedOperation, ResolvedProgram, ResolvedStatement,
+};
 use std::collections::VecDeque;
 
 fn read_slots(expression: &ResolvedExpression, initialized: &[bool]) -> Result<(), String> {
@@ -93,7 +95,8 @@ fn audit_frame(
                 for slot in retire {
                     *state_out
                         .get_mut(*slot)
-                        .ok_or_else(|| format!("control retires out-of-range slot {slot}"))? = false;
+                        .ok_or_else(|| format!("control retires out-of-range slot {slot}"))? =
+                        false;
                 }
                 successors.push(*target);
             }
@@ -101,7 +104,8 @@ fn audit_frame(
                 for slot in slots {
                     *state_out
                         .get_mut(*slot)
-                        .ok_or_else(|| format!("retirement targets out-of-range slot {slot}"))? = false;
+                        .ok_or_else(|| format!("retirement targets out-of-range slot {slot}"))? =
+                        false;
                 }
                 successors.push(pc + 1);
             }
@@ -211,7 +215,9 @@ mod tests {
     fn detects_bad_forward_transfer_and_out_of_range_retirement() {
         let mut program = crate::compile("print(1);").unwrap();
         program.statements[0].kind = ResolvedStatement::Jump { target: 99 };
-        assert!(audit(&program).unwrap_err().contains("outside operation stream"));
+        assert!(audit(&program)
+            .unwrap_err()
+            .contains("outside operation stream"));
         program.statements[0].kind = ResolvedStatement::Retire { slots: vec![99] };
         assert!(audit(&program).unwrap_err().contains("out-of-range"));
     }
