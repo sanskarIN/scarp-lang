@@ -27,7 +27,10 @@ fn failure(source: &str, kind: Kind) {
         panic!("expected diagnostic");
     };
     assert_eq!(actual, expected);
-    assert!(out.is_empty() && err.is_empty(), "errors cannot leak output");
+    assert!(
+        out.is_empty() && err.is_empty(),
+        "errors cannot leak output"
+    );
 }
 
 #[test]
@@ -93,7 +96,10 @@ fn empty_and_type_errors_are_atomic_and_have_stable_codes() {
         failure(&format!("print({function}(1.0));"), Kind::TypeMismatch);
         failure(&format!("print({function}([1]));"), Kind::TypeMismatch);
         failure(&format!("print({function}());"), Kind::CallArguments);
-        failure(&format!("print({function}([1.0], [2.0]));"), Kind::CallArguments);
+        failure(
+            &format!("print({function}([1.0], [2.0]));"),
+            Kind::CallArguments,
+        );
         failure(
             &format!("print({function}(v: [1.0]));"),
             Kind::CallArguments,
@@ -110,22 +116,11 @@ fn selectors_precharge_work_but_do_not_allocate_new_vector_payload() {
         Builtin::MaxValue,
         Builtin::MinValue,
     ] {
-        numeric::evaluate_with_vector_limit(
-            function,
-            std::slice::from_ref(&vector),
-            3,
-            0,
-        )
-        .unwrap();
+        numeric::evaluate_with_vector_limit(function, std::slice::from_ref(&vector), 3, 0).unwrap();
         assert_eq!(
-            numeric::evaluate_with_vector_limit(
-                function,
-                std::slice::from_ref(&vector),
-                2,
-                0,
-            )
-            .unwrap_err()
-            .kind,
+            numeric::evaluate_with_vector_limit(function, std::slice::from_ref(&vector), 2, 0,)
+                .unwrap_err()
+                .kind,
             Kind::ExecutionLimit
         );
         assert_eq!(
