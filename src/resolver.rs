@@ -544,10 +544,8 @@ impl<'a> Resolver<'a> {
                     }
                     let depth = self.loops.last().unwrap().scope_depth;
                     let retire = self.retirement_slots(depth);
-                    let index = self.emit(
-                        ResolvedStatement::LoopControl { target: 0, retire },
-                        span,
-                    );
+                    let index =
+                        self.emit(ResolvedStatement::LoopControl { target: 0, retire }, span);
                     self.loops.last_mut().unwrap().breaks.push(index);
                 }
                 Statement::Continue { span } => {
@@ -556,10 +554,8 @@ impl<'a> Resolver<'a> {
                     }
                     let depth = self.loops.last().unwrap().scope_depth;
                     let retire = self.retirement_slots(depth);
-                    let index = self.emit(
-                        ResolvedStatement::LoopControl { target: 0, retire },
-                        span,
-                    );
+                    let index =
+                        self.emit(ResolvedStatement::LoopControl { target: 0, retire }, span);
                     self.loops.last_mut().unwrap().continues.push(index);
                 }
                 Statement::If {
@@ -791,7 +787,8 @@ impl<'a> Resolver<'a> {
     fn finish_loop(&mut self, context: LoopContext, next: usize, end: usize) {
         for (indices, destination) in [(context.breaks, end), (context.continues, next)] {
             for index in indices {
-                if let ResolvedStatement::LoopControl { target, .. } = &mut self.statements[index].kind
+                if let ResolvedStatement::LoopControl { target, .. } =
+                    &mut self.statements[index].kind
                 {
                     *target = destination;
                 }
@@ -1183,7 +1180,7 @@ fn loop_control(span: Span) -> Diagnostic {
 
 #[cfg(test)]
 mod retirement_plan_tests {
-    use super::{ResolvedStatement, ResolvedProgram};
+    use super::{ResolvedProgram, ResolvedStatement};
 
     fn plan(source: &str) -> ResolvedProgram {
         crate::compile(source).unwrap()
