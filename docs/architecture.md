@@ -70,6 +70,21 @@ rounds offsets inside UTF-8 characters down to valid boundaries. Source control
 characters are escaped in excerpts. This keeps diagnostic rendering safe for
 callers that construct their own diagnostics.
 
+## Development-only scope-retirement plan
+
+A separate, unreleased internal improvement records lexical binding retirement
+in the compiled operation stream. Scope exits clear their declared storage
+slots; `break` and `continue` clear all locally exited scopes, retaining the
+current repeat index and enclosing-loop values. Function completion drops
+local slots while retaining parameters/results for executable postconditions.
+
+No source syntax or public binding/type/CLI APIs are changed. Existing snapshot
+semantics and work-limit boundaries are preserved. The Rust host still uses
+`Arc` for immutable payload sharing, and total process-memory usage is
+**not** bounded by the slot limit. See the
+[scope-retirement ledger](proposals/0019-scope-retirement-ledger.md) for
+the invariants, test strategy and explicit limitations.
+
 ## Failure boundaries
 
 Lexing, parsing, resolution, primitive type checks, and arithmetic evaluation
