@@ -105,7 +105,8 @@ fn empty_inputs_and_unrepresentable_log_probabilities_fail_atomically() {
             Kind::NumericDomain,
         );
     }
-    let extreme = "print(\"queued\"); print(logsoftmax([-1.7976931348623157e308, 1.7976931348623157e308]));";
+    let extreme =
+        "print(\"queued\"); print(logsoftmax([-1.7976931348623157e308, 1.7976931348623157e308]));";
     failed(extreme, ExecutionOptions::default(), Kind::NonFiniteNumber);
     let huge = vector(&[f64::MAX, f64::MAX]);
     let result = numeric::evaluate(Builtin::LogSoftmax, &[huge], 8).unwrap();
@@ -132,13 +133,8 @@ fn native_work_budget_is_prepaid_and_scalar_kernel_never_allocates() {
             .kind,
         Kind::NumericDomain
     );
-    numeric::evaluate_with_vector_limit(
-        Builtin::LogSumExp,
-        std::slice::from_ref(&input),
-        8,
-        0,
-    )
-    .unwrap();
+    numeric::evaluate_with_vector_limit(Builtin::LogSumExp, std::slice::from_ref(&input), 8, 0)
+        .unwrap();
     let err =
         numeric::evaluate_with_vector_limit(Builtin::LogSoftmax, &[input], 8, 15).unwrap_err();
     assert_eq!(err.kind, Kind::VectorBudget);
