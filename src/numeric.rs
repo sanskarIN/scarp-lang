@@ -387,7 +387,11 @@ pub(crate) fn evaluate_with_budget(
         function,
         Builtin::LogProb | Builtin::CrossEntropy | Builtin::LossGrad
     ) {
-        Some(checked_target(args[1].require_integer(span)?, left.len(), span)?)
+        Some(checked_target(
+            args[1].require_integer(span)?,
+            left.len(),
+            span,
+        )?)
     } else {
         None
     };
