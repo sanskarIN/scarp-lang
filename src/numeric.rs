@@ -20,6 +20,10 @@ pub enum Builtin {
     Softmax,
     Norm,
     Normalize,
+    ArgMax,
+    ArgMin,
+    MaxValue,
+    MinValue,
 }
 
 impl Builtin {
@@ -37,6 +41,10 @@ impl Builtin {
             "softmax" => Self::Softmax,
             "norm" => Self::Norm,
             "normalize" => Self::Normalize,
+            "argmax" => Self::ArgMax,
+            "argmin" => Self::ArgMin,
+            "maxval" => Self::MaxValue,
+            "minval" => Self::MinValue,
             _ => return None,
         })
     }
@@ -49,7 +57,11 @@ impl Builtin {
             | Self::Mean
             | Self::Softmax
             | Self::Norm
-            | Self::Normalize => &[Vector],
+            | Self::Normalize
+            | Self::ArgMax
+            | Self::ArgMin
+            | Self::MaxValue
+            | Self::MinValue => &[Vector],
             Self::Dot | Self::Mse | Self::Add => &[Vector, Vector],
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
@@ -59,8 +71,8 @@ impl Builtin {
 
     pub fn result_type(self) -> ValueType {
         match self {
-            Self::Length => ValueType::Integer,
-            Self::Sum | Self::Mean | Self::Dot | Self::Mse | Self::Norm => ValueType::Float,
+            Self::Length | Self::ArgMax | Self::ArgMin => ValueType::Integer,
+            Self::Sum | Self::Mean | Self::Dot | Self::Mse | Self::Norm | Self::MaxValue | Self::MinValue => ValueType::Float,
             _ => ValueType::Vector,
         }
     }
@@ -268,7 +280,14 @@ pub(crate) fn evaluate_with_budget(
     };
     if matches!(
         function,
-        Builtin::Mean | Builtin::Mse | Builtin::Softmax | Builtin::Normalize
+        Builtin::Mean
+            | Builtin::Mse
+            | Builtin::Softmax
+            | Builtin::Normalize
+            | Builtin::ArgMax
+            | Builtin::ArgMin
+            | Builtin::MaxValue
+            | Builtin::MinValue
     ) && left.is_empty()
     {
         return Err(domain(
@@ -284,6 +303,28 @@ pub(crate) fn evaluate_with_budget(
     budget.charge(left.len() as u64 * work, span)?;
     let floats = || left.as_slice().iter().map(|value| value.get());
     match function {
+        Builtin::ArgMax | Builtin::ArgMin | Builtin::MaxValue | Builtin::MinValue => {
+            // Keep the earliest index on equal values, including the two
+            // signed zero encodings. No extra buffer, host call or allocation
+            // occurs; selection runs only after the entire work fee is paid.
+            let mut chosen = 0;
+            for (index, candidate) in left.as_slice().iter().enumerate().skip(1) {
+                let current = left.as_slice()[chosen].get();
+                let better = if matches!(function, Builtin::ArgMax | Builtin::MaxValue) {
+                    candidate.get() > current
+                } else {
+                    candidate.get() < current
+                };
+                if better {
+                    chosen = index;
+                }
+            }
+            if matches!(function, Builtin::ArgMax | Builtin::ArgMin) {
+                Ok(Value::Integer(chosen as i64))
+            } else {
+                Ok(Value::Float(left.as_slice()[chosen]))
+            }
+        }
         Builtin::Norm | Builtin::Normalize => {
             let (scale, magnitude) = scaled_l2(left, span)?;
             if function == Builtin::Norm {
