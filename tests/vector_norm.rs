@@ -31,9 +31,7 @@ fn checked_failure(source: &str, kind: Kind) -> Diagnostic {
 #[test]
 fn l2_norm_and_normalize_are_typed_pure_kernels() {
     assert_eq!(
-        output(
-            "print(norm([3.0, 4.0])); print(normalize([3.0, 4.0])); print(norm([]));"
-        ),
+        output("print(norm([3.0, 4.0])); print(normalize([3.0, 4.0])); print(norm([]));"),
         "5.0\n[0.6, 0.8]\n0.0\n"
     );
     assert_eq!(
@@ -86,7 +84,10 @@ fn subnormals_and_signed_zeros_are_handled_without_squaring_underflow() {
         assert!((element.get() - std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-14);
     }
     let unit = numeric::evaluate(Builtin::Normalize, &[vector(&[-0.0, 1.0])], 8).unwrap();
-    assert_eq!(unit.as_vector().unwrap().as_slice()[0].get().to_bits(), (-0.0_f64).to_bits());
+    assert_eq!(
+        unit.as_vector().unwrap().as_slice()[0].get().to_bits(),
+        (-0.0_f64).to_bits()
+    );
     assert_eq!(
         numeric::evaluate(Builtin::Norm, &[vector(&[-0.0, 0.0])], 8)
             .unwrap()
