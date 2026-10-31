@@ -71,7 +71,8 @@ fn new_materialization_is_cumulative_even_after_previous_values_retire() {
     let source = "var i = 0; while i < 3 { bind temp = fill(2.0, 2); i += 1; } print(i);";
     assert_eq!(checked(source, 48), b"3\n");
     failure(source, limit(47), Kind::VectorBudget);
-    let function = "pure funcra build() -> vector { return fill(3.0, 2); } print(build(), build());";
+    let function =
+        "pure funcra build() -> vector { return fill(3.0, 2); } print(build(), build());";
     assert_eq!(checked(function, 32), b"[3.0, 3.0] [3.0, 3.0]\n");
     failure(function, limit(31), Kind::VectorBudget);
 }
@@ -85,9 +86,15 @@ fn each_native_buffer_allocates_under_the_same_quota() {
     for function in [Builtin::Fill, Builtin::Softmax, Builtin::Scale] {
         let vector = Value::Vector(NumericVector::new(&[1.0, 2.0]).unwrap());
         let args = match function {
-            Builtin::Fill => vec![Value::Float(scarp::value::FiniteFloat::new(1.0).unwrap()), Value::Integer(2)],
+            Builtin::Fill => vec![
+                Value::Float(scarp::value::FiniteFloat::new(1.0).unwrap()),
+                Value::Integer(2),
+            ],
             Builtin::Softmax => vec![vector],
-            Builtin::Scale => vec![vector, Value::Float(scarp::value::FiniteFloat::new(2.0).unwrap())],
+            Builtin::Scale => vec![
+                vector,
+                Value::Float(scarp::value::FiniteFloat::new(2.0).unwrap()),
+            ],
             _ => unreachable!(),
         };
         numeric::evaluate_with_vector_limit(function, &args, 1_000, 16).unwrap();
@@ -104,19 +111,18 @@ fn scalar_kernels_and_empty_vector_kernels_do_not_require_payload_bytes() {
     assert_eq!(result.as_float(), Some(3.0));
     let result = numeric::evaluate_with_vector_limit(
         Builtin::Add,
-        &[Value::Vector(NumericVector::new(&[]).unwrap()), Value::Vector(NumericVector::new(&[]).unwrap())],
+        &[
+            Value::Vector(NumericVector::new(&[]).unwrap()),
+            Value::Vector(NumericVector::new(&[]).unwrap()),
+        ],
         100,
         0,
     )
     .unwrap();
     assert!(result.as_vector().unwrap().is_empty());
-    let failure = numeric::evaluate_with_vector_limit(
-        Builtin::Add,
-        &[vector.clone(), vector],
-        100,
-        0,
-    )
-    .unwrap_err();
+    let failure =
+        numeric::evaluate_with_vector_limit(Builtin::Add, &[vector.clone(), vector], 100, 0)
+            .unwrap_err();
     assert_eq!(failure.kind, Kind::VectorBudget);
 }
 
@@ -145,7 +151,10 @@ fn vector_limit_is_independent_from_existing_work_and_capture_limits() {
     let source = "print([1.0, 2.0]);";
     let limited_work = ExecutionOptions {
         max_vector_bytes: 16,
-        limits: scarp::ExecutionLimits { max_steps: 0, max_prints: 10 },
+        limits: scarp::ExecutionLimits {
+            max_steps: 0,
+            max_prints: 10,
+        },
         ..ExecutionOptions::default()
     };
     failure(source, limited_work, Kind::ExecutionLimit);
