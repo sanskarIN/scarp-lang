@@ -61,8 +61,8 @@ fn onehot_materializes_a_single_bounded_target_vector() {
 
 #[test]
 fn lossgrad_is_stable_for_equal_logits_and_conserves_total_gradient() {
-    let gradients = numeric::evaluate(Builtin::LossGrad, &[vector(&[0.0, 0.0]), index(0)], 12)
-        .unwrap();
+    let gradients =
+        numeric::evaluate(Builtin::LossGrad, &[vector(&[0.0, 0.0]), index(0)], 12).unwrap();
     let result = gradients.as_vector().unwrap().as_slice();
     assert_eq!(result[0].get(), -0.5);
     assert_eq!(result[1].get(), 0.5);
@@ -86,8 +86,7 @@ fn lossgrad_is_stable_for_equal_logits_and_conserves_total_gradient() {
 #[test]
 fn lossgrad_handles_extreme_finite_logit_differences() {
     let extreme = vector(&[-f64::MAX, f64::MAX]);
-    let result = numeric::evaluate(Builtin::LossGrad, &[extreme.clone(), index(0)], 12)
-        .unwrap();
+    let result = numeric::evaluate(Builtin::LossGrad, &[extreme.clone(), index(0)], 12).unwrap();
     let values = result.as_vector().unwrap().as_slice();
     assert_eq!(values[0].get(), -1.0);
     assert_eq!(values[1].get(), 1.0);
@@ -110,7 +109,11 @@ fn invalid_onehot_counts_and_class_indices_are_atomic() {
             Kind::VectorLength,
         );
     }
-    failure("print(onehot(0, 0));", ExecutionOptions::default(), Kind::NumericDomain);
+    failure(
+        "print(onehot(0, 0));",
+        ExecutionOptions::default(),
+        Kind::NumericDomain,
+    );
     for statement in [
         "onehot(3, -1)",
         "onehot(3, 3)",
@@ -209,12 +212,22 @@ fn both_kernels_charge_steps_and_bytes_before_new_buffers() {
         ..ExecutionOptions::default()
     };
     assert_eq!(verify(source, options).lines().count(), 1);
-    failure(source, ExecutionOptions { max_vector_bytes: 31, ..options }, Kind::VectorBudget);
+    failure(
+        source,
+        ExecutionOptions {
+            max_vector_bytes: 31,
+            ..options
+        },
+        Kind::VectorBudget,
+    );
 }
 
 #[test]
 fn max_size_onehot_writes_only_one_selected_element() {
-    let args = [index(MAX_VECTOR_LENGTH as i64), index(MAX_VECTOR_LENGTH as i64 - 1)];
+    let args = [
+        index(MAX_VECTOR_LENGTH as i64),
+        index(MAX_VECTOR_LENGTH as i64 - 1),
+    ];
     let required_bytes = MAX_VECTOR_LENGTH * std::mem::size_of::<scarp::value::FiniteFloat>();
     let value = numeric::evaluate_with_vector_limit(
         Builtin::OneHot,
@@ -232,7 +245,10 @@ fn max_size_onehot_writes_only_one_selected_element() {
 #[test]
 fn sample_is_checked_and_matches_its_exact_output_fixture() {
     assert_eq!(
-        verify(include_str!("../examples/classification_training.srp"), ExecutionOptions::default()),
+        verify(
+            include_str!("../examples/classification_training.srp"),
+            ExecutionOptions::default()
+        ),
         include_str!("../examples/classification_training.stdout")
     );
 }
