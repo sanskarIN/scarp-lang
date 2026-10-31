@@ -41,6 +41,10 @@ These are **not** present in the published alpha.2 binaries.
 See [alpha.3 notes](docs/releases/v0.0.4-alpha.3.md) for release status
 and [branch conventions](docs/branches.md) for the repository workflow.
 
+The [log-space numerical proposal](docs/proposals/0024-bounded-log-space-kernels.md)
+tracks development-only `logsumexp` and `logsoftmax` for finite model
+logits. Published alpha.3 binaries do not contain these functions.
+
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See
