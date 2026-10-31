@@ -43,9 +43,11 @@ jobs:
         run: |
           cargo bench --locked --offline --bench runtime -- --quick
           cargo bench --locked --offline --bench numerics -- --quick
-      - name: Verify release asset validation
+      - name: Verify release and branch-maintenance tools
         if: runner.os == 'Linux'
-        run: python3 -m unittest discover -s scripts -p 'test_*release*.py'
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_*release*.py'
+          python3 -m unittest discover -s scripts -p 'test_prune_branches.py'
       - name: Validate PowerShell check script
         if: runner.os == 'Windows'
         shell: pwsh
