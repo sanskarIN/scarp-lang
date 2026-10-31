@@ -65,9 +65,11 @@ fn empty_shapes_preserve_dimension_identity() {
 fn numeric_cells_are_immutable_and_unroll_shares_storage() {
     let original = NumericVector::new(&[1.0, 2.0, 3.0, 4.0]).unwrap();
     let grid = NumericTile::from_vector(original.clone(), 2, 2).unwrap();
-    assert!(std::ptr::eq(grid.cells().as_ptr(), original.as_slice().as_ptr()));
-    let unrolled = numeric::evaluate(Builtin::Unroll, &[Value::Tile(grid.clone())], 1)
-        .unwrap();
+    assert!(std::ptr::eq(
+        grid.cells().as_ptr(),
+        original.as_slice().as_ptr()
+    ));
+    let unrolled = numeric::evaluate(Builtin::Unroll, &[Value::Tile(grid.clone())], 1).unwrap();
     assert!(std::ptr::eq(
         unrolled.as_vector().unwrap().as_slice().as_ptr(),
         original.as_slice().as_ptr()
@@ -81,10 +83,7 @@ fn numeric_cells_are_immutable_and_unroll_shares_storage() {
     assert_eq!(grid, second);
     assert_ne!(grid, NumericTile::new(&[1.0, 2.0, 3.0, 4.0], 1, 4).unwrap());
     let turn = numeric::evaluate(Builtin::Turn, &[Value::Tile(grid)], 4).unwrap();
-    assert_eq!(
-        turn,
-        shaped(&[1.0, 3.0, 2.0, 4.0], 2, 2)
-    );
+    assert_eq!(turn, shaped(&[1.0, 3.0, 2.0, 4.0], 2, 2));
     assert_eq!(original.as_slice()[2].get(), 3.0);
 }
 
@@ -169,9 +168,7 @@ fn distinct_shape_is_not_equal_even_with_identical_cells() {
         "false true\ntrue\n"
     );
     assert_eq!(
-        output(
-            "pure funcra height(t: integer) -> integer { return t + 1; } print(height(4));"
-        ),
+        output("pure funcra height(t: integer) -> integer { return t + 1; } print(height(4));"),
         "5\n"
     );
 }
@@ -179,7 +176,11 @@ fn distinct_shape_is_not_equal_even_with_identical_cells() {
 #[test]
 fn budget_accounting_is_exact_and_errors_are_atomic() {
     let source = shaped(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 2, 3);
-    let tile_args = [flat(&[1.0, 2.0, 3.0, 4.0]), Value::Integer(2), Value::Integer(2)];
+    let tile_args = [
+        flat(&[1.0, 2.0, 3.0, 4.0]),
+        Value::Integer(2),
+        Value::Integer(2),
+    ];
     numeric::evaluate(Builtin::Tile, &tile_args, 1).unwrap();
     assert_eq!(
         numeric::evaluate(Builtin::Tile, &tile_args, 0)
@@ -188,7 +189,11 @@ fn budget_accounting_is_exact_and_errors_are_atomic() {
         Kind::ExecutionLimit
     );
     for (builtin, args, passes) in [
-        (Builtin::Cell, vec![source.clone(), Value::Integer(0), Value::Integer(0)], 1),
+        (
+            Builtin::Cell,
+            vec![source.clone(), Value::Integer(0), Value::Integer(0)],
+            1,
+        ),
         (Builtin::Lane, vec![source.clone(), Value::Integer(1)], 3),
         (Builtin::Unroll, vec![source.clone()], 1),
         (Builtin::Turn, vec![source.clone()], 6),
@@ -208,7 +213,10 @@ fn budget_accounting_is_exact_and_errors_are_atomic() {
     numeric::evaluate(Builtin::Lane, &[shaped(&[], 2, 0), Value::Integer(1)], 0).unwrap();
     numeric::evaluate(Builtin::Turn, &[shaped(&[], 0, 10)], 0).unwrap();
     let source = "print(\"ok\"); repeat 10 as i { print(turn(tile([1.0, 2.0, 3.0, 4.0], 2, 2))); }";
-    let limits = ExecutionLimits { max_steps: 20, max_prints: 50 };
+    let limits = ExecutionLimits {
+        max_steps: 20,
+        max_prints: 50,
+    };
     let expected = scarp::check_with_limits(source, limits).unwrap_err();
     assert_eq!(expected.kind, Kind::ExecutionLimit);
     let mut out = Vec::new();
