@@ -494,16 +494,14 @@ pub(super) fn prepare(
         let mut remaining = 16;
         for frame in frames.iter().rev().filter(|f| f.function.is_some()) {
             let name = &program.functions()[frame.function.unwrap()].name;
-            for span in std::iter::once(frame.call_span)
-                .chain(frame.tail_sites.iter().rev().copied())
+            for span in
+                std::iter::once(frame.call_span).chain(frame.tail_sites.iter().rev().copied())
             {
                 if remaining == 0 {
                     break;
                 }
-                error = error.with_related(
-                    span,
-                    format!("called funcra {} here", bounded_name(name)),
-                );
+                error =
+                    error.with_related(span, format!("called funcra {} here", bounded_name(name)));
                 remaining -= 1;
             }
             if remaining == 0 {
