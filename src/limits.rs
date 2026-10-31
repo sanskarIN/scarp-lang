@@ -85,11 +85,7 @@ impl Budget {
         self
     }
 
-    pub fn charge_vector_allocation(
-        &mut self,
-        bytes: usize,
-        span: Span,
-    ) -> Result<(), Diagnostic> {
+    pub fn charge_vector_allocation(&mut self, bytes: usize, span: Span) -> Result<(), Diagnostic> {
         if bytes > self.vector_remaining {
             return Err(Diagnostic::new(
                 DiagnosticKind::VectorBudget,
