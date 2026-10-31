@@ -38,6 +38,11 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
+An [unreleased scope-retirement ledger](proposals/0019-scope-retirement-ledger.md)
+documents compiler-planned disposal of out-of-scope binding values, without
+adding any user-facing memory-management syntax. It is development work only,
+not part of the published alpha.2 binaries.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
