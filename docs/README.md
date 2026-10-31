@@ -38,6 +38,15 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
+## Unreleased vector-range development
+
+[Proposal 0020](proposals/0020-vector-windows-stitch.md) describes
+`window(values, start, count)` and `stitch(left, right)`, an unmerged
+candidate for immutable shared views and bounded sequence assembly.
+These operations are **not in published alpha.2**, and do not authorize a
+version, tag, prerelease or merge. Read the proposal for zero-copy
+retention implications and the exact work-budget charges.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
