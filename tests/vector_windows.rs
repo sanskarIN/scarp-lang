@@ -268,7 +268,10 @@ fn bounded_error(source: &str, options: ExecutionOptions, kind: Kind) -> Diagnos
         panic!("expected a language diagnostic");
     };
     assert_eq!(actual, expected);
-    assert!(stdout.is_empty() && stderr.is_empty(), "failed program leaked output");
+    assert!(
+        stdout.is_empty() && stderr.is_empty(),
+        "failed program leaked output"
+    );
     actual
 }
 
@@ -285,19 +288,28 @@ fn cumulative_payload_counts_only_new_stitch_elements_and_literals() {
     assert_eq!(stdout, b"[2.0, 2.0, 3.0]\n");
     bounded_error(
         source,
-        ExecutionOptions { max_vector_bytes: 47, ..options },
+        ExecutionOptions {
+            max_vector_bytes: 47,
+            ..options
+        },
         Kind::VectorBudget,
     );
     // The two windows and the scalar indexing allocate no element payload.
     let source = "bind base = [1.0, 2.0, 3.0]; bind part = window(base, 1, 2); print(window(part, 2, 0), part[1]);";
     scarp::check_with_options(
         source,
-        ExecutionOptions { max_vector_bytes: 24, ..options },
+        ExecutionOptions {
+            max_vector_bytes: 24,
+            ..options
+        },
     )
     .unwrap();
     bounded_error(
         source,
-        ExecutionOptions { max_vector_bytes: 23, ..options },
+        ExecutionOptions {
+            max_vector_bytes: 23,
+            ..options
+        },
         Kind::VectorBudget,
     );
 }
@@ -350,12 +362,8 @@ fn windows_feed_lossgrad_and_logspace_kernels_without_full_buffer_exposure() {
     );
     let original = NumericVector::new(&[1.0, 2.0, 3.0, 4.0]).unwrap();
     let selected = original.window(1, 2).unwrap();
-    let softmax = numeric::evaluate(
-        Builtin::Softmax,
-        &[Value::Vector(selected.clone())],
-        8,
-    )
-    .unwrap();
+    let softmax =
+        numeric::evaluate(Builtin::Softmax, &[Value::Vector(selected.clone())], 8).unwrap();
     assert_eq!(softmax.as_vector().unwrap().len(), 2);
     assert_eq!(original.as_slice().len(), 4);
     assert_eq!(selected.as_slice().len(), 2);
