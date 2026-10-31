@@ -360,8 +360,8 @@ pub(crate) fn evaluate_with_budget(
     }
     let left = args[0].require_vector(span)?;
     if function == Builtin::Window {
-        let start = usize::try_from(args[1].require_integer(span)?)
-            .map_err(|_| window_bounds(span))?;
+        let start =
+            usize::try_from(args[1].require_integer(span)?).map_err(|_| window_bounds(span))?;
         let count = usize::try_from(args[2].require_integer(span)?)
             .ok()
             .filter(|&count| count <= MAX_VECTOR_LENGTH)
