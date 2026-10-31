@@ -42,6 +42,9 @@ struct PendingOutput<'a> {
 struct Frame<'a> {
     function: Option<usize>,
     call_span: Span,
+    /// Up to 15 earlier call sites from terminal self-transfers. The active
+    /// call site is stored separately to keep total diagnostics bounded.
+    tail_sites: Vec<Span>,
     operations: &'a [ResolvedOperation],
     environment: Vec<Value>,
     supplied: Vec<bool>,
@@ -88,6 +91,7 @@ pub(super) fn prepare(
     let mut frames = vec![Frame {
         function: None,
         call_span: Span::default(),
+        tail_sites: Vec::new(),
         operations: &program.statements,
         environment: vec![Value::Unit; program.binding_count()],
         supplied: Vec::new(),
@@ -130,7 +134,15 @@ pub(super) fn prepare(
                             unreachable!("native kernels complete in the expression workspace")
                         };
                         let function = &program.functions[*id];
-                        if depth > options.max_call_depth {
+                        // A direct self-call in the returned expression is
+                        // terminal only when the suspended frame has no
+                        // postconditions left to evaluate. Needs/defaults on
+                        // the next invocation still execute normally.
+                        let terminal = frame.function == Some(*id)
+                            && matches!(frame.completion, Completion::Return)
+                            && expression.syntax.root() == node
+                            && !function.contracts.iter().any(|c| c.postcondition);
+                        if !terminal && depth > options.max_call_depth {
                             return Err(limit(
                                 span,
                                 "function call depth",
@@ -146,7 +158,9 @@ pub(super) fn prepare(
                                 "max_calls",
                             ));
                         }
-                        if function.slots > options.max_live_slots.saturating_sub(live_slots) {
+                        if !terminal
+                            && function.slots > options.max_live_slots.saturating_sub(live_slots)
+                        {
                             return Err(limit(
                                 span,
                                 "live binding slot",
@@ -157,16 +171,29 @@ pub(super) fn prepare(
                         // Charge frame initialization before allocating its storage.
                         budget.charge(1 + function.slots as u64, span)?;
                         calls += 1;
-                        live_slots += function.slots;
+                        if !terminal {
+                            live_slots += function.slots;
+                        }
                         let mut environment = vec![Value::Unit; function.slots];
                         let mut supplied = vec![false; function.defaults.len()];
                         for (parameter, value) in parameters.iter().zip(arguments) {
                             environment[*parameter] = value;
                             supplied[*parameter] = true;
                         }
-                        frames.push(Frame {
+                        let mut tail_sites = Vec::new();
+                        if terminal {
+                            // Keep a bounded source trace of the logical
+                            // invocations, without retaining their storage.
+                            tail_sites = std::mem::take(&mut frame.tail_sites);
+                            if tail_sites.len() == 15 {
+                                tail_sites.remove(0);
+                            }
+                            tail_sites.push(frame.call_span);
+                        }
+                        let new_frame = Frame {
                             function: Some(*id),
                             call_span: span,
+                            tail_sites,
                             operations: &function.statements,
                             environment,
                             supplied,
@@ -177,7 +204,12 @@ pub(super) fn prepare(
                             workspace: Workspace::default(),
                             output: None,
                             result: Value::Unit,
-                        });
+                        };
+                        if terminal {
+                            *frame = new_frame;
+                        } else {
+                            frames.push(new_frame);
+                        }
                     }
                     Evaluation::Complete(value) => {
                         frame.expression = None;
@@ -459,17 +491,24 @@ pub(super) fn prepare(
         Ok(())
     })();
     outcome.map_err(|mut error| {
-        for frame in frames
-            .iter()
-            .rev()
-            .filter(|f| f.function.is_some())
-            .take(16)
-        {
+        let mut remaining = 16;
+        for frame in frames.iter().rev().filter(|f| f.function.is_some()) {
             let name = &program.functions()[frame.function.unwrap()].name;
-            error = error.with_related(
-                frame.call_span,
-                format!("called funcra {} here", bounded_name(name)),
-            );
+            for span in std::iter::once(frame.call_span)
+                .chain(frame.tail_sites.iter().rev().copied())
+            {
+                if remaining == 0 {
+                    break;
+                }
+                error = error.with_related(
+                    span,
+                    format!("called funcra {} here", bounded_name(name)),
+                );
+                remaining -= 1;
+            }
+            if remaining == 0 {
+                break;
+            }
         }
         error
     })?;
