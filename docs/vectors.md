@@ -180,6 +180,26 @@ it does not charge additional `--max-vector-bytes`. They are useful
 for deterministic score decoding, but are **not in published alpha.3**.
 See [proposal 0025](proposals/0025-stable-vector-selection.md).
 
+## Development-only categorical logit loss
+
+Two new pure, typed scalar kernels operate on a finite logit vector
+and a zero-based **integer target index**: `crossentropy(logits, target)`
+returns the selected class's categorical negative log likelihood, while
+`logprob(logits, target)` returns the negative of that loss.
+
+Both reuse maximum-shifted compensated log normalization. They compute
+`max(logits) - logits[target] + ln(sum(exp(x-max)))` without first rounding
+a potentially enormous log-sum to an absolute scalar. This preserves a
+meaningful loss for two equally large finite logits. Empty inputs give
+E0034, an invalid target index E0033, and an unrepresentable finite
+result E0031.
+
+They prepay `4n` work and allocate **no** new numerical vector; zero
+extra `max_vector_bytes` is required for the operation itself. See
+[proposal 0026](proposals/0026-logit-loss.md) and
+[example](../examples/logit_loss.srp). These kernels are in development,
+**not in published alpha.3**.
+
 ## Examples and host use
 
 [Basic vectors](../examples/vectors.srp) cover indexing, snapshots and kernels.
