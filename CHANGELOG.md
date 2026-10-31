@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.4-alpha.3 — prerelease candidate, 2026-10-31
+
+- Add pure, overflow-resistant `norm(v)` and `normalize(v)` kernels with
+  scaled numerical reductions, checked finite results and regression coverage.
+- Reuse the current `funcra` frame on eligible direct terminal self-returns
+  without bypassing total-call/step budgets or needs/default contracts.
+  Postcondition functions and nonterminal calls retain ordinary frames.
+- Introduce cumulative numerical payload allocation quota
+  `--max-vector-bytes`/`ExecutionOptions.max_vector_bytes` (default 8 MiB),
+  E0036 errors, exact-byte host/kernel/CLI tests and atomic-output validation.
+  `normalize` participates in this same quota.
+- Add three exact-output examples and a memory-control specification.
+- Define minimal branch naming, auto-prune only merged inactive branches,
+  and retain open PR heads or divergent experiments.
+- Require exact-main multi-OS CI, native assets, checksum/source verification,
+  and explicitly requested gated publication. See
+  [release notes](docs/releases/v0.0.4-alpha.3.md).
+
+
 ## 0.0.4-alpha.2 — scheduled prerelease, 2026-10-31
 
 - Immutable finite vectors, literals/indexing, whole-value assignment and typed

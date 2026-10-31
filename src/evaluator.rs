@@ -186,7 +186,7 @@ impl Workspace {
                 Task::Vector(count, span) => {
                     budget.charge(count as u64, span)?;
                     let start = values.len() - count;
-                    let mut elements = numeric::buffer(count, span)?;
+                    let mut elements = numeric::buffer(count, budget, span)?;
                     for value in &values[start..] {
                         elements.push(finite_number(value.require_float(span)?, span)?);
                     }

@@ -1,0 +1,33 @@
+name: Prune fully merged historical branches
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: scarp-safe-branch-pruning
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: github.repository == 'sanskarIN/scarp-lang' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out audited maintenance source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate pruning safeguards without network writes
+        run: python3 -m unittest discover -s scripts -p 'test_prune_branches.py'
+      - name: Recheck live ancestry and prune only merged inactive scarp branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
+        run: python3 scripts/prune-merged-branches.py --apply

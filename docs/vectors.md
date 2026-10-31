@@ -108,6 +108,17 @@ the builtin. A binding named sum remains independent of call position. A user
 function that shadows a kernel makes that builtin unavailable by that name in
 the program. Builtins do not support labels, defaults or first-class values.
 
+## Unreleased separate vector allocation quota
+
+The alpha.3 candidate option `--max-vector-bytes` introduces an independent
+**cumulative allocation limit** for newly materialized finite-vector
+element payloads. Each new element costs 8 bytes; sharing existing
+immutable data does not allocate or charge again. This is separate from
+the existing step, capture and frame-slot caps. A failed allocation
+quota produces E0036, with the usual atomic-output behavior.
+See [proposal 0023](proposals/0023-vector-allocation-ledger.md).
+The option is **not available in the published alpha.2 binary**.
+
 ## Deterministic work and storage
 
 Keep all six existing execution options and CLI controls. Beyond dispatch tasks,
@@ -157,12 +168,12 @@ host variable injection is added. See [embedding](embedding.md) and
 
 ## Unreleased next milestone: stable L2 operations
 
-The active `scarp/alpha3-vector-norms` development branch adds `norm(v)`
-(returning a finite float) and `normalize(v)` (returning a new vector).
-**These operations are not present in the published v0.0.4-alpha.2 binaries.**
+The alpha.3 candidate adds `norm(v)` (returning a finite float) and
+`normalize(v)` (returning a new vector). These operations are implemented
+in the candidate, but not present in the published alpha.2 binaries.
 They use a maximum-magnitude scaled reduction to avoid unnecessary square
 overflow/underflow, with prepaid 4n work per call, the existing 65,536-element
 bound and unchanged diagnostic codes. Empty/zero vectors cannot be normalized;
 `norm([])` returns 0.0. A nonrepresentable final scalar norm still fails.
 See [proposal 0018](proposals/0018-scaled-l2-norms.md) for precise semantics,
-tests and release criteria. No alpha.3 release is currently authorized.
+tests and release criteria. See [alpha.3 release notes](releases/v0.0.4-alpha.3.md).

@@ -295,6 +295,43 @@ fn function_budget_errors_discard_both_program_streams() {
 }
 
 #[test]
+fn vector_allocation_flag_enforces_exact_cumulative_bytes_in_run_and_check() {
+    let fixture = Fixture::new();
+    let file = fixture.file(
+        "memory.srp",
+        "print(\"prepared\"); bind a = [1.0, 2.0]; bind b = fill(3.0, 2); print(a, b);",
+    );
+    for mode in ["run", "check"] {
+        let accepted = command()
+            .args([mode, "--max-vector-bytes", "32"])
+            .arg(&file)
+            .output()
+            .unwrap();
+        assert!(accepted.status.success(), "{}", stderr(&accepted));
+        assert_eq!(
+            accepted.stdout,
+            if mode == "run" {
+                b"prepared\n[1.0, 2.0] [3.0, 3.0]\n".as_slice()
+            } else {
+                b"".as_slice()
+            }
+        );
+
+        let rejected = command()
+            .args([mode, "--max-vector-bytes", "31"])
+            .arg(&file)
+            .output()
+            .unwrap();
+        assert_eq!(rejected.status.code(), Some(1));
+        assert!(rejected.stdout.is_empty());
+        let diagnostic = stderr(&rejected);
+        assert!(diagnostic.contains("E0036"), "{diagnostic}");
+        assert!(diagnostic.contains("31 bytes"), "{diagnostic}");
+        assert!(diagnostic.contains("--max-vector-bytes"), "{diagnostic}");
+    }
+}
+
+#[test]
 fn all_budget_flags_allow_zero_and_mixed_order_without_changing_path_rules() {
     let fixture = Fixture::new();
     fixture.file("--max-calls", "// empty program\n");
@@ -313,6 +350,8 @@ fn all_budget_flags_allow_zero_and_mixed_order_without_changing_path_rules() {
                 "--max-live-slots",
                 "0",
                 "--max-call-depth",
+                "0",
+                "--max-vector-bytes",
                 "0",
                 "--",
                 "--max-calls",
@@ -335,6 +374,7 @@ fn function_budget_option_errors_are_rejected_before_reading_source() {
         "--max-calls",
         "--max-live-slots",
         "--max-capture-bytes",
+        "--max-vector-bytes",
     ] {
         for mode in ["run", "check"] {
             for invalid in [
@@ -393,6 +433,7 @@ fn help_lists_all_function_budget_flags_and_defaults() {
             "--max-calls 100000",
             "--max-live-slots 1000000",
             "--max-capture-bytes 16777216",
+            "--max-vector-bytes 8388608",
         ] {
             assert!(help.contains(entry), "{entry}: {help}");
         }

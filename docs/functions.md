@@ -168,7 +168,7 @@ interpreter APIs accept caller-selected limits. See [embedding](embedding.md).
 
 ## Development-only: terminal self-transfer
 
-**Unreleased draft feature, not present in the published alpha.2 binary.**
+**Included in the alpha.3 release candidate, not the published alpha.2 binary.**
 On the terminal self-transfer branch, a function that directly returns
 `same_function(...)` can reuse its current execution frame if that function
 has no `ensures` clauses. This permits bounded-depth execution of long

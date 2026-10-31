@@ -1,0 +1,8 @@
+// A direct self-return can reuse its execution frame.
+pure funcra count(n: integer, total: integer = 0) -> integer
+    needs n >= 0;
+{
+    if n == 0 { return total; }
+    return count(n - 1, total + 1);
+}
+print(count(128));

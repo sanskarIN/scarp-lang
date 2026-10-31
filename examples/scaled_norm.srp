@@ -1,0 +1,4 @@
+// Finite-safe Euclidean norm and immutable normalization.
+bind values = [3.0, 4.0];
+print(norm(values));
+print(normalize(values));

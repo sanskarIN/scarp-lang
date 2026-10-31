@@ -76,6 +76,18 @@ return +0.0; empty add/scale/fill are allowed. Choose the domain policy in your
 program rather than assuming every reduction has the same empty behavior.
 Clamp also reports E0034 when its lower bound exceeds the upper bound.
 
+## Development-only cumulative numerical payload budget
+
+When a new vector element buffer would exceed the proposed
+`--max-vector-bytes` limit, Scarp reports **E0036** before reserving the
+buffer. Each element requires 8 logical payload bytes. For example,
+`print([1.0, 2.0]);` needs 16 bytes; a limit of 15 fails, but 16
+succeeds. Reusing an immutable vector in bindings and function calls
+does not allocate another payload. The ledger is cumulative across
+function invocations and loops and never refunds earlier materialization.
+This is an **alpha.3 candidate** option, not present in alpha.2.
+See [proposal 0023](../proposals/0023-vector-allocation-ledger.md).
+
 ## Distinguish overflow from an exhausted quota
 
 | Code | Meaning | Repair |
@@ -85,6 +97,7 @@ Clamp also reports E0034 when its lower bound exceeds the upper bound.
 | E0017 | Execution work exhausted | Bound the computation or deliberately adjust max-steps |
 | E0029 | Logical output snapshot quota exhausted | Reduce selected output or adjust max-capture-bytes |
 | E0035 | Bounded vector payload reservation failed | Reduce data size; this is not a type conversion error |
+| E0036 | Cumulative numerical element payload budget exhausted (alpha.3) | Reduce allocations or adjust `--max-vector-bytes` |
 
 For example, sum of `[1e308, 1e308]` overflows, while mean of those values is
 representable. Request mean directly when that is the intended calculation.
