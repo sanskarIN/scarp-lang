@@ -38,6 +38,7 @@ fn log_space_kernels_are_typed_pure_and_have_no_implicit_coercions() {
     );
     assert_eq!(
         run("pure funcra score(v: vector) -> float ensures result >= 0.0; { return logsumexp(v); } print(score([0.0, 0.0]));")
+            .trim()
             .parse::<f64>()
             .unwrap(),
         2.0_f64.ln()
