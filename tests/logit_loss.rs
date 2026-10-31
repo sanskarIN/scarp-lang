@@ -189,3 +189,10 @@ fn score_losses_handle_subnormal_ties_and_preserve_input_data() {
         .unwrap();
     assert!((ce - std::f64::consts::LN_2).abs() < 1e-15);
 }
+
+#[test]
+fn example_source_has_identical_check_and_run_semantics() {
+    let source = include_str!("../examples/logit_loss.srp");
+    let expected = include_str!("../examples/logit_loss.stdout");
+    assert_eq!(output(source), expected);
+}
