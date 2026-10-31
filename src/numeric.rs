@@ -73,6 +73,23 @@ pub fn evaluate(
     )
 }
 
+/// Run a standalone built-in with both the step and cumulative numerical
+/// payload-allocation limits. Existing `evaluate` keeps its historical
+/// step-only host contract; it does not allocate any user program frames.
+pub fn evaluate_with_vector_limit(
+    function: Builtin,
+    arguments: &[Value],
+    max_steps: u64,
+    max_vector_bytes: usize,
+) -> Result<Value, Diagnostic> {
+    evaluate_with_budget(
+        function,
+        arguments,
+        &mut Budget::new(max_steps).with_vector_bytes(max_vector_bytes),
+        Span::default(),
+    )
+}
+
 pub(crate) fn length_error(span: Span) -> Diagnostic {
     Diagnostic::new(
         DiagnosticKind::VectorLength,
@@ -85,10 +102,18 @@ fn domain(span: Span, message: &str) -> Diagnostic {
     Diagnostic::new(DiagnosticKind::NumericDomain, span, message)
 }
 
-pub(crate) fn buffer(count: usize, span: Span) -> Result<Vec<FiniteFloat>, Diagnostic> {
+pub(crate) fn buffer(
+    count: usize,
+    budget: &mut Budget,
+    span: Span,
+) -> Result<Vec<FiniteFloat>, Diagnostic> {
     if count > MAX_VECTOR_LENGTH {
         return Err(length_error(span));
     }
+    // Charge the exact logical element payload before any allocation occurs.
+    // A failed reservation ends execution; as with work steps, no refund is
+    // necessary and no partially prepared output becomes visible.
+    budget.charge_vector_allocation(count * std::mem::size_of::<FiniteFloat>(), span)?;
     let mut values = Vec::new();
     values.try_reserve_exact(count).map_err(|_| {
         Diagnostic::new(
@@ -195,7 +220,7 @@ pub(crate) fn evaluate_with_budget(
             .ok_or_else(|| length_error(span))?;
         budget.charge(count as u64, span)?;
         let value = finite_number(args[0].require_float(span)?, span)?;
-        let mut values = buffer(count, span)?;
+        let mut values = buffer(count, budget, span)?;
         values.resize(count, value);
         return vector(values, span);
     }
@@ -257,7 +282,7 @@ pub(crate) fn evaluate_with_budget(
             if low > high {
                 return Err(domain(span, "clamp lower bound exceeds its upper bound"));
             }
-            let mut values = buffer(left.len(), span)?;
+            let mut values = buffer(left.len(), budget, span)?;
             for (index, value) in floats().enumerate() {
                 let result = match function {
                     Builtin::Add => value + right.unwrap().as_slice()[index].get(),
@@ -278,7 +303,7 @@ pub(crate) fn evaluate_with_budget(
         }
         Builtin::Softmax => {
             let maximum = floats().fold(f64::NEG_INFINITY, f64::max);
-            let mut values = buffer(left.len(), span)?;
+            let mut values = buffer(left.len(), budget, span)?;
             for value in floats() {
                 let shifted = value - maximum;
                 // A negative overflowing shift has a negligible exponential.
