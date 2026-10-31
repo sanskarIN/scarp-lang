@@ -180,7 +180,10 @@ impl NumericTile {
         if row >= self.height || column >= self.width {
             return None;
         }
-        self.cells.as_slice().get(row.checked_mul(self.width)?.checked_add(column)?).copied()
+        self.cells
+            .as_slice()
+            .get(row.checked_mul(self.width)?.checked_add(column)?)
+            .copied()
     }
 
     pub fn row(&self, row: usize) -> Option<&[FiniteFloat]> {
@@ -188,7 +191,9 @@ impl NumericTile {
             return None;
         }
         let start = row.checked_mul(self.width)?;
-        self.cells.as_slice().get(start..start.checked_add(self.width)?)
+        self.cells
+            .as_slice()
+            .get(start..start.checked_add(self.width)?)
     }
 }
 
@@ -200,7 +205,12 @@ impl fmt::Display for NumericTile {
                 f.write_str(", ")?;
             }
             f.write_str("[")?;
-            for (index, value) in self.row(row).expect("validated tile row").iter().enumerate() {
+            for (index, value) in self
+                .row(row)
+                .expect("validated tile row")
+                .iter()
+                .enumerate()
+            {
                 if index != 0 {
                     f.write_str(", ")?;
                 }
