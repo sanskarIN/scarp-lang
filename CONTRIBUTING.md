@@ -52,6 +52,21 @@ Document new syntax and changed limitations. Features listed as planned are not
 part of the implemented language until their implementation and tests land.
 Discuss dependencies and changes to the minimum Rust version in the PR.
 
+## Branch lifecycle
+
+Keep `main` as the protected, verified release source and `development`
+as an optional long-lived experimentation line. Use short-lived `feature/*`,
+`fix/*`, `release/*` and `scarp/*` branches only for actual changes; do
+not manufacture ten permanent branches merely to reach a fixed number.
+Aim to keep **fewer than ten active working branches** while preserving any
+open PR, unmerged experimental work or branch necessary for release recovery.
+
+[Branch policy and cleanup safeguards](docs/branches.md) document which
+historical branches can be removed. The protected-main cleanup workflow
+checks the current ancestry and active PR references before deleting
+fully merged inactive heads. It never force-pushes or prunes a divergent
+branch, and must pass its own dry-run safety tests.
+
 ## Pull requests and commits
 
 Open a PR against the appropriate base branch and explain the observable change,

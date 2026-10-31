@@ -85,7 +85,7 @@ buffer. Each element requires 8 logical payload bytes. For example,
 succeeds. Reusing an immutable vector in bindings and function calls
 does not allocate another payload. The ledger is cumulative across
 function invocations and loops and never refunds earlier materialization.
-This is an **unreleased** option, not present in alpha.2.
+This is an **alpha.3 candidate** option, not present in alpha.2.
 See [proposal 0023](../proposals/0023-vector-allocation-ledger.md).
 
 ## Distinguish overflow from an exhausted quota
@@ -97,7 +97,7 @@ See [proposal 0023](../proposals/0023-vector-allocation-ledger.md).
 | E0017 | Execution work exhausted | Bound the computation or deliberately adjust max-steps |
 | E0029 | Logical output snapshot quota exhausted | Reduce selected output or adjust max-capture-bytes |
 | E0035 | Bounded vector payload reservation failed | Reduce data size; this is not a type conversion error |
-| E0036 | Cumulative numerical element payload budget exhausted (draft only) | Reduce allocations or adjust `--max-vector-bytes` |
+| E0036 | Cumulative numerical element payload budget exhausted (alpha.3) | Reduce allocations or adjust `--max-vector-bytes` |
 
 For example, sum of `[1e308, 1e308]` overflows, while mean of those values is
 representable. Request mean directly when that is the intended calculation.

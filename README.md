@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-targets the 0.0.4-alpha.2 numerical prerelease, with finite binary64 values, a lexer, parser,
+targets the 0.0.4-alpha.3 numerical and memory-control candidate, with finite binary64 values, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -33,10 +33,13 @@ Boolean only. The [alpha release notes](docs/releases/v0.0.4-alpha.1.md)
 describe the new scope. The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
 records publication status and provides verified native downloads after publication.
 
-The separate [scaled L2 proposal](docs/proposals/0018-scaled-l2-norms.md)
-tracks development-only `norm` and `normalize` kernels for a future milestone.
-They are **not** present in the published alpha.2 binaries, and no new
-prerelease is authorized.
+The [scaled L2 proposal](docs/proposals/0018-scaled-l2-norms.md) documents
+the implemented pure `norm` and `normalize` functions. The alpha.3
+candidate also includes terminal self-transfer for `funcra` and
+the optional `--max-vector-bytes` runtime allocation gate.
+These are **not** present in the published alpha.2 binaries.
+See [alpha.3 notes](docs/releases/v0.0.4-alpha.3.md) for release status
+and [branch conventions](docs/branches.md) for the repository workflow.
 
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are

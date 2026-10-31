@@ -1,6 +1,7 @@
 # Proposal 0023: Cumulative vector allocation ledger
 
-Status: **unreleased draft, not merged**. The design adds an independent
+Status: **integrated in the alpha.3 release candidate; publication gated**.
+The design adds an independent
 runtime allocation quota without importing external code, changing Scarp
 syntax, or exposing any manual-memory, garbage-collection or ownership API
 to Scarp programs.

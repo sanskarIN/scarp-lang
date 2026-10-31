@@ -48,9 +48,9 @@ Dual-stream hosts can use `run_with_io_and_limits` or
 
 ## Function and snapshot options (beta.3)
 
-Seven options are available on both `run` and `check`, before the file path on
-this unreleased development branch. The published alpha.2 has six; the seventh
-is the independent cumulative vector-allocation limit.
+Seven options are available on both `run` and `check` in the alpha.3
+candidate; the published alpha.2 has six. The seventh is an independent
+cumulative vector-allocation limit.
 Each takes unsigned decimal digits, allows zero, and may occur once. Options
 may appear in any order. Missing, negative, signed, nondecimal, overflowing, or
 duplicate counts produce usage status 2 before the file is read. `tokens`
@@ -64,7 +64,7 @@ rejects execution options; `--` ends option parsing for a dash-prefixed path.
 | `--max-calls` | 100,000 | `max_calls` | Cumulative selected calls, including defaults/contracts |
 | `--max-live-slots` | 1,000,000 | `max_live_slots` | Slots across live file/function frames and saved loop state |
 | `--max-capture-bytes` | 16,777,216 | `max_capture_bytes` | Cumulative logical output snapshot storage |
-| `--max-vector-bytes` | 8,388,608 | `max_vector_bytes` | Cumulative newly allocated finite-vector element payload, draft only |
+| `--max-vector-bytes` | 8,388,608 | `max_vector_bytes` | Cumulative newly allocated finite-vector element payload (alpha.3) |
 
 ```sh
 scarp run --max-call-depth 512 --max-calls 200000 examples/function_recursion.srp
@@ -91,9 +91,9 @@ measurement. Parser allocations are outside these execution caps. See
 [functions](functions.md) for evaluation order and [embedding](embedding.md)
 for reusable immutable plans and caller-selected options.
 
-## Independent cumulative vector allocation quota (unreleased draft)
+## Independent cumulative vector allocation quota (alpha.3 candidate)
 
-The development-only `--max-vector-bytes N` option limits cumulative
+The alpha.3 candidate `--max-vector-bytes N` option limits cumulative
 newly materialized numerical-element payload, separate from the step budget.
 Each finite element costs 8 bytes. This cap is prepaid before reserving a
 vector literal or a fresh buffer for fill/add/scale/clamp/softmax. Clones,

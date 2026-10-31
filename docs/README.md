@@ -3,14 +3,15 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Choose a guide by the task you want to complete. Current tutorials target the
-0.0.4-alpha.2 implementation. They include variables, strings,
+0.0.4-alpha.3 candidate implementation. They include variables, strings,
 booleans, conditionals, bounded while/repeat loops, five string escapes, and
 [output statements](output.md). Release notes describe fixed snapshots;
 beta.3 added [typed funcra functions](functions.md) and CLI resource controls.
 Alpha.1 added [finite floats](floats.md); this candidate adds [vectors](vectors.md).
 The [scaled L2 norms proposal](proposals/0018-scaled-l2-norms.md)
-tracks new development-branch work. The published alpha.2 version does not
-contain `norm` or `normalize`; no alpha.3 release is authorized.
+describes `norm` and `normalize` in the alpha.3 candidate. The published
+alpha.2 version does not include them. See the
+[alpha.3 release notes](releases/v0.0.4-alpha.3.md) for publication status.
 Tensors, native backends and CLI redesign remain separate. See
 [release notes](releases/v0.0.4-alpha.2.md) for the planned publication; alpha.1 has no vectors.
 
@@ -46,8 +47,8 @@ Tensors, native backends and CLI redesign remain separate. See
 [Proposal 0022: terminal self-transfer](proposals/0022-terminal-self-transfer.md)
 specifies bounded frame reuse for direct self-recursive returns in functions
 without postconditions. Defaults, preconditions, call-count budgets and
-diagnostic traces remain enforced. This feature is **draft-only** and not
-available in published alpha.2; it does not change the release version.
+diagnostic traces remain enforced. This feature is included in the alpha.3 release candidate and is not
+available in published alpha.2.
 
 ## Unreleased memory-control development
 
@@ -55,7 +56,7 @@ available in published alpha.2; it does not change the release version.
 deterministic `max_vector_bytes` allocation ledger, with the CLI flag
 `--max-vector-bytes` and diagnostic E0036. It is distinct from live
 frame-slot and output-snapshot limits, and does not claim to bound the
-entire process's resident memory. This feature is draft-only and not
+entire process's resident memory. This feature is included in the alpha.3 release candidate but not
 available in published alpha.2.
 
 ## Reading paths
