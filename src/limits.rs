@@ -33,6 +33,9 @@ pub struct ExecutionOptions {
     pub max_live_slots: usize,
     /// Conservative cumulative storage of output snapshots, including overhead.
     pub max_capture_bytes: usize,
+    /// Cumulative newly reserved numerical-vector element payload, in bytes.
+    /// Sharing an existing immutable vector does not charge again.
+    pub max_vector_bytes: usize,
 }
 
 impl Default for ExecutionOptions {
@@ -43,6 +46,7 @@ impl Default for ExecutionOptions {
             max_calls: 100_000,
             max_live_slots: 1_000_000,
             max_capture_bytes: 16 * 1024 * 1024,
+            max_vector_bytes: 8 * 1024 * 1024,
         }
     }
 }
@@ -59,6 +63,8 @@ impl From<ExecutionLimits> for ExecutionOptions {
 pub(crate) struct Budget {
     remaining: u64,
     limit: u64,
+    vector_remaining: usize,
+    vector_limit: usize,
 }
 
 impl Budget {
@@ -66,7 +72,37 @@ impl Budget {
         Self {
             remaining: steps,
             limit: steps,
+            vector_remaining: usize::MAX,
+            vector_limit: usize::MAX,
         }
+    }
+
+    /// Configure a separate cumulative payload-allocation cap. This is not a
+    /// physical process-memory cap or a live-heap byte count.
+    pub fn with_vector_bytes(mut self, bytes: usize) -> Self {
+        self.vector_remaining = bytes;
+        self.vector_limit = bytes;
+        self
+    }
+
+    pub fn charge_vector_allocation(
+        &mut self,
+        bytes: usize,
+        span: Span,
+    ) -> Result<(), Diagnostic> {
+        if bytes > self.vector_remaining {
+            return Err(Diagnostic::new(
+                DiagnosticKind::VectorBudget,
+                span,
+                format!(
+                    "cumulative vector allocation limit of {} bytes exceeded",
+                    self.vector_limit
+                ),
+            )
+            .with_help("reduce vector materialization or raise --max-vector-bytes / ExecutionOptions.max_vector_bytes"));
+        }
+        self.vector_remaining -= bytes;
+        Ok(())
     }
 
     pub fn charge(&mut self, amount: u64, span: Span) -> Result<(), Diagnostic> {
