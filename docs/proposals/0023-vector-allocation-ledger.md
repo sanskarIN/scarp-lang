@@ -75,6 +75,17 @@ softmax, while retaining the same diagnostics and finite-value guarantees.
 Host-constructed `NumericVector::new` allocations occur *outside* these
 program-execution quotas; callers remain responsible for their own buffers.
 
+## Rust source compatibility
+
+`ExecutionOptions` is currently a public struct. Adding `max_vector_bytes`
+introduces one new field: host applications that construct the struct using
+an exhaustive literal must add that field when moving to this development
+branch. Callers using `ExecutionOptions::default()`, `..Default::default()`
+or the preserved two-field `ExecutionLimits` interface require no source
+change. This is an **API compatibility concern to review before merge or
+release**, rather than a claim that all host code remains source-compatible.
+The existing standalone `numeric::evaluate` signature is unchanged.
+
 ## Limitations and intentional non-claims
 
 The cap covers **new element payload requested through the interpreter's
