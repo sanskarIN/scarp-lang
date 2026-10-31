@@ -41,6 +41,11 @@ These are **not** present in the published alpha.2 binaries.
 See [alpha.3 notes](docs/releases/v0.0.4-alpha.3.md) for release status
 and [branch conventions](docs/branches.md) for the repository workflow.
 
+The [stable selection proposal](docs/proposals/0025-stable-vector-selection.md)
+tracks development-only `argmax`, `argmin`, `maxval`, and `minval`
+for deterministic model score decoding. Published alpha.3 binaries do
+not include these functions.
+
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See
