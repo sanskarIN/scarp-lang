@@ -38,6 +38,15 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
+## Unreleased memory-control development
+
+[Proposal 0023](proposals/0023-vector-allocation-ledger.md) adds a
+deterministic `max_vector_bytes` allocation ledger, with the CLI flag
+`--max-vector-bytes` and diagnostic E0036. It is distinct from live
+frame-slot and output-snapshot limits, and does not claim to bound the
+entire process's resident memory. This feature is draft-only and not
+available in published alpha.2.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
