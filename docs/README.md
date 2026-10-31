@@ -79,6 +79,14 @@ allocation-free `crossentropy(logits, target)` and
 `logprob(logits, target)` kernels for single-class classification.
 These development kernels are not in published alpha.3.
 
+## Experimental explicit training helpers
+
+[Proposal 0027](proposals/0027-classification-training-primitives.md)
+documents `lossgrad`, the finite categorical-loss gradient, and
+`onehot`, a bounded target encoder. Both work within the native step
+and cumulative vector allocation limits. Neither constitutes an automatic
+differentiation engine. They are not in published alpha.3.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
