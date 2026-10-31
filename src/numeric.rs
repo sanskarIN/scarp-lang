@@ -353,7 +353,10 @@ pub(crate) fn evaluate_with_budget(
             Diagnostic::new(
                 DiagnosticKind::VectorIndex,
                 span,
-                format!("target index {index} is outside the vector length {}", left.len()),
+                format!(
+                    "target index {index} is outside the vector length {}",
+                    left.len()
+                ),
             )
             .with_help("provide a zero-based target index within the logits vector")
         })?)
@@ -388,7 +391,11 @@ pub(crate) fn evaluate_with_budget(
             let gap = finite_number(maximum - target_score, span)?.get();
             let loss = finite_number(gap + log_sum, span)?.get();
             finite_number(
-                if function == Builtin::LogProb { -loss } else { loss },
+                if function == Builtin::LogProb {
+                    -loss
+                } else {
+                    loss
+                },
                 span,
             )
             .map(Value::Float)
