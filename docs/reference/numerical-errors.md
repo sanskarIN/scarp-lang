@@ -65,6 +65,17 @@ if index >= 0 and index < len(values) {
 This program succeeds without output. Runtime bounds are checked only when the
 access is selected; all branches still undergo static type checking.
 
+## Development-only window and stitch diagnostics
+
+**Not present in the published alpha.2 executable.** On the
+[window/stitch development branch](../proposals/0020-vector-windows-stitch.md),
+`window([1.0], 2, 0)` fails E0033 (start outside the visible range),
+as does `window([1.0], 0, 2)` (requested range extends too far).
+`window([1.0], 1, 0)` succeeds and returns `[]`. A negative or
+excessive count fails E0032, as does stitching into a vector longer than
+65,536. E0017 denotes exhausted work before window or stitch completion.
+Use `len(values)` and explicit guards for uncertain boundaries.
+
 ## Decide what an empty result means
 
 ```scarp-invalid
