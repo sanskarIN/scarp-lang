@@ -128,7 +128,7 @@ fn function_budget_flags_enforce_exact_boundaries_in_run_and_check() {
     let fixture = Fixture::new();
     let file = fixture.file(
         "recursion.srp",
-        "pure funcra f(n: integer) -> integer { if n == 0 { return 0; } return f(n - 1); } print(f(4));",
+        "pure funcra f(n: integer) -> integer { if n == 0 { return 0; } return f(n - 1) + 0; } print(f(4));",
     );
     for mode in ["run", "check"] {
         for (flag, accepted, rejected) in [
