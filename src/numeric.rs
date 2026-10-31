@@ -18,6 +18,8 @@ pub enum Builtin {
     Clamp,
     Fill,
     Softmax,
+    Norm,
+    Normalize,
 }
 
 impl Builtin {
@@ -33,6 +35,8 @@ impl Builtin {
             "clamp" => Self::Clamp,
             "fill" => Self::Fill,
             "softmax" => Self::Softmax,
+            "norm" => Self::Norm,
+            "normalize" => Self::Normalize,
             _ => return None,
         })
     }
@@ -40,7 +44,9 @@ impl Builtin {
     pub fn parameter_types(self) -> &'static [ValueType] {
         use ValueType::{Float, Integer, Vector};
         match self {
-            Self::Length | Self::Sum | Self::Mean | Self::Softmax => &[Vector],
+            Self::Length | Self::Sum | Self::Mean | Self::Softmax | Self::Norm | Self::Normalize => {
+                &[Vector]
+            }
             Self::Dot | Self::Mse | Self::Add => &[Vector, Vector],
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
@@ -51,7 +57,7 @@ impl Builtin {
     pub fn result_type(self) -> ValueType {
         match self {
             Self::Length => ValueType::Integer,
-            Self::Sum | Self::Mean | Self::Dot | Self::Mse => ValueType::Float,
+            Self::Sum | Self::Mean | Self::Dot | Self::Mse | Self::Norm => ValueType::Float,
             _ => ValueType::Vector,
         }
     }
@@ -169,6 +175,26 @@ fn mse(left: &NumericVector, right: &NumericVector, span: Span) -> Result<f64, D
     Ok(finite_number((scale * average) * scale, span)?.get())
 }
 
+// Divide by the largest magnitude before squaring so finite input vectors
+// can be normalized even if their unscaled squared sum or L2 norm overflows.
+// The second component is sqrt(sum((x / scale)^2)); it lies in [1, sqrt(n)]
+// for nonzero inputs and remains finite under the vector length bound.
+fn scaled_l2(values: &NumericVector, span: Span) -> Result<(f64, f64), Diagnostic> {
+    let scale = values
+        .as_slice()
+        .iter()
+        .map(|value| value.get().abs())
+        .fold(0.0_f64, f64::max);
+    if scale == 0.0 {
+        return Ok((0.0, 0.0));
+    }
+    let squares = values.as_slice().iter().map(|value| {
+        let normalized = value.get() / scale;
+        Ok(normalized * normalized)
+    });
+    Ok((scale, compensated(squares, span)?.sqrt()))
+}
+
 pub(crate) fn evaluate_with_budget(
     function: Builtin,
     args: &[Value],
@@ -212,20 +238,34 @@ pub(crate) fn evaluate_with_budget(
     } else {
         None
     };
-    if matches!(function, Builtin::Mean | Builtin::Mse | Builtin::Softmax) && left.is_empty() {
+    if matches!(function, Builtin::Mean | Builtin::Mse | Builtin::Softmax | Builtin::Normalize) && left.is_empty() {
         return Err(domain(
             span,
             "this numerical kernel requires a nonempty vector",
         ));
     }
     let work = match function {
-        Builtin::Mean | Builtin::Mse | Builtin::Softmax => 4,
+        Builtin::Mean | Builtin::Mse | Builtin::Softmax | Builtin::Norm | Builtin::Normalize => 4,
         Builtin::Dot => 2,
         _ => 1,
     };
     budget.charge(left.len() as u64 * work, span)?;
     let floats = || left.as_slice().iter().map(|value| value.get());
     match function {
+        Builtin::Norm | Builtin::Normalize => {
+            let (scale, magnitude) = scaled_l2(left, span)?;
+            if function == Builtin::Norm {
+                return finite_number(scale * magnitude, span).map(Value::Float);
+            }
+            if scale == 0.0 {
+                return Err(domain(span, "cannot normalize a zero vector"));
+            }
+            let mut values = buffer(left.len(), span)?;
+            for value in floats() {
+                values.push(finite_number((value / scale) / magnitude, span)?);
+            }
+            vector(values, span)
+        }
         Builtin::Sum => compensated(floats().map(Ok), span)
             .and_then(|v| finite_number(v, span))
             .map(Value::Float),
