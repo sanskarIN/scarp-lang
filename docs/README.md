@@ -87,6 +87,15 @@ documents `lossgrad`, the finite categorical-loss gradient, and
 and cumulative vector allocation limits. Neither constitutes an automatic
 differentiation engine. They are not in published alpha.3.
 
+## Development-only immutable vector windows
+
+[Proposal 0020](proposals/0020-vector-windows-stitch.md) specifies
+`window` (shared immutable storage, constant native work) and
+`stitch` (checked concatenation, charged element payload). This
+integration is validated against the current E0036 cumulative vector
+allocation ledger and classification numerical kernels. These functions
+are not in the published alpha.3 executable.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
