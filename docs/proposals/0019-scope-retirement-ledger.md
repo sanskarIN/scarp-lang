@@ -92,6 +92,17 @@ of immediate process-level deallocation whenever any value becomes unused.
 - Internal resolver tests inspect retirement plans for nested scopes and
   distinguish `break` from `continue`, verifying that outer storage and
   repeat index remain live.
+- A development/test-only **fixed-point ledger audit** checks every reachable
+  resolved operation. It propagates the set of definitely initialized slots
+  along normal execution and both sides of conditional jumps; flow joins
+  conservatively intersect those sets. Retire and loop control remove only
+  their planned slots, while stores reinitialize the target slot. Any read
+  that may access a retired/uninitialized slot, out-of-range retirement,
+  or invalid jump is rejected by the audit.
+- Source and resolver unit tests intentionally corrupt retirement plans to
+  prove that the audit detects stale reads and malformed transfers.
+- This audit runs in Rust unit-test builds, not in released binaries; it is
+  an engineering verification aid and **not** a formal memory-safety proof.
 - Integration tests cover conditional paths, loops, function postconditions,
   value/output snapshots, arithmetic failures, and unchanged work budgets.
 - Validate the whole Rust debug/release/Clippy/rustdoc test suite against
