@@ -38,6 +38,15 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
+## Unreleased two-axis numerical values
+
+[Proposal 0021: immutable numerical tiles](proposals/0021-immutable-numeric-tiles.md)
+defines a development-only `tile` type with rectangular row-major values,
+shape introspection, indexed cell and row access, flattening and axis swapping.
+It is **not** included in the published alpha.2 binaries or merged into main.
+Read the proposal for shape/empty-dimension rules, resource charges, and the
+integration review required with the other draft numerical PRs.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
