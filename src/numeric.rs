@@ -28,6 +28,8 @@ pub enum Builtin {
     MinValue,
     LogProb,
     CrossEntropy,
+    LossGrad,
+    OneHot,
 }
 
 impl Builtin {
@@ -53,6 +55,8 @@ impl Builtin {
             "minval" => Self::MinValue,
             "logprob" => Self::LogProb,
             "crossentropy" => Self::CrossEntropy,
+            "lossgrad" => Self::LossGrad,
+            "onehot" => Self::OneHot,
             _ => return None,
         })
     }
@@ -76,7 +80,8 @@ impl Builtin {
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
             Self::Fill => &[Float, Integer],
-            Self::LogProb | Self::CrossEntropy => &[Vector, Integer],
+            Self::LogProb | Self::CrossEntropy | Self::LossGrad => &[Vector, Integer],
+            Self::OneHot => &[Integer, Integer],
         }
     }
 
@@ -279,6 +284,21 @@ fn log_partition(values: &NumericVector, span: Span) -> Result<(f64, f64), Diagn
     Ok((maximum, sum.ln()))
 }
 
+// Validate a categorical index before any scan or buffer creation.
+fn checked_target(index: i64, count: usize, span: Span) -> Result<usize, Diagnostic> {
+    usize::try_from(index)
+        .ok()
+        .filter(|&i| i < count)
+        .ok_or_else(|| {
+            Diagnostic::new(
+                DiagnosticKind::VectorIndex,
+                span,
+                format!("target index {index} is outside the vector length {count}"),
+            )
+            .with_help("provide a zero-based target index within the logits vector")
+        })
+}
+
 pub(crate) fn evaluate_with_budget(
     function: Builtin,
     args: &[Value],
@@ -309,6 +329,22 @@ pub(crate) fn evaluate_with_budget(
         values.resize(count, value);
         return vector(values, span);
     }
+    if function == Builtin::OneHot {
+        let count = usize::try_from(args[0].require_integer(span)?)
+            .ok()
+            .filter(|&count| count <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        if count == 0 {
+            return Err(domain(span, "onehot requires at least one class"));
+        }
+        let index = args[1].require_integer(span)?;
+        let chosen = checked_target(index, count, span)?;
+        budget.charge(count as u64, span)?;
+        let mut values = buffer(count, budget, span)?;
+        values.resize(count, finite_number(0.0, span)?);
+        values[chosen] = finite_number(1.0, span)?;
+        return vector(values, span);
+    }
     let left = args[0].require_vector(span)?;
     if function == Builtin::Length {
         return Ok(Value::Integer(left.len() as i64));
@@ -336,6 +372,7 @@ pub(crate) fn evaluate_with_budget(
             | Builtin::MinValue
             | Builtin::LogProb
             | Builtin::CrossEntropy
+            | Builtin::LossGrad
     ) && left.is_empty()
     {
         return Err(domain(
@@ -346,24 +383,20 @@ pub(crate) fn evaluate_with_budget(
     // A label is an index, never a probability or a float. Validate its
     // bounds before the numerical scan so no invalid label reaches the
     // target lookup. A negative index is invalid, not Python-style indexing.
-    let target = if matches!(function, Builtin::LogProb | Builtin::CrossEntropy) {
-        let index = args[1].require_integer(span)?;
-        let chosen = usize::try_from(index).ok().filter(|&i| i < left.len());
-        Some(chosen.ok_or_else(|| {
-            Diagnostic::new(
-                DiagnosticKind::VectorIndex,
-                span,
-                format!(
-                    "target index {index} is outside the vector length {}",
-                    left.len()
-                ),
-            )
-            .with_help("provide a zero-based target index within the logits vector")
-        })?)
+    let target = if matches!(
+        function,
+        Builtin::LogProb | Builtin::CrossEntropy | Builtin::LossGrad
+    ) {
+        Some(checked_target(
+            args[1].require_integer(span)?,
+            left.len(),
+            span,
+        )?)
     } else {
         None
     };
     let work = match function {
+        Builtin::LossGrad => 6,
         Builtin::Mean
         | Builtin::Mse
         | Builtin::Softmax
@@ -379,6 +412,30 @@ pub(crate) fn evaluate_with_budget(
     budget.charge(left.len() as u64 * work, span)?;
     let floats = || left.as_slice().iter().map(|value| value.get());
     match function {
+        Builtin::LossGrad => {
+            // d crossentropy(logits, target) / d logits_i =
+            // softmax(logits)_i - indicator(i == target).
+            // The maximum-shifted log partition avoids a second
+            // probability vector and tolerates negative infinite *shifts*
+            // without storing any nonfinite Scarp values.
+            let (maximum, log_sum) = log_partition(left, span)?;
+            let mut values = buffer(left.len(), budget, span)?;
+            for (index, value) in floats().enumerate() {
+                let shifted = value - maximum;
+                let probability = if shifted.is_finite() {
+                    (shifted - log_sum).exp()
+                } else {
+                    0.0
+                };
+                let gradient = if Some(index) == target {
+                    probability - 1.0
+                } else {
+                    probability
+                };
+                values.push(finite_number(gradient, span)?);
+            }
+            vector(values, span)
+        }
         Builtin::LogProb | Builtin::CrossEntropy => {
             let (maximum, log_sum) = log_partition(left, span)?;
             let target_score = left.as_slice()[target.unwrap()].get();
@@ -520,6 +577,8 @@ pub(crate) fn evaluate_with_budget(
             }
             vector(values, span)
         }
-        Builtin::Length | Builtin::Fill => unreachable!("handled before vector kernels"),
+        Builtin::Length | Builtin::Fill | Builtin::OneHot => {
+            unreachable!("handled before vector kernels")
+        }
     }
 }

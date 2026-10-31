@@ -200,6 +200,26 @@ extra `max_vector_bytes` is required for the operation itself. See
 [example](../examples/logit_loss.srp). These kernels are in development,
 **not in published alpha.3**.
 
+## Development-only classification training primitives
+
+Two pure typed kernels extend the single-label categorical classification
+utilities: `lossgrad(logits: vector, target: integer) -> vector` calculates
+the explicit gradient of categorical cross-entropy with respect to logits,
+and `onehot(count: integer, target: integer) -> vector` constructs a
+new immutable one-hot target vector. These are **not general automatic
+differentiation**, an optimizer, or a full model-training backend.
+
+`lossgrad` uses maximum-shifted probabilities and subtracts 1.0 only at
+the selected index. It uses **6n work steps and 8n newly allocated bytes**.
+`onehot` uses **n work steps and 8n newly allocated bytes**. All work and
+allocation quota checks happen before building new result vectors.
+Empty logits and a zero class count are E0034, invalid target E0033,
+negative/oversized class counts E0032. Neither accepts float targets.
+
+See [proposal 0027](proposals/0027-classification-training-primitives.md)
+and [classification example](../examples/classification_training.srp).
+These operations are **development-only**, not in published alpha.3.
+
 ## Examples and host use
 
 [Basic vectors](../examples/vectors.srp) cover indexing, snapshots and kernels.

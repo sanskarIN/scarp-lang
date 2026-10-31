@@ -1,0 +1,7 @@
+// One-hot target construction and explicit categorical-loss gradient.
+// No automatic differentiation or training loop is implied.
+bind logits = [0.0, 0.0];
+bind class_id = 1;
+print(onehot(3, class_id));
+print(lossgrad(logits, class_id));
+print(crossentropy([3.0], 0));

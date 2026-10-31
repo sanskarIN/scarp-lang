@@ -57,6 +57,12 @@ vectors and integer class indices, with bounded execution and no new
 vector payload allocation. Published alpha.3 packages do not include
 these operations.
 
+The [explicit training primitives proposal](docs/proposals/0027-classification-training-primitives.md)
+covers the unreleased `lossgrad(logits, target)` and `onehot(count, target)`
+vector kernels, both with bounded work and element-allocation budgets.
+They are not a general autograd, GPU, or optimizer implementation, and
+are **not present in published alpha.3**.
+
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See
