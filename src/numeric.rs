@@ -44,9 +44,12 @@ impl Builtin {
     pub fn parameter_types(self) -> &'static [ValueType] {
         use ValueType::{Float, Integer, Vector};
         match self {
-            Self::Length | Self::Sum | Self::Mean | Self::Softmax | Self::Norm | Self::Normalize => {
-                &[Vector]
-            }
+            Self::Length
+            | Self::Sum
+            | Self::Mean
+            | Self::Softmax
+            | Self::Norm
+            | Self::Normalize => &[Vector],
             Self::Dot | Self::Mse | Self::Add => &[Vector, Vector],
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
@@ -238,7 +241,11 @@ pub(crate) fn evaluate_with_budget(
     } else {
         None
     };
-    if matches!(function, Builtin::Mean | Builtin::Mse | Builtin::Softmax | Builtin::Normalize) && left.is_empty() {
+    if matches!(
+        function,
+        Builtin::Mean | Builtin::Mse | Builtin::Softmax | Builtin::Normalize
+    ) && left.is_empty()
+    {
         return Err(domain(
             span,
             "this numerical kernel requires a nonempty vector",
