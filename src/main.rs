@@ -23,7 +23,7 @@ Usage:
 
 Use -- before a filename that begins with a dash.
 run/check options before the path: --max-steps, --max-prints, --max-call-depth,
---max-calls, --max-live-slots, --max-capture-bytes (each followed by a count).
+--max-calls, --max-live-slots, --max-capture-bytes, --max-vector-bytes (counts).
 Defaults: 1000000 execution steps, 100000 selected output statements.
 Iteration: while condition { ... }, repeat count as index { ... }.
 Use scarp run --help or scarp check --help for budget examples.
@@ -36,7 +36,8 @@ while guards are boolean; repeat count as index saves one nonnegative integer co
 break; exits the nearest loop; continue; rechecks while or advances repeat.
 Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
 Function defaults: --max-call-depth 256, --max-calls 100000,
---max-live-slots 1000000, --max-capture-bytes 16777216.
+--max-live-slots 1000000, --max-capture-bytes 16777216,
+--max-vector-bytes 8388608 (cumulative numerical element payload).
 Snapshot bytes are a logical storage cap, not an exact process-memory limit.
 Counts are unsigned decimal digits, zero is valid, and each option may occur once.
 Example: scarp run --max-steps 2000000 --max-prints 10 examples/repeat.srp
@@ -50,8 +51,9 @@ Loops and arithmetic execute with fresh storage and the same limits as run.
 This evaluates code; it is not a static-only check. All bodies are type-checked.
 Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
 Function defaults: --max-call-depth 256, --max-calls 100000,
---max-live-slots 1000000, --max-capture-bytes 16777216.
-All six options take unsigned decimal counts, allow zero, and may occur once.
+--max-live-slots 1000000, --max-capture-bytes 16777216,
+--max-vector-bytes 8388608 (cumulative numerical element payload).
+All seven options take unsigned decimal counts, allow zero, and may occur once.
 Snapshot bytes are a logical storage cap, including when check discards output.
 Example: scarp check --max-steps 2000000 examples/repeat.srp
 Use tokens for lexing without executing a program. No execution-limit flags on tokens.
@@ -188,7 +190,8 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionOptions), &
                 | "--max-call-depth"
                 | "--max-calls"
                 | "--max-live-slots"
-                | "--max-capture-bytes"),
+                | "--max-capture-bytes"
+                | "--max-vector-bytes"),
             ) => flag,
             _ => break,
         };
@@ -218,6 +221,7 @@ fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionOptions), &
                     "--max-call-depth" => options.max_call_depth = value,
                     "--max-live-slots" => options.max_live_slots = value,
                     "--max-capture-bytes" => options.max_capture_bytes = value,
+                    "--max-vector-bytes" => options.max_vector_bytes = value,
                     _ => unreachable!(),
                 }
             }
