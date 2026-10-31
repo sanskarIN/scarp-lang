@@ -24,7 +24,8 @@ an empty vector fail. Calls and groups compose with indexing, including
 
 `bind` prevents replacement; `var` permits replacing the whole vector, including
 with another length. The inferred type stays vector. No element assignment,
-slice, implicit conversion or broadcasting is implemented. Use named kernels
+implicit conversion or broadcasting is implemented. Development-only shared
+vector windows are described below. Use named kernels
 instead of `+`, `*` or compound arithmetic assignments. `==`/`!=` compare contents;
 different lengths compare unequal and signed zeros compare equal.
 
@@ -35,7 +36,8 @@ brackets, for example `[1.0, -0.0]`; binary rounding remains observable.
 ## Ten pure kernels
 
 All arguments are positional. Scalar arguments must be float unless marked
-integer. Each returned vector owns a new buffer; inputs are borrowed unchanged.
+integer. Most returned vectors own new buffers; shared windows are the exception
+in the unreleased development candidate. Inputs are borrowed unchanged.
 
 | Call | Result | Rules |
 | --- | --- | --- |
@@ -59,6 +61,39 @@ print(dot(a, [2.0, 2.0, 2.0]));
 print(mse(a, [1.0, 2.0, 5.0]));
 print(clamp(scale(a, 0.5), 0.0, 1.0));
 ```
+
+## Development-only: shared windows and stitching
+
+**Not available in published v0.0.4-alpha.2.** A separate draft PR introduces
+`window(values, start, count)` and `stitch(left, right)`:
+
+```scarp
+bind points = [10.0, 20.0, 30.0, 40.0];
+bind selected = window(points, 1, 2);
+print(selected);
+print(stitch(selected, [50.0]));
+```
+
+A window is a new immutable *value* containing a contiguous visible range.
+Its elements share the original backing buffer without copying. Indexing,
+equality, display, and existing numerical kernels see only the selected
+elements. Windows of windows use indices relative to the visible range.
+`window(values, len(values), 0)` is valid. Negative starts and out-of-range
+selections fail with E0033; invalid negative or excessive counts fail with
+E0032. Work cost is **one** native kernel step for a successful selection
+(in addition to normal expression dispatch).
+
+`stitch` creates a fresh vector with both visible ranges in order. Its total
+length may not exceed 65,536; it precharges **one work step per copied element**
+and uses the existing fallible allocation check. An empty stitch is valid.
+Both functions are pure and positional. Existing user functions of these names
+still take precedence.
+
+A window retains the whole backing buffer even if the visible range is
+small or empty. This does not offer a hard total-memory limit or user-visible
+ownership API; the host still shares immutable storage internally. See
+[proposal 0020](proposals/0020-vector-windows-stitch.md) for exact behavior,
+tests and release boundaries.
 
 ## Numerical guarantees and limits
 
@@ -124,7 +159,8 @@ is promised: parsing, host allocations and small control allocations are outside
 it. Legacy standalone expression evaluation has an unbounded work allowance;
 use capped program APIs or the capped native API for controlled execution.
 
-Snapshots charge 64 + 8n logical bytes per vector, even when sharing a buffer.
+Snapshots charge 64 + 8n logical bytes per vector, where n is its visible
+length even for a window, and regardless of a shared backing buffer.
 An empty vector costs 64 bytes. This is not a formatted-byte count. Run and check
 apply identical work/capture limits; check discards snapshots without formatting
 them. File/function slots retain their previous meaning. See [budgets](budgets.md).

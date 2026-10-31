@@ -71,10 +71,22 @@ impl fmt::Display for FiniteFloat {
 /// Maximum elements in either a source-created or host-created numeric vector.
 pub const MAX_VECTOR_LENGTH: usize = 65_536;
 
-/// Shared contiguous immutable finite elements. Moving an owned buffer into
-/// this wrapper does not copy its payload; cloning only shares the Arc.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NumericVector(Arc<Vec<FiniteFloat>>);
+/// Immutable finite elements with an optional visible window into shared
+/// storage. Value identity is its visible numbers, never its backing buffer.
+/// No user-visible pointer, lifetime or ownership operation is exposed.
+#[derive(Debug, Clone)]
+pub struct NumericVector {
+    storage: Arc<Vec<FiniteFloat>>,
+    offset: usize,
+    length: usize,
+}
+
+impl PartialEq for NumericVector {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_slice() == other.as_slice()
+    }
+}
+impl Eq for NumericVector {}
 
 impl NumericVector {
     /// Reject oversized/nonfinite input or failed buffer reservation.
@@ -92,17 +104,38 @@ impl NumericVector {
 
     /// Consume an already checked finite buffer without copying its elements.
     pub fn from_finite(values: Vec<FiniteFloat>) -> Option<Self> {
-        (values.len() <= MAX_VECTOR_LENGTH).then(|| Self(Arc::new(values)))
+        if values.len() > MAX_VECTOR_LENGTH {
+            return None;
+        }
+        Some(Self {
+            length: values.len(),
+            offset: 0,
+            storage: Arc::new(values),
+        })
+    }
+
+    /// Select a finite, contiguous range without copying elements. The new
+    /// immutable value retains the backing allocation until its last view
+    /// is dropped, even when the visible range is empty.
+    pub fn window(&self, start: usize, length: usize) -> Option<Self> {
+        if start.checked_add(length)? > self.length {
+            return None;
+        }
+        Some(Self {
+            storage: Arc::clone(&self.storage),
+            offset: self.offset.checked_add(start)?,
+            length,
+        })
     }
 
     pub fn as_slice(&self) -> &[FiniteFloat] {
-        self.0.as_slice()
+        &self.storage[self.offset..self.offset + self.length]
     }
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.length
     }
     pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.length == 0
     }
 }
 

@@ -18,6 +18,8 @@ pub enum Builtin {
     Clamp,
     Fill,
     Softmax,
+    Window,
+    Stitch,
 }
 
 impl Builtin {
@@ -33,6 +35,8 @@ impl Builtin {
             "clamp" => Self::Clamp,
             "fill" => Self::Fill,
             "softmax" => Self::Softmax,
+            "window" => Self::Window,
+            "stitch" => Self::Stitch,
             _ => return None,
         })
     }
@@ -41,7 +45,8 @@ impl Builtin {
         use ValueType::{Float, Integer, Vector};
         match self {
             Self::Length | Self::Sum | Self::Mean | Self::Softmax => &[Vector],
-            Self::Dot | Self::Mse | Self::Add => &[Vector, Vector],
+            Self::Dot | Self::Mse | Self::Add | Self::Stitch => &[Vector, Vector],
+            Self::Window => &[Vector, Integer, Integer],
             Self::Scale => &[Vector, Float],
             Self::Clamp => &[Vector, Float, Float],
             Self::Fill => &[Float, Integer],
@@ -78,6 +83,14 @@ pub(crate) fn length_error(span: Span) -> Diagnostic {
         DiagnosticKind::VectorLength,
         span,
         "vector lengths must match and stay within 0..65536 elements",
+    )
+}
+
+fn window_bounds(span: Span) -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticKind::VectorIndex,
+        span,
+        "window start/count exceed the visible vector bounds",
     )
 }
 
@@ -203,6 +216,34 @@ pub(crate) fn evaluate_with_budget(
     if function == Builtin::Length {
         return Ok(Value::Integer(left.len() as i64));
     }
+    if function == Builtin::Window {
+        let start =
+            usize::try_from(args[1].require_integer(span)?).map_err(|_| window_bounds(span))?;
+        let count = usize::try_from(args[2].require_integer(span)?)
+            .ok()
+            .filter(|&count| count <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        // Window selection is constant-time regardless of selected length.
+        budget.charge(1, span)?;
+        return left
+            .window(start, count)
+            .map(Value::Vector)
+            .ok_or_else(|| window_bounds(span));
+    }
+    if function == Builtin::Stitch {
+        let right = args[1].require_vector(span)?;
+        let count = left
+            .len()
+            .checked_add(right.len())
+            .filter(|&count| count <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        // The result materializes a fresh buffer: charge each copied element.
+        budget.charge(count as u64, span)?;
+        let mut values = buffer(count, span)?;
+        values.extend_from_slice(left.as_slice());
+        values.extend_from_slice(right.as_slice());
+        return vector(values, span);
+    }
     let right = if matches!(function, Builtin::Dot | Builtin::Mse | Builtin::Add) {
         let right = args[1].require_vector(span)?;
         if left.len() != right.len() {
@@ -297,6 +338,8 @@ pub(crate) fn evaluate_with_budget(
             }
             vector(values, span)
         }
-        Builtin::Length | Builtin::Fill => unreachable!("handled before vector kernels"),
+        Builtin::Length | Builtin::Fill | Builtin::Window | Builtin::Stitch => {
+            unreachable!("handled before vector kernels")
+        }
     }
 }
