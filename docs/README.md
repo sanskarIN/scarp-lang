@@ -8,6 +8,9 @@ booleans, conditionals, bounded while/repeat loops, five string escapes, and
 [output statements](output.md). Release notes describe fixed snapshots;
 beta.3 added [typed funcra functions](functions.md) and CLI resource controls.
 Alpha.1 added [finite floats](floats.md); this candidate adds [vectors](vectors.md).
+The [scaled L2 norms proposal](proposals/0018-scaled-l2-norms.md)
+tracks new development-branch work. The published alpha.2 version does not
+contain `norm` or `normalize`; no alpha.3 release is authorized.
 Tensors, native backends and CLI redesign remain separate. See
 [release notes](releases/v0.0.4-alpha.2.md) for the planned publication; alpha.1 has no vectors.
 
