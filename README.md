@@ -33,6 +33,11 @@ Boolean only. The [alpha release notes](docs/releases/v0.0.4-alpha.1.md)
 describe the new scope. The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
 records publication status and provides verified native downloads after publication.
 
+The separate [scaled L2 proposal](docs/proposals/0018-scaled-l2-norms.md)
+tracks development-only `norm` and `normalize` kernels for a future milestone.
+They are **not** present in the published alpha.2 binaries, and no new
+prerelease is authorized.
+
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See
@@ -225,8 +230,8 @@ code generation remain future work.
 
 This is a small interpreter. It reads a complete file into memory
 and reports the first error. Functions are interpreted using heap call frames.
-It has no collections, user-defined types, imports, standard library,
-package manager, native code
+It has immutable one-dimensional numerical vectors but no general-purpose
+collections, user-defined types, imports, standard library, package manager, native code
 generation, or self-hosting support. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
 
