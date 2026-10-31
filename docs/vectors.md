@@ -151,6 +151,19 @@ them. File/function slots retain their previous meaning. See [budgets](budgets.m
 | E0034 | Empty required input or reversed clamp bounds |
 | E0035 | Bounded vector buffer reservation failed |
 
+## Development-only stable score selection
+
+Four pure selectors return a vector's first greatest/least index or its
+original finite scalar value: `argmax(v)`, `argmin(v)` (integer) and
+`maxval(v)`, `minval(v)` (float). They require nonempty input (E0034).
+Equal scores always retain the **first** matching index, including signed
+zero ties; returned float values preserve the original selected zero sign.
+
+Each selector prepays `n` work steps and creates no vector payload, so
+it does not charge additional `--max-vector-bytes`. They are useful
+for deterministic score decoding, but are **not in published alpha.3**.
+See [proposal 0025](proposals/0025-stable-vector-selection.md).
+
 ## Examples and host use
 
 [Basic vectors](../examples/vectors.srp) cover indexing, snapshots and kernels.
