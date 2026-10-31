@@ -63,6 +63,13 @@ vector kernels, both with bounded work and element-allocation budgets.
 They are not a general autograd, GPU, or optimizer implementation, and
 are **not present in published alpha.3**.
 
+The [vector-window proposal](docs/proposals/0020-vector-windows-stitch.md)
+documents development-only `window(v, start, count)` for zero-copy
+immutable visible ranges, and `stitch(a, b)` for bounded vector
+concatenation. Windowing charges no new element payload, while stitching
+precharges the current vector allocation ledger. **These functions
+are not included in published alpha.3.**
+
 The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
 indexing, ten pure kernels, typed functions and resource accounting. These are
 new alpha.2 features, absent from published alpha.1. See
