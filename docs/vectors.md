@@ -220,6 +220,32 @@ See [proposal 0027](proposals/0027-classification-training-primitives.md)
 and [classification example](../examples/classification_training.srp).
 These operations are **development-only**, not in published alpha.3.
 
+## Development-only shared vector windows and stitching
+
+`window(v, start, count)` selects a zero-based contiguous **visible**
+range without copying the finite elements. The returned immutable vector
+shares its backing allocation with the original; nested windows compose
+offsets. `window(v, len(v), 0)` is allowed. Invalid start or out-of-bounds
+selection reports E0033, while a negative/oversized count reports E0032.
+
+`stitch(left, right)` concatenates **visible** elements into a new
+immutable vector. Combined lengths above 65,536 report E0032 before
+allocation. Equal vectors compare their visible values, not the hidden
+backing buffers. All other kernels, indexing, formatting, contracts, and
+output snapshots also operate on the visible range.
+
+Work and storage deliberately differ: `window` uses one native step
+and **no new element payload allocation**, while `stitch` uses
+`len(left) + len(right)` native steps and newly allocates exactly
+`8 * (len(left) + len(right))` payload bytes, charged to the same
+`max_vector_bytes` ledger as every new vector. A small window can still
+retain a large hidden backing buffer; the cumulative allocation limit
+is not a process-memory or peak-live-buffer limit.
+
+See [proposal 0020](proposals/0020-vector-windows-stitch.md) and the
+[example](../examples/vector_windows.srp). These kernels are only in the
+development branch and **not in published alpha.3**.
+
 ## Examples and host use
 
 [Basic vectors](../examples/vectors.srp) cover indexing, snapshots and kernels.
