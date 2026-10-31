@@ -173,8 +173,31 @@ pub(super) fn audit(program: &ResolvedProgram) -> Result<(), String> {
         .map_err(|error| format!("main: {error}"))?;
     for (index, function) in program.functions.iter().enumerate() {
         let parameter_count = program.metadata[index].parameters.len();
+        let function_name = &program.metadata[index].name;
+        let mut available = vec![false; function.slots];
+        // Defaults run in order. A default can only see earlier parameters;
+        // required or supplied parameters are initialized before proceeding.
+        for (slot, default) in function.defaults.iter().enumerate() {
+            if let Some(expression) = default {
+                read_slots(expression, &available)
+                    .map_err(|error| format!("function {function_name} default {slot}: {error}"))?;
+            }
+            available[slot] = true;
+        }
+        // Preconditions can inspect all parameters, and postconditions may
+        // inspect the returned result in its dedicated slot.
+        for contract in &function.contracts {
+            let mut contract_state = available.clone();
+            if contract.postcondition {
+                if let Some(slot) = function.result_slot {
+                    contract_state[slot] = true;
+                }
+            }
+            read_slots(&contract.expression, &contract_state)
+                .map_err(|error| format!("function {function_name} contract: {error}"))?;
+        }
         audit_frame(&function.statements, function.slots, parameter_count)
-            .map_err(|error| format!("function {}: {error}", program.metadata[index].name))?;
+            .map_err(|error| format!("function {function_name}: {error}"))?;
     }
     Ok(())
 }
@@ -196,6 +219,28 @@ mod tests {
             let program = crate::compile(source).unwrap();
             assert!(audit(&program).is_ok(), "{source}: {:?}", audit(&program));
         }
+    }
+
+    #[test]
+    fn audits_default_parameters_and_result_contract_dependencies() {
+        let program = crate::compile(
+            "funcra f(x: integer, y: integer = x) -> integer ensures result >= x; { return y; } print(f(1));",
+        )
+        .unwrap();
+        audit(&program).unwrap();
+        // The caller cannot construct a default that reads the future result.
+        let mut invalid = program.clone();
+        invalid.functions[0].defaults[1] =
+            Some(invalid.functions[0].contracts[0].expression.clone());
+        assert!(audit(&invalid)
+            .unwrap_err()
+            .contains("default 1: read from uninitialized"));
+        // A precondition cannot observe the result before body evaluation.
+        let mut invalid = program;
+        invalid.functions[0].contracts[0].postcondition = false;
+        assert!(audit(&invalid)
+            .unwrap_err()
+            .contains("contract: read from uninitialized"));
     }
 
     #[test]
