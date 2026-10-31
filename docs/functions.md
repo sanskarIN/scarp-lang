@@ -166,6 +166,36 @@ combines it with the additional limits. Old APIs use the additional defaults;
 `run_with_options`, `run_with_io_and_options`, `check_with_options`, and matching
 interpreter APIs accept caller-selected limits. See [embedding](embedding.md).
 
+## Development-only: terminal self-transfer
+
+**Unreleased draft feature, not present in the published alpha.2 binary.**
+On the terminal self-transfer branch, a function that directly returns
+`same_function(...)` can reuse its current execution frame if that function
+has no `ensures` clauses. This permits bounded-depth execution of long
+tail-recursive computations without bypassing call-count or step limits.
+
+```scarp
+pure funcra count(n: integer, total: integer = 0) -> integer
+    needs n >= 0;
+{
+    if n == 0 { return total; }
+    return count(n - 1, total + 1);
+}
+print(count(5000));
+```
+
+Every transfer still charges a function call, evaluates provided arguments
+once, applies omitted defaults, and checks `needs` again. Selected output
+remains atomic on errors. To preserve postcondition semantics, any function
+with `ensures` continues to allocate ordinary nested frames. Likewise,
+`return 1 + count(n);`, `return (count(n));`, and cross-function calls
+retain ordinary call behavior. Related diagnostics preserve up to 16 logical
+call locations without retaining the full recursion history.
+
+See [proposal 0022](proposals/0022-terminal-self-transfer.md) for exact
+eligibility, caveats, and resource accounting. The behavior still requires
+separate review before merging with other draft value and retirement changes.
+
 ## Repeat counts and returns
 
 A function call in a repeat count suspends the caller until it returns. The
