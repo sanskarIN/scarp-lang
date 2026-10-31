@@ -68,6 +68,18 @@ impl<'a> Frame<'a> {
             self.environment[slot] = value.clone();
         }
         self.result = value;
+        if let Some(id) = self.function {
+            // Postconditions can only inspect parameters and the result.
+            // Release all other values at function completion, including
+            // locals in blocks bypassed by an early return.
+            let parameter_count = program.functions()[id].parameters.len();
+            let result_slot = program.functions[id].result_slot;
+            for (index, slot) in self.environment.iter_mut().enumerate().skip(parameter_count) {
+                if Some(index) != result_slot {
+                    *slot = Value::Unit;
+                }
+            }
+        }
         self.stage = Stage::Ensures(0);
     }
 }
@@ -344,7 +356,11 @@ pub(super) fn prepare(
                         frame.finish(program, Value::Unit);
                         continue;
                     };
-                    budget.charge(1, operation.span)?;
+                    // Retire is storage bookkeeping, not a source statement.
+                    // It leaves existing instruction/step budgets unchanged.
+                    if !matches!(&operation.kind, ResolvedStatement::Retire { .. }) {
+                        budget.charge(1, operation.span)?;
+                    }
                     frame.pc += 1;
                     match &operation.kind {
                         ResolvedStatement::RepeatInit {
@@ -381,8 +397,18 @@ pub(super) fn prepare(
                                 })?;
                             frame.environment[*index_slot] = Value::Integer(next);
                         }
-                        ResolvedStatement::Jump { target }
-                        | ResolvedStatement::LoopControl { target } => frame.pc = *target,
+                        ResolvedStatement::Jump { target } => frame.pc = *target,
+                        ResolvedStatement::LoopControl { target, retire } => {
+                            for &slot in retire {
+                                frame.environment[slot] = Value::Unit;
+                            }
+                            frame.pc = *target;
+                        }
+                        ResolvedStatement::Retire { slots } => {
+                            for &slot in slots {
+                                frame.environment[slot] = Value::Unit;
+                            }
+                        }
                         ResolvedStatement::JumpIfFalse { condition, target } => {
                             frame.start(
                                 condition,
