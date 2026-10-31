@@ -3,7 +3,9 @@
 use crate::{
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     limits::Budget,
-    value::{finite_number, FiniteFloat, NumericTile, NumericVector, Value, ValueType, MAX_VECTOR_LENGTH},
+    value::{
+        finite_number, FiniteFloat, NumericTile, NumericVector, Value, ValueType, MAX_VECTOR_LENGTH,
+    },
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -244,25 +246,28 @@ pub(crate) fn evaluate_with_budget(
             Builtin::Cell => {
                 let row = usize::try_from(args[1].require_integer(span)?).ok();
                 let column = usize::try_from(args[2].require_integer(span)?).ok();
-                let selected = row.zip(column)
+                let selected = row
+                    .zip(column)
                     .and_then(|(row, column)| tile.cell(row, column))
-                    .ok_or_else(|| Diagnostic::new(
-                        DiagnosticKind::VectorIndex,
-                        span,
-                        "tile cell is outside its rectangular shape",
-                    ))?;
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::VectorIndex,
+                            span,
+                            "tile cell is outside its rectangular shape",
+                        )
+                    })?;
                 budget.charge(1, span)?;
                 Ok(Value::Float(selected))
             }
             Builtin::Lane => {
                 let index = usize::try_from(args[1].require_integer(span)?).ok();
-                let row = index
-                    .and_then(|index| tile.row(index))
-                    .ok_or_else(|| Diagnostic::new(
+                let row = index.and_then(|index| tile.row(index)).ok_or_else(|| {
+                    Diagnostic::new(
                         DiagnosticKind::VectorIndex,
                         span,
                         "tile lane is outside its row count",
-                    ))?;
+                    )
+                })?;
                 budget.charge(row.len() as u64, span)?;
                 let mut cells = buffer(row.len(), span)?;
                 cells.extend_from_slice(row);
@@ -282,8 +287,8 @@ pub(crate) fn evaluate_with_budget(
                         elements.push(tile.cell(row, column).expect("validated tile coordinates"));
                     }
                 }
-                let cells = NumericVector::from_finite(elements)
-                    .ok_or_else(|| length_error(span))?;
+                let cells =
+                    NumericVector::from_finite(elements).ok_or_else(|| length_error(span))?;
                 let turned = NumericTile::from_vector(cells, width, height)
                     .ok_or_else(|| length_error(span))?;
                 Ok(Value::Tile(turned))
