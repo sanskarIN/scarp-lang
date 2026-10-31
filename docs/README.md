@@ -49,6 +49,15 @@ without postconditions. Defaults, preconditions, call-count budgets and
 diagnostic traces remain enforced. This feature is **draft-only** and not
 available in published alpha.2; it does not change the release version.
 
+## Unreleased memory-control development
+
+[Proposal 0023](proposals/0023-vector-allocation-ledger.md) adds a
+deterministic `max_vector_bytes` allocation ledger, with the CLI flag
+`--max-vector-bytes` and diagnostic E0036. It is distinct from live
+frame-slot and output-snapshot limits, and does not claim to bound the
+entire process's resident memory. This feature is draft-only and not
+available in published alpha.2.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then

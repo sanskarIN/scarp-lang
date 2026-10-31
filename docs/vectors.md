@@ -108,6 +108,17 @@ the builtin. A binding named sum remains independent of call position. A user
 function that shadows a kernel makes that builtin unavailable by that name in
 the program. Builtins do not support labels, defaults or first-class values.
 
+## Unreleased separate vector allocation quota
+
+A development-only option `--max-vector-bytes` introduces an independent
+**cumulative allocation limit** for newly materialized finite-vector
+element payloads. Each new element costs 8 bytes; sharing existing
+immutable data does not allocate or charge again. This is separate from
+the existing step, capture and frame-slot caps. A failed allocation
+quota produces E0036, with the usual atomic-output behavior.
+See [proposal 0023](proposals/0023-vector-allocation-ledger.md).
+The option is **not available in the published alpha.2 binary**.
+
 ## Deterministic work and storage
 
 Keep all six existing execution options and CLI controls. Beyond dispatch tasks,
