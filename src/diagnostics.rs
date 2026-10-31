@@ -112,6 +112,7 @@ pub enum DiagnosticKind {
     VectorIndex,
     NumericDomain,
     VectorAllocation,
+    VectorBudget,
 }
 
 impl DiagnosticKind {
@@ -152,6 +153,7 @@ impl DiagnosticKind {
             Self::VectorIndex => "E0033",
             Self::NumericDomain => "E0034",
             Self::VectorAllocation => "E0035",
+            Self::VectorBudget => "E0036",
         }
     }
 }
