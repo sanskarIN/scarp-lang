@@ -151,6 +151,22 @@ them. File/function slots retain their previous meaning. See [budgets](budgets.m
 | E0034 | Empty required input or reversed clamp bounds |
 | E0035 | Bounded vector buffer reservation failed |
 
+## Development-only log-space kernels
+
+The log-space branch adds two pure, nonempty-vector functions:
+`logsumexp(v) -> float` and `logsoftmax(v) -> vector`. Both use
+maximum-shifted exponentials plus compensated accumulation. They permit
+large finite logits without overflowing `exp`, but reject a genuinely
+unrepresentable negative log probability with E0031. Empty input produces
+E0034. Neither allows integer vectors or implicit conversions.
+
+Both operations precharge `4n` numerical steps, and only
+`logsoftmax` allocates a new `8n`-byte payload (charged against
+`--max-vector-bytes`). User functions with the same names take precedence.
+See [proposal 0024](proposals/0024-bounded-log-space-kernels.md) for the
+exact numerical and diagnostic contract. These functions are **not** in
+the released alpha.3 binaries.
+
 ## Examples and host use
 
 [Basic vectors](../examples/vectors.srp) cover indexing, snapshots and kernels.

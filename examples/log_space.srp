@@ -1,0 +1,3 @@
+// Stable score normalization without exponential overflow.
+print(logsumexp([0.0]));
+print(logsoftmax([0.0, -1000.0]));
