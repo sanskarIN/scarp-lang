@@ -38,6 +38,14 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
+## Development-only function-frame optimization
+
+[Proposal 0022: terminal self-transfer](proposals/0022-terminal-self-transfer.md)
+specifies bounded frame reuse for direct self-recursive returns in functions
+without postconditions. Defaults, preconditions, call-count budgets and
+diagnostic traces remain enforced. This feature is **draft-only** and not
+available in published alpha.2; it does not change the release version.
+
 ## Reading paths
 
 For a first program, follow getting started, the first-program tutorial, then
