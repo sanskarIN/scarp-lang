@@ -58,6 +58,18 @@ struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
+    fn recycle_storage(&mut self) -> (Vec<Value>, Vec<bool>, Workspace) {
+        // Outgoing arguments already own their values. Release every old
+        // binding/temporary before starting the next invocation's defaults.
+        self.environment.fill(Value::Unit);
+        self.supplied.fill(false);
+        self.workspace.clear();
+        (
+            std::mem::take(&mut self.environment),
+            std::mem::take(&mut self.supplied),
+            std::mem::take(&mut self.workspace),
+        )
+    }
     fn start(&mut self, expression: &'a ResolvedExpression, completion: Completion) {
         self.workspace.start(expression);
         self.expression = Some(expression);
@@ -71,6 +83,23 @@ impl<'a> Frame<'a> {
             self.environment[slot] = value.clone();
         }
         self.result = value;
+        if let Some(id) = self.function {
+            // Postconditions can only inspect parameters and the result.
+            // Release all other values at function completion, including
+            // locals in blocks bypassed by an early return.
+            let parameter_count = program.functions()[id].parameters.len();
+            let result_slot = program.functions[id].result_slot;
+            for (index, slot) in self
+                .environment
+                .iter_mut()
+                .enumerate()
+                .skip(parameter_count)
+            {
+                if Some(index) != result_slot {
+                    *slot = Value::Unit;
+                }
+            }
+        }
         self.stage = Stage::Ensures(0);
     }
 }
@@ -175,8 +204,15 @@ pub(super) fn prepare(
                         if !terminal {
                             live_slots += function.slots;
                         }
-                        let mut environment = vec![Value::Unit; function.slots];
-                        let mut supplied = vec![false; function.defaults.len()];
+                        let (mut environment, mut supplied, workspace) = if terminal {
+                            frame.recycle_storage()
+                        } else {
+                            (
+                                vec![Value::Unit; function.slots],
+                                vec![false; function.defaults.len()],
+                                Workspace::default(),
+                            )
+                        };
                         for (parameter, value) in parameters.iter().zip(arguments) {
                             environment[*parameter] = value;
                             supplied[*parameter] = true;
@@ -202,7 +238,7 @@ pub(super) fn prepare(
                             stage: Stage::Defaults(0),
                             expression: None,
                             completion: Completion::Discard,
-                            workspace: Workspace::default(),
+                            workspace,
                             output: None,
                             result: Value::Unit,
                         };
@@ -257,6 +293,14 @@ pub(super) fn prepare(
                                 }
                             }
                             Completion::Output => {
+                                if let Some(tile) = value.as_tile() {
+                                    // Formatting visits cells and row delimiters,
+                                    // including rows of a zero-width tile.
+                                    budget.charge(
+                                        (tile.len() + tile.height()) as u64,
+                                        frame.output.as_ref().unwrap().span,
+                                    )?;
+                                }
                                 if let Some(vector) = value.as_vector() {
                                     budget.charge(
                                         vector.len() as u64,
@@ -377,7 +421,11 @@ pub(super) fn prepare(
                         frame.finish(program, Value::Unit);
                         continue;
                     };
-                    budget.charge(1, operation.span)?;
+                    // Retire is storage bookkeeping, not a source statement.
+                    // It leaves existing instruction/step budgets unchanged.
+                    if !matches!(&operation.kind, ResolvedStatement::Retire { .. }) {
+                        budget.charge(1, operation.span)?;
+                    }
                     frame.pc += 1;
                     match &operation.kind {
                         ResolvedStatement::RepeatInit {
@@ -414,8 +462,18 @@ pub(super) fn prepare(
                                 })?;
                             frame.environment[*index_slot] = Value::Integer(next);
                         }
-                        ResolvedStatement::Jump { target }
-                        | ResolvedStatement::LoopControl { target } => frame.pc = *target,
+                        ResolvedStatement::Jump { target } => frame.pc = *target,
+                        ResolvedStatement::LoopControl { target, retire } => {
+                            for &slot in retire {
+                                frame.environment[slot] = Value::Unit;
+                            }
+                            frame.pc = *target;
+                        }
+                        ResolvedStatement::Retire { slots } => {
+                            for &slot in slots {
+                                frame.environment[slot] = Value::Unit;
+                            }
+                        }
                         ResolvedStatement::JumpIfFalse { condition, target } => {
                             frame.start(
                                 condition,
@@ -547,6 +605,7 @@ fn charge_capture(
         PrintValue::String(text) => text.len(),
         PrintValue::Value(Value::String(text)) => text.len(),
         PrintValue::Value(Value::Vector(vector)) => vector.len().saturating_mul(8),
+        PrintValue::Value(Value::Tile(tile)) => tile.len().saturating_mul(8).saturating_add(16),
         _ => 8,
     };
     let amount = payload.saturating_add(64);
@@ -560,4 +619,53 @@ fn charge_capture(
     }
     *used += amount;
     Ok(())
+}
+
+#[cfg(test)]
+mod retirement_runtime_tests {
+    use super::{Completion, Frame, Stage, Workspace};
+    use crate::{diagnostics::Span, value::Value};
+    use std::sync::Arc;
+
+    #[test]
+    fn function_completion_releases_payloads_but_preserves_contract_inputs() {
+        let program = crate::compile(
+            "funcra example(s: string) -> string ensures result == s; { bind temporary = \"local\"; return s; }",
+        )
+        .unwrap();
+        let function = &program.functions[0];
+        let owned_local: Arc<str> = Arc::from("retired value");
+        let mut environment = vec![Value::Unit; function.slots];
+        environment[0] = Value::from("parameter");
+        environment[2] = Value::String(owned_local.clone());
+        let mut frame = Frame {
+            function: Some(0),
+            call_span: Span::default(),
+            tail_sites: Vec::new(),
+            operations: &function.statements,
+            environment,
+            supplied: vec![true],
+            pc: 0,
+            stage: Stage::Body,
+            expression: None,
+            completion: Completion::Discard,
+            workspace: Workspace::default(),
+            output: None,
+            result: Value::Unit,
+        };
+        assert_eq!(Arc::strong_count(&owned_local), 2);
+        frame.finish(&program, Value::from("parameter"));
+        assert_eq!(Arc::strong_count(&owned_local), 1);
+        assert_eq!(frame.environment[0].as_str(), Some("parameter"));
+        assert_eq!(frame.environment[1].as_str(), Some("parameter"));
+        assert_eq!(frame.environment[2], Value::Unit);
+        assert!(matches!(frame.stage, Stage::Ensures(0)));
+        let slots_pointer = frame.environment.as_ptr();
+        let supplied_pointer = frame.supplied.as_ptr();
+        let (environment, supplied, _) = frame.recycle_storage();
+        assert_eq!(environment.as_ptr(), slots_pointer);
+        assert_eq!(supplied.as_ptr(), supplied_pointer);
+        assert!(environment.iter().all(|value| *value == Value::Unit));
+        assert!(supplied.iter().all(|&supplied| !supplied));
+    }
 }

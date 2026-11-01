@@ -1,5 +1,44 @@
 # Measure performance before changing execution
 
+## Alpha.4 terminal-call storage experiment — 1 November 2026
+
+Baseline code: `6d9a39a8d1f2b2a3a14947be3ad6ebf59c0b9828`.
+New code: `c6648152976bbcd911fbc74efe62557208169b92`.
+Platform: Windows x86_64 MSVC, Intel i5-1235U, rustc 1.99.1
+(`58cf8f9c3`, LLVM 23.1.1), Cargo's optimized bench profile,
+`CARGO_INCREMENTAL=0`. No dependencies or custom optimization flags.
+
+`benches/runtime.rs` adds `terminal_calls_4096`: a pure countdown with 4,097
+invocations, an ordered default, a needs check, a nested local scope and a scalar
+accumulator. It verifies exactly `4096\n` before timing. Each full run measures
+seven batch medians, with 200 validate/execute repetitions per batch and three
+warmups. Three separate full runs were performed before and after the change.
+
+| Measurement (microseconds per program) | Before, median of 3 runs | After, median of 3 runs |
+| --- | --- | --- |
+| Validation without formatting | 13,074.982 | 8,898.351 |
+| Execute to a sink | 12,941.690 | 8,722.230 |
+
+This workload's observed execute time decreased about 33%. The baseline execute
+medians ranged from 12,905.710 to 13,232.484 microseconds; the updated range was
+8,435.807 to 8,911.290. Slot and supplied-parameter arrays and expression scratch
+capacity are reused on terminal self-calls; outgoing arguments are evaluated
+first, old values cleared, and existing initialization charges retained. A unit
+test verifies actual array-address reuse and clearing. Ordinary/postcondition
+frames continue to be isolated.
+
+This is an interactive shared laptop, without CPU pinning or frequency control;
+documentation/verification activity can affect timings. The result supports a
+workload-specific observation, not a general speedup or cross-language claim.
+Both existing benchmark suites also ran with `--quick`; those short results are
+smoke checks, not performance comparisons. Original-main quick results at
+`466ae7027ec5e977b9402c8acffa6074b1f60577` are retained for context.
+
+[Raw CSVs](benchmarks/2026-11-01-alpha4/) include every full pre/post run and
+the quick runtime/numerics runs. Reproduce the full experiment with
+`cargo bench --locked --offline --bench runtime` at each revision. Dirty
+documentation/version preparation did not change the measured runtime sources.
+
 Scarp currently interprets programs. Native compilation and performance
 comparisons with compiled C, C++, or Rust programs remain future work. These
 benchmarks measure Scarp pipeline stages, not native-language parity.

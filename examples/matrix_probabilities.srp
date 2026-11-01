@@ -1,0 +1,5 @@
+bind weights = tile([1.0, 0.0, 0.0, 1.0], 2, 2);
+bind scores = matvec(weights, [0.0, 0.0]);
+print(softmax(scores));
+bind loss = crossentropy(scores, 1);
+print(loss > 0.6931 and loss < 0.6932);

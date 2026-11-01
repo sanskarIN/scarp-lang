@@ -48,6 +48,7 @@ fn main() {
         ("branches", branches, "2048\n".to_string()),
         ("prints", prints, "7\n".repeat(4096)),
         ("long_expression", chain, "4096\n".to_string()),
+        ("terminal_calls_4096", "pure funcra descend(n: integer, acc: integer = 0) -> integer needs n >= 0; { if n == 0 { return acc; } { bind local = acc + 1; } return descend(n - 1, acc + 1); } print(descend(4096));".to_string(), "4096\n".to_string()),
     ] {
         let program = scarp::compile(&source).unwrap();
         let mut actual = Vec::new();

@@ -11,6 +11,7 @@ pub enum ValueType {
     Integer,
     Float,
     Vector,
+    Tile,
     Boolean,
     String,
 }
@@ -22,6 +23,7 @@ impl fmt::Display for ValueType {
             Self::Integer => "integer",
             Self::Float => "float",
             Self::Vector => "vector",
+            Self::Tile => "tile",
             Self::Boolean => "boolean",
             Self::String => "string",
         })
@@ -152,6 +154,113 @@ impl fmt::Display for NumericVector {
     }
 }
 
+/// Immutable row-major rectangular numerical value with an explicit shape.
+/// The cells reuse a finite vector's shared backing storage without copying.
+/// Zero-sized shapes are allowed and remain distinguishable by their axes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NumericTile {
+    cells: NumericVector,
+    height: usize,
+    width: usize,
+}
+
+impl NumericTile {
+    /// Preserve the original immutable vector without copying its elements.
+    /// Both dimensions and their product are bounded by MAX_VECTOR_LENGTH.
+    pub fn from_vector(cells: NumericVector, height: usize, width: usize) -> Option<Self> {
+        if height > MAX_VECTOR_LENGTH || width > MAX_VECTOR_LENGTH {
+            return None;
+        }
+        if height.checked_mul(width)? != cells.len() {
+            return None;
+        }
+        Some(Self {
+            cells,
+            height,
+            width,
+        })
+    }
+
+    pub fn new(values: &[f64], height: usize, width: usize) -> Option<Self> {
+        if height > MAX_VECTOR_LENGTH
+            || width > MAX_VECTOR_LENGTH
+            || height.checked_mul(width)? != values.len()
+        {
+            return None;
+        }
+        Self::from_vector(NumericVector::new(values)?, height, width)
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn len(&self) -> usize {
+        self.cells.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cells.is_empty()
+    }
+
+    pub fn cells(&self) -> &[FiniteFloat] {
+        self.cells.as_slice()
+    }
+
+    pub fn as_vector(&self) -> &NumericVector {
+        &self.cells
+    }
+
+    pub fn cell(&self, row: usize, column: usize) -> Option<FiniteFloat> {
+        if row >= self.height || column >= self.width {
+            return None;
+        }
+        self.cells
+            .as_slice()
+            .get(row.checked_mul(self.width)?.checked_add(column)?)
+            .copied()
+    }
+
+    pub fn row(&self, row: usize) -> Option<&[FiniteFloat]> {
+        if row >= self.height {
+            return None;
+        }
+        let start = row.checked_mul(self.width)?;
+        self.cells
+            .as_slice()
+            .get(start..start.checked_add(self.width)?)
+    }
+}
+
+impl fmt::Display for NumericTile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "tile({}x{})[", self.height, self.width)?;
+        for row in 0..self.height {
+            if row != 0 {
+                f.write_str(", ")?;
+            }
+            f.write_str("[")?;
+            for (index, value) in self
+                .row(row)
+                .expect("validated tile row")
+                .iter()
+                .enumerate()
+            {
+                if index != 0 {
+                    f.write_str(", ")?;
+                }
+                value.fmt(f)?;
+            }
+            f.write_str("]")?;
+        }
+        f.write_str("]")
+    }
+}
+
 pub(crate) fn finite_number(value: f64, span: Span) -> Result<FiniteFloat, Diagnostic> {
     FiniteFloat::new(value).ok_or_else(|| {
         Diagnostic::new(
@@ -172,6 +281,7 @@ pub enum Value {
     Integer(i64),
     Float(FiniteFloat),
     Vector(NumericVector),
+    Tile(NumericTile),
     Boolean(bool),
     String(Arc<str>),
 }
@@ -183,6 +293,7 @@ impl Value {
             Self::Integer(_) => ValueType::Integer,
             Self::Float(_) => ValueType::Float,
             Self::Vector(_) => ValueType::Vector,
+            Self::Tile(_) => ValueType::Tile,
             Self::Boolean(_) => ValueType::Boolean,
             Self::String(_) => ValueType::String,
         }
@@ -207,6 +318,18 @@ impl Value {
             Self::Vector(value) => Some(value),
             _ => None,
         }
+    }
+
+    pub fn as_tile(&self) -> Option<&NumericTile> {
+        match self {
+            Self::Tile(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn require_tile(&self, span: Span) -> Result<&NumericTile, Diagnostic> {
+        self.as_tile()
+            .ok_or_else(|| type_mismatch(span, ValueType::Tile, self.kind()))
     }
 
     pub(crate) fn require_vector(&self, span: Span) -> Result<&NumericVector, Diagnostic> {
@@ -263,6 +386,7 @@ impl fmt::Display for Value {
             Self::Integer(value) => value.fmt(f),
             Self::Float(value) => value.fmt(f),
             Self::Vector(value) => value.fmt(f),
+            Self::Tile(value) => value.fmt(f),
             Self::Boolean(value) => value.fmt(f),
             Self::String(value) => f.write_str(value),
         }

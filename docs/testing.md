@@ -1,5 +1,20 @@
 # Test and validate changes
 
+For alpha.4, run `cargo test --locked --offline --test numeric_tiles --test
+linear_algebra --test numeric_diagnostics --test scope_retirement` plus the
+existing vector/window/allocation/function suites. Library unit tests include
+positive and deliberately corrupted lifetime plans and physical slot-storage
+reuse checks. The matrix reference uses exact small integers independently of
+the floating-point accumulation implementation. Every shipped example has
+verified `.stdout` bytes, including seven tile/AI demonstrations. The CLI suite
+checks resource failures, atomic streams, CRLF/UTF-8 and spaced paths.
+
+Run `python -m unittest discover -s scripts -p 'test_*release*.py'` for package
+and exact-source publication guards. `scripts/check.ps1 -Offline` is the native
+Windows equivalent of `sh scripts/check.sh --offline`. Hosted Windows/Linux/macOS
+and Rust 1.74 results must be checked on the final source SHA; local Windows
+results alone do not establish cross-platform release readiness.
+
 Use this guide in a source checkout to select the smallest meaningful test for a
 change and then run the project's required checks. Binary archives contain
 examples and documentation, but omit the Rust sources and test suite.

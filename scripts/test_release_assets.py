@@ -52,20 +52,20 @@ class ReleaseAssets(unittest.TestCase):
                 f"docs/releases/v{version}.md", "examples/bindings.srp",
                 "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             ) if name != omit}
-            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2")):
+            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4")):
                 for name in ("loops", "repeat", "control_escapes"):
                     for extension in ("srp", "stdout"):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2"):
+            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2"):
+            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
                 for member in (
                     "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
                     "examples/function_contracts.srp", "examples/function_contracts.stdout",
@@ -74,14 +74,14 @@ class ReleaseAssets(unittest.TestCase):
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.4-alpha.1", "0.0.4-alpha.2"):
+            if version in ("0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
                 for member in (
                     "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
                     "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version == "0.0.4-alpha.2":
+            if version in ("0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
                 for member in (
                     "docs/vectors.md", "examples/vectors.srp", "examples/vectors.stdout",
                     "examples/vector_probabilities.srp", "examples/vector_probabilities.stdout",
@@ -89,6 +89,23 @@ class ReleaseAssets(unittest.TestCase):
                 ):
                     if member != omit:
                         files[member] = b"fixture"
+            if version in ("0.0.4-alpha.3", "0.0.4-alpha.4"):
+                for name in ("scaled_norm", "terminal_recursion", "vector_allocation"):
+                    for extension in ("srp", "stdout"):
+                        member = f"examples/{name}.{extension}"
+                        if member != omit:
+                            files[member] = b"fixture"
+            if version == "0.0.4-alpha.4":
+                for member in ("docs/tiles.md", "docs/memory-lifetimes.md", "docs/architecture.md", "docs/testing.md"):
+                    if member != omit:
+                        files[member] = b"fixture"
+                for name in ("matrix_inference", "linear_transform", "matrix_classification", "matrix_probabilities",
+                             "matrix_targets", "matrix_forward", "tile_windows", "vector_windows",
+                             "classification_training", "logit_loss", "log_space", "score_selection"):
+                    for extension in ("srp", "stdout"):
+                        member = f"examples/{name}.{extension}"
+                        if member != omit:
+                            files[member] = b"fixture"
             files.update(extra_files or {})
             files["BUILD-INFO.txt"] = (
                 f"version={record_version or version}\ntarget={target}\ncommit={commit}\n"
@@ -114,6 +131,27 @@ class ReleaseAssets(unittest.TestCase):
         manifest = verifier.verify(self.directory, "0.0.2", COMMIT)
         self.assertEqual(len(manifest.splitlines()), 3)
         self.assertEqual(manifest.splitlines(), sorted(manifest.splitlines()))
+
+    def test_alpha4_requires_new_and_inherited_package_content(self):
+        self.build(version="0.0.4-alpha.4")
+        self.assertEqual(len(verifier.verify(self.directory, "0.0.4-alpha.4", COMMIT).splitlines()), 3)
+        for member in (
+            "docs/tiles.md", "docs/memory-lifetimes.md", "docs/architecture.md", "docs/testing.md",
+            "docs/vectors.md", "docs/floats.md", "docs/functions.md", "docs/budgets.md",
+            "docs/releases/v0.0.4-alpha.4.md", "examples/repeat.srp", "examples/vector_allocation.stdout",
+            "examples/matrix_inference.srp", "examples/matrix_inference.stdout",
+            "examples/linear_transform.srp", "examples/linear_transform.stdout",
+            "examples/matrix_classification.srp", "examples/matrix_classification.stdout",
+            "examples/matrix_probabilities.srp", "examples/matrix_probabilities.stdout",
+            "examples/matrix_targets.srp", "examples/matrix_targets.stdout",
+            "examples/matrix_forward.srp", "examples/matrix_forward.stdout",
+            "examples/tile_windows.srp", "examples/tile_windows.stdout",
+            "examples/vector_windows.stdout", "examples/classification_training.srp",
+        ):
+            with self.subTest(member=member):
+                self.build(version="0.0.4-alpha.4", omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, "0.0.4-alpha.4", COMMIT)
 
     def test_wrong_source_commit_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "unexpected commit"):

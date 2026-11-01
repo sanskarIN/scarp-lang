@@ -1,5 +1,12 @@
 # Repair numerical errors
 
+In alpha.4, E0032 also identifies incompatible tile shapes and invalid dimensions.
+For example, `matmul` reports both operand shapes and requires matching inner
+axes. E0033 reports the row or column and highlights that index argument.
+`matvec` expects a tile and a vector of its width; `tileadd` expects equal shapes;
+`tilescale` takes a float factor. See [the tile contract](../tiles.md).
+Matrix work exhaustion is E0017; fresh vector/tile payload exhaustion is E0036.
+
 Use the error code, highlighted source and call trace together. Run/check
 discard pending stdout and stderr on source, type, evaluation, contract or
 quota failure. A diagnostic can quote a print statement from the source; that
@@ -64,6 +71,16 @@ if index >= 0 and index < len(values) {
 
 This program succeeds without output. Runtime bounds are checked only when the
 access is selected; all branches still undergo static type checking.
+
+## Development-only tile shape and cell errors
+
+The **unreleased** two-axis numerical-tile prototype reports E0032 for
+`tile([1.0], 2, 2)` (inconsistent dimensions) and negative or excessive
+dimensions. `cell(tile([1.0], 1, 1), 1, 0)` reports E0033 because valid
+rows are 0 through height minus one. `lane` performs the same row check.
+An empty tile may have shape `0x3` or `3x0`, but no cell in either is
+addressable. See [proposal 0021](../proposals/0021-immutable-numeric-tiles.md).
+These features do not exist in published alpha.2.
 
 ## Decide what an empty result means
 

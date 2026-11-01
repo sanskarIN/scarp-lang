@@ -43,6 +43,47 @@ fn command() -> Command {
     Command::new(env!("CARGO_BIN_EXE_scarp"))
 }
 
+#[test]
+fn matrix_programs_use_spaced_paths_and_distinct_resource_diagnostics() {
+    let fixture = Fixture::new();
+    let valid = fixture.file(
+        "matrix with spaces.srp",
+        "bind t=tile([1.0,2.0,3.0,4.0],2,2); print(matvec(t,[1.0,1.0]));",
+    );
+    for mode in ["run", "check"] {
+        let result = command()
+            .args([mode, "--max-vector-bytes", "64"])
+            .arg(&valid)
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "{}", stderr(&result));
+        assert_eq!(
+            result.stdout,
+            if mode == "run" {
+                b"[3.0, 7.0]\n".as_slice()
+            } else {
+                b"".as_slice()
+            }
+        );
+        for (flag, limit, code) in [
+            ("--max-steps", "10", "E0017"),
+            ("--max-vector-bytes", "63", "E0036"),
+        ] {
+            let result = command()
+                .args([mode, flag, limit])
+                .arg(&valid)
+                .output()
+                .unwrap();
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            assert!(stderr(&result).contains(code), "{}", stderr(&result));
+        }
+    }
+    let tokens = command().arg("tokens").arg(&valid).output().unwrap();
+    assert!(tokens.status.success());
+    assert!(tokens.stderr.is_empty());
+}
+
 fn stderr(output: &Output) -> String {
     String::from_utf8_lossy(&output.stderr).into_owned()
 }

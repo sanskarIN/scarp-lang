@@ -1,5 +1,14 @@
 # Work and print budgets
 
+In the alpha.4 candidate, vectors and tiles share the cumulative numerical
+payload ledger. Shape binding, windows and unroll share existing storage without
+new element charges. Lane extraction, transpose, tile arithmetic and matrix
+products prepay new payload. Retirement does not refund earlier allocations.
+The [tile cost table](tiles.md#resource-contract) specifies matrix work, including
+zero-inner products. Selected tile output costs cell count plus height in work,
+and `80 + 8*cell_count` logical snapshot bytes. Live retained backing allocations,
+visible cells, cumulative new payload and process RSS remain separate quantities.
+
 Every run and check starts with 1,000,000 logical work steps and 100,000 selected
 output statements across both streams, including empty writes. The limits include both while and repeat, nested control
 flow, and expressions. They do not measure wall time, parse memory, or the byte

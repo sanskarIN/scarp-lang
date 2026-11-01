@@ -1,6 +1,11 @@
 # Scarp prototype language reference
 
-This source reference targets the 0.0.4-alpha.2 source candidate on top of
+The alpha.4 candidate adds the `tile` parameter/result type and immutable
+two-axis values. `height`, `width`, `cell`, `lane`, `unroll`, `turn`, `matvec`,
+`matmul`, `tileadd` and `tilescale` follow [the tile contract](tiles.md).
+There is no broadcasting, implicit vector conversion or mutable cell indexing.
+
+This source reference targets the 0.0.4-alpha.4 source candidate on top of
 the Scarp 0.0.3-beta.3 baseline. Published beta.3 does not include floats.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an

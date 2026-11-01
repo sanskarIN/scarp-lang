@@ -1,0 +1,4 @@
+// Two output scores from two input features.
+bind weights = tile([1.0, 2.0, -1.0, 3.0], 2, 2);
+bind features = [2.0, 1.0];
+print(matvec(weights, features));

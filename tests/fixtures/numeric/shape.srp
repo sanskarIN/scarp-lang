@@ -1,0 +1,3 @@
+bind a = tile([1.0, 2.0], 1, 2);
+bind b = tile([3.0, 4.0], 1, 2);
+print(matmul(a, b));

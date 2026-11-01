@@ -1,0 +1,6 @@
+error[E0030]: expected decimal digits after the point or exponent
+ --> fixture.srp:1:13
+  |
+1 | print(tile([1.0e+], 1, 1));
+  |             ^^^^^
+ = help: write a complete float such as 1.0, 0.5, or 1e3

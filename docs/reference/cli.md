@@ -1,5 +1,16 @@
 # Command-line reference
 
+The alpha.4 candidate keeps these commands, options and exit codes. Tile and
+matrix calls work through `run` and `check`; `tokens` only lexes their source.
+`--max-vector-bytes` counts new vector and tile element buffers together, including
+matrix outputs, and retirement does not refund the cumulative quota. E0017
+identifies work exhaustion, while E0036 identifies payload exhaustion. Example:
+
+```sh
+scarp run --max-steps 2000000 --max-vector-bytes 1024 "examples/matrix_forward.srp"
+scarp check examples/tile_windows.srp
+```
+
 Use this page to select a command, interpret its streams and status, and pass
 paths reliably. Availability differs between the published release and the
 development stack; see [compatibility](../compatibility.md).

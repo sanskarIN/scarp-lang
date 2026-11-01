@@ -1,0 +1,4 @@
+pure funcra read(t: tile) -> float { return cell(t, 0, 2); }
+pure funcra caller(t: tile) -> float { return read(t); }
+print("hidden");
+eprint(caller(tile([1.0], 1, 1)));

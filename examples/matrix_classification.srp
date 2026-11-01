@@ -1,0 +1,4 @@
+bind weights = tile([1.0, 0.0, 0.0, 2.0, -1.0, 1.0], 3, 2);
+bind scores = matvec(weights, [2.0, 1.0]);
+// Equal best scores choose the first class.
+print(scores, argmax(scores), maxval(scores));

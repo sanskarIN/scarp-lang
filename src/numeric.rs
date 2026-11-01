@@ -6,6 +6,8 @@ use crate::{
     value::{finite_number, FiniteFloat, NumericVector, Value, ValueType, MAX_VECTOR_LENGTH},
 };
 
+mod tiles;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Builtin {
     Length,
@@ -32,6 +34,17 @@ pub enum Builtin {
     OneHot,
     Window,
     Stitch,
+    Tile,
+    Height,
+    Width,
+    Cell,
+    Lane,
+    Unroll,
+    Turn,
+    MatVec,
+    MatMul,
+    TileAdd,
+    TileScale,
 }
 
 impl Builtin {
@@ -61,12 +74,23 @@ impl Builtin {
             "onehot" => Self::OneHot,
             "window" => Self::Window,
             "stitch" => Self::Stitch,
+            "tile" => Self::Tile,
+            "height" => Self::Height,
+            "width" => Self::Width,
+            "cell" => Self::Cell,
+            "lane" => Self::Lane,
+            "unroll" => Self::Unroll,
+            "turn" => Self::Turn,
+            "matvec" => Self::MatVec,
+            "matmul" => Self::MatMul,
+            "tileadd" => Self::TileAdd,
+            "tilescale" => Self::TileScale,
             _ => return None,
         })
     }
 
     pub fn parameter_types(self) -> &'static [ValueType] {
-        use ValueType::{Float, Integer, Vector};
+        use ValueType::{Float, Integer, Tile, Vector};
         match self {
             Self::Length
             | Self::Sum
@@ -87,12 +111,21 @@ impl Builtin {
             Self::Fill => &[Float, Integer],
             Self::LogProb | Self::CrossEntropy | Self::LossGrad => &[Vector, Integer],
             Self::OneHot => &[Integer, Integer],
+            Self::Tile => &[Vector, Integer, Integer],
+            Self::Height | Self::Width | Self::Unroll | Self::Turn => &[Tile],
+            Self::Cell => &[Tile, Integer, Integer],
+            Self::Lane => &[Tile, Integer],
+            Self::MatVec => &[Tile, Vector],
+            Self::MatMul | Self::TileAdd => &[Tile, Tile],
+            Self::TileScale => &[Tile, Float],
         }
     }
 
     pub fn result_type(self) -> ValueType {
         match self {
-            Self::Length | Self::ArgMax | Self::ArgMin => ValueType::Integer,
+            Self::Length | Self::ArgMax | Self::ArgMin | Self::Height | Self::Width => {
+                ValueType::Integer
+            }
             Self::Sum
             | Self::Mean
             | Self::Dot
@@ -102,9 +135,30 @@ impl Builtin {
             | Self::MaxValue
             | Self::MinValue
             | Self::LogProb
-            | Self::CrossEntropy => ValueType::Float,
+            | Self::CrossEntropy
+            | Self::Cell => ValueType::Float,
+            Self::Tile | Self::Turn | Self::MatMul | Self::TileAdd | Self::TileScale => {
+                ValueType::Tile
+            }
             _ => ValueType::Vector,
         }
+    }
+
+    pub(crate) fn is_tile(self) -> bool {
+        matches!(
+            self,
+            Self::Tile
+                | Self::Height
+                | Self::Width
+                | Self::Cell
+                | Self::Lane
+                | Self::Unroll
+                | Self::Turn
+                | Self::MatVec
+                | Self::MatMul
+                | Self::TileAdd
+                | Self::TileScale
+        )
     }
 }
 
@@ -318,6 +372,16 @@ pub(crate) fn evaluate_with_budget(
     budget: &mut Budget,
     span: Span,
 ) -> Result<Value, Diagnostic> {
+    evaluate_with_spans(function, args, budget, span, |_| span)
+}
+
+pub(crate) fn evaluate_with_spans(
+    function: Builtin,
+    args: &[Value],
+    budget: &mut Budget,
+    span: Span,
+    argument_span: impl Fn(usize) -> Span,
+) -> Result<Value, Diagnostic> {
     let types = function.parameter_types();
     if args.len() != types.len() {
         return Err(Diagnostic::new(
@@ -326,10 +390,17 @@ pub(crate) fn evaluate_with_budget(
             format!("expected {} arguments, found {}", types.len(), args.len()),
         ));
     }
-    for (value, &expected) in args.iter().zip(types) {
+    for (i, (value, &expected)) in args.iter().zip(types).enumerate() {
         if value.kind() != expected {
-            return Err(crate::value::type_mismatch(span, expected, value.kind()));
+            return Err(crate::value::type_mismatch(
+                argument_span(i),
+                expected,
+                value.kind(),
+            ));
         }
+    }
+    if function.is_tile() {
+        return tiles::evaluate(function, args, budget, span, argument_span);
     }
     if function == Builtin::Fill {
         let count = usize::try_from(args[1].require_integer(span)?)
@@ -620,8 +691,21 @@ pub(crate) fn evaluate_with_budget(
             }
             vector(values, span)
         }
-        Builtin::Length | Builtin::Fill | Builtin::OneHot | Builtin::Window | Builtin::Stitch => {
-            unreachable!("handled before vector kernels")
-        }
+        Builtin::Length
+        | Builtin::Fill
+        | Builtin::OneHot
+        | Builtin::Window
+        | Builtin::Stitch
+        | Builtin::Tile
+        | Builtin::Height
+        | Builtin::Width
+        | Builtin::Cell
+        | Builtin::Lane
+        | Builtin::Unroll
+        | Builtin::Turn
+        | Builtin::MatVec
+        | Builtin::MatMul
+        | Builtin::TileAdd
+        | Builtin::TileScale => unreachable!("handled before vector kernels"),
     }
 }

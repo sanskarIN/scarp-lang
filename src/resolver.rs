@@ -3,6 +3,8 @@
 use std::collections::HashMap;
 
 mod functions;
+#[cfg(test)]
+mod retirement_audit;
 use functions::{build_call_graph, resolve_function};
 
 use crate::{
@@ -78,6 +80,12 @@ pub(crate) enum ResolvedStatement {
     },
     LoopControl {
         target: usize,
+        // Slots belonging to scopes exited by this control transfer.
+        retire: Vec<usize>,
+    },
+    // Compiler-planned retirement: no source syntax or runtime graph traversal.
+    Retire {
+        slots: Vec<usize>,
     },
     JumpIfFalse {
         condition: ResolvedExpression,
@@ -314,7 +322,12 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
     let statement_count = resolver
         .statements
         .iter()
-        .filter(|statement| !matches!(statement.kind, ResolvedStatement::Jump { .. }))
+        .filter(|statement| {
+            !matches!(
+                statement.kind,
+                ResolvedStatement::Jump { .. } | ResolvedStatement::Retire { .. }
+            )
+        })
         .count();
     let mut result = ResolvedProgram {
         statements: resolver.statements,
@@ -324,6 +337,10 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
         metadata,
     };
     build_call_graph(&mut result);
+    #[cfg(test)]
+    if let Err(error) = retirement_audit::audit(&result) {
+        panic!("resolved storage plan is invalid: {error}");
+    }
     Ok(result)
 }
 
@@ -341,6 +358,8 @@ struct Resolver<'a> {
 struct LoopContext {
     breaks: Vec<usize>,
     continues: Vec<usize>,
+    // Scopes created inside this loop must retire before break/continue.
+    scope_depth: usize,
 }
 
 impl<'a> Resolver<'a> {
@@ -465,6 +484,7 @@ impl<'a> Resolver<'a> {
                     self.loops.push(LoopContext {
                         breaks: Vec::new(),
                         continues: Vec::new(),
+                        scope_depth: self.scopes.len(),
                     });
                     self.enter_scope(span)?;
                     self.scopes.last_mut().unwrap().insert(
@@ -479,6 +499,7 @@ impl<'a> Resolver<'a> {
                         },
                     );
                     self.statement_list(statements)?;
+                    self.retire_scope(span);
                     self.scopes.pop();
                     let next = self.emit(ResolvedStatement::RepeatNext { index_slot }, index_span);
                     self.emit(ResolvedStatement::Jump { target: start }, count_span);
@@ -510,6 +531,7 @@ impl<'a> Resolver<'a> {
                     self.loops.push(LoopContext {
                         breaks: Vec::new(),
                         continues: Vec::new(),
+                        scope_depth: self.scopes.len(),
                     });
                     self.scoped_statements(statements, span)?;
                     let context = self.loops.pop().unwrap();
@@ -526,14 +548,20 @@ impl<'a> Resolver<'a> {
                     if self.loops.is_empty() {
                         return Err(loop_control(span));
                     }
-                    let index = self.emit(ResolvedStatement::LoopControl { target: 0 }, span);
+                    let depth = self.loops.last().unwrap().scope_depth;
+                    let retire = self.retirement_slots(depth);
+                    let index =
+                        self.emit(ResolvedStatement::LoopControl { target: 0, retire }, span);
                     self.loops.last_mut().unwrap().breaks.push(index);
                 }
                 Statement::Continue { span } => {
                     if self.loops.is_empty() {
                         return Err(loop_control(span));
                     }
-                    let index = self.emit(ResolvedStatement::LoopControl { target: 0 }, span);
+                    let depth = self.loops.last().unwrap().scope_depth;
+                    let retire = self.retirement_slots(depth);
+                    let index =
+                        self.emit(ResolvedStatement::LoopControl { target: 0, retire }, span);
                     self.loops.last_mut().unwrap().continues.push(index);
                 }
                 Statement::If {
@@ -723,8 +751,30 @@ impl<'a> Resolver<'a> {
     ) -> Result<(), Diagnostic> {
         self.enter_scope(span)?;
         self.statement_list(statements)?;
+        self.retire_scope(span);
         self.scopes.pop();
         Ok(())
+    }
+
+    // Every declaration has a unique resolver-assigned slot. Lexical retirement
+    // can therefore be planned once and executed without tracing live objects.
+    // Repeat indices are read after body exit by RepeatNext and stay live.
+    fn retirement_slots(&self, from_depth: usize) -> Vec<usize> {
+        let mut slots: Vec<usize> = self.scopes[from_depth..]
+            .iter()
+            .flat_map(|scope| scope.values())
+            .filter(|binding| !binding.repeat_index && !binding.parameter)
+            .map(|binding| binding.slot)
+            .collect();
+        slots.sort_unstable();
+        slots
+    }
+
+    fn retire_scope(&mut self, span: Span) {
+        let slots = self.retirement_slots(self.scopes.len() - 1);
+        if !slots.is_empty() {
+            self.emit(ResolvedStatement::Retire { slots }, span);
+        }
     }
 
     fn enter_scope(&mut self, span: Span) -> Result<(), Diagnostic> {
@@ -743,7 +793,8 @@ impl<'a> Resolver<'a> {
     fn finish_loop(&mut self, context: LoopContext, next: usize, end: usize) {
         for (indices, destination) in [(context.breaks, end), (context.continues, next)] {
             for index in indices {
-                if let ResolvedStatement::LoopControl { target } = &mut self.statements[index].kind
+                if let ResolvedStatement::LoopControl { target, .. } =
+                    &mut self.statements[index].kind
                 {
                     *target = destination;
                 }
@@ -857,12 +908,27 @@ fn resolve_expression(
                             format!("{name} requires {} positional arguments", parameters.len()),
                         ));
                     }
-                    for (argument, &expected) in arguments.iter().zip(parameters) {
+                    for (position, (argument, &expected)) in
+                        arguments.iter().zip(parameters).enumerate()
+                    {
                         require_type(
                             types[argument.expression],
                             expected,
                             syntax.nodes()[argument.expression].span,
-                        )?;
+                        )
+                        .map_err(|error| {
+                            if builtin.is_tile() {
+                                error.with_related(
+                                    *function_span,
+                                    format!(
+                                        "argument {} of {name} requires {expected}",
+                                        position + 1
+                                    ),
+                                )
+                            } else {
+                                error
+                            }
+                        })?;
                     }
                     slots.push(None);
                     calls.push(Some(ResolvedCall::Builtin(builtin)));
@@ -1131,4 +1197,56 @@ fn loop_control(span: Span) -> Diagnostic {
         "loop control used outside a while or repeat body",
     )
     .with_help("put break; or continue; inside the while or repeat loop it should control")
+}
+
+#[cfg(test)]
+mod retirement_plan_tests {
+    use super::{ResolvedProgram, ResolvedStatement};
+
+    fn plan(source: &str) -> ResolvedProgram {
+        crate::compile(source).unwrap()
+    }
+
+    #[test]
+    fn nested_scopes_retire_only_their_own_binding_slots() {
+        let program = plan(
+            "bind root = [1.0]; { bind outer = [2.0]; { bind inner = [3.0]; } print(outer); } print(root);",
+        );
+        let retirements: Vec<Vec<usize>> = program
+            .statements
+            .iter()
+            .filter_map(|operation| match &operation.kind {
+                ResolvedStatement::Retire { slots } => Some(slots.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(retirements, vec![vec![2], vec![1]]);
+        // Internal bookkeeping is excluded from observable statement counts.
+        assert_eq!(program.statement_count(), 5);
+    }
+
+    #[test]
+    fn loop_transfers_retire_exited_scopes_but_preserve_repeat_index() {
+        let program = plan(
+            "bind carried = [1.0]; repeat 2 as i { bind body = [2.0]; if i == 0 { bind leaf = [3.0]; continue; } if i == 1 { bind leaf2 = [4.0]; break; } print(i); } print(carried);",
+        );
+        let transfers: Vec<(usize, Vec<usize>)> = program
+            .statements
+            .iter()
+            .filter_map(|operation| match &operation.kind {
+                ResolvedStatement::LoopControl { target, retire } => {
+                    Some((*target, retire.clone()))
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(transfers.len(), 2);
+        assert_eq!(transfers[0].1, vec![3, 4]);
+        assert_eq!(transfers[1].1, vec![3, 5]);
+        assert!(transfers[0].0 != transfers[1].0);
+        // Index slot 2 and outer binding slot 0 must stay live.
+        assert!(transfers
+            .iter()
+            .all(|(_, slots)| !slots.contains(&0) && !slots.contains(&2)));
+    }
 }

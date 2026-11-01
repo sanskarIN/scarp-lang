@@ -1,0 +1,6 @@
+error[E0033]: tile column index -1 is outside axis length 2
+ --> fixture.srp:2:18
+  |
+2 | print(cell(t, 0, -1));
+  |                  ^^
+ = help: use a zero-based index smaller than the corresponding tile axis

@@ -1,8 +1,8 @@
 # Numerical vectors
 
-The 0.0.4-alpha.2 implementation adds immutable, one-dimensional finite
+The current alpha.4 candidate includes immutable, one-dimensional finite
 binary64 vectors. Published alpha.1 supports scalar floats but not vectors.
-See [release notes](releases/v0.0.4-alpha.2.md) for the planned publication
+See [candidate release notes](releases/v0.0.4-alpha.4.md) for the publication
 and the [integration audit](development/numerical-vectors-audit.md).
 
 ## Construct, inspect and replace
@@ -59,6 +59,31 @@ print(dot(a, [2.0, 2.0, 2.0]));
 print(mse(a, [1.0, 2.0, 5.0]));
 print(clamp(scale(a, 0.5), 0.0, 1.0));
 ```
+
+## Two-axis tiles (alpha.4 candidate)
+
+This alpha.4 candidate includes immutable `tile` values, absent from
+published alpha.3 binaries. The `tile(vector, height, width)` constructor
+retains the existing immutable flat vector and requires height × width to
+exactly equal the vector's length. `height(t)`/`width(t)` inspect the shape,
+`cell(t, row, column)` selects one float, `lane(t, row)` returns a copied
+row, `unroll(t)` shares the original flat vector, and `turn(t)` swaps axes
+into a newly allocated bounded tile.
+
+```scarp
+bind matrix = tile([1.0, 2.0, 3.0, 4.0], 2, 2);
+print(matrix);
+print(cell(matrix, 1, 0));
+print(turn(matrix));
+```
+
+The type is explicitly finite, immutable, and strictly capped at
+65,536 cells. A zero dimension is allowed with an empty source; both axes
+remain part of the value even when there are no elements. The full shape,
+step, diagnostic and memory contract is in
+[proposal 0021](proposals/0021-immutable-numeric-tiles.md).
+Matrix arithmetic is also available: see [tiles and linear algebra](tiles.md).
+These calls require the alpha.4 candidate, not published alpha.3.
 
 ## Numerical guarantees and limits
 

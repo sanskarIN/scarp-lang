@@ -56,6 +56,10 @@ pub(crate) enum Evaluation {
 }
 
 impl Workspace {
+    pub(crate) fn clear(&mut self) {
+        self.values.clear();
+        self.tasks.clear();
+    }
     pub(crate) fn evaluate(
         &mut self,
         expression: &ResolvedExpression,
@@ -74,8 +78,7 @@ impl Workspace {
     }
 
     pub(crate) fn start(&mut self, expression: &ResolvedExpression) {
-        self.values.clear();
-        self.tasks.clear();
+        self.clear();
         self.tasks.push(Task::Visit(expression.syntax.root()));
     }
 
@@ -111,7 +114,7 @@ impl Workspace {
                         ExpressionKind::UserCall { arguments, .. } => {
                             tasks.push(match &expression.calls[index] {
                                 Some(ResolvedCall::Builtin(builtin)) => {
-                                    Task::Builtin(*builtin, arguments.len(), node.span)
+                                    Task::Builtin(*builtin, index, node.span)
                                 }
                                 _ => Task::UserCall(index, arguments.len(), node.span),
                             });
@@ -209,10 +212,21 @@ impl Workspace {
                         })?;
                     values.push(Value::Float(*element));
                 }
-                Task::Builtin(builtin, count, span) => {
+                Task::Builtin(builtin, node, span) => {
+                    let ExpressionKind::UserCall { arguments, .. } =
+                        &expression.syntax.nodes()[node].kind
+                    else {
+                        unreachable!("resolved builtin call")
+                    };
+                    let count = arguments.len();
                     let start = values.len() - count;
-                    let value =
-                        numeric::evaluate_with_budget(builtin, &values[start..], budget, span)?;
+                    let value = numeric::evaluate_with_spans(
+                        builtin,
+                        &values[start..],
+                        budget,
+                        span,
+                        |i| expression.syntax.nodes()[arguments[i].expression].span,
+                    )?;
                     values.truncate(start);
                     values.push(value);
                 }
@@ -248,6 +262,9 @@ impl Workspace {
                     let right = values.pop().unwrap();
                     let left = values.pop().unwrap();
                     if let (Some(a), Some(b)) = (left.as_vector(), right.as_vector()) {
+                        budget.charge(a.len().max(b.len()) as u64, span)?;
+                    }
+                    if let (Some(a), Some(b)) = (left.as_tile(), right.as_tile()) {
                         budget.charge(a.len().max(b.len()) as u64, span)?;
                     }
                     values.push(apply_binary(operator, &left, &right, span)?);

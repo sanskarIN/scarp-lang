@@ -1,0 +1,2 @@
+bind scores = matvec(tile([1.0, 0.0, 0.0, 2.0, -1.0, 1.0], 3, 2), [2.0, 1.0]);
+print(onehot(len(scores), argmax(scores)));

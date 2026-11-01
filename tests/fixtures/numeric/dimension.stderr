@@ -1,0 +1,6 @@
+error[E0032]: tile height must be in 0..65536, found -1
+ --> fixture.srp:1:16
+  |
+1 | print(tile([], -1, 0));
+  |                ^^
+ = help: use compatible tile shapes with each axis and the cell count in 0..65536
