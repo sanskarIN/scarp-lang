@@ -579,6 +579,9 @@ fn every_truncated_module_source_is_panic_free_and_errors_keep_owned_sources() {
     ])
     .unwrap_err();
     assert!(error.render().contains("lib.srp:2:"));
+    assert_eq!(error.to_string(), error.render());
+    let run_error = ModuleRunError::Diagnostic(error.clone());
+    assert_eq!(run_error.to_string(), error.render());
     assert!(std::error::Error::source(&error).is_some());
 }
 

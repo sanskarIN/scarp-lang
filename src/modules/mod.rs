@@ -142,7 +142,7 @@ impl ModuleDiagnostic {
 }
 impl fmt::Display for ModuleDiagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.diagnostic.fmt(f)
+        f.write_str(&self.render())
     }
 }
 impl std::error::Error for ModuleDiagnostic {
