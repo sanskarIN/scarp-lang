@@ -50,7 +50,7 @@ E0037–E0043 for modules. Existing assignments are unchanged.
 | `E0036` | Cumulative numerical payload quota | Reduce new vector/tile buffers or raise max_vector_bytes |
 | `E0037` | Invalid module syntax/declaration or missing loader API | Use file-level imports/declarations and an explicit module compiler |
 | `E0038` | Module loading/UTF-8 failure | Check the importing file's relative path and save UTF-8 |
-| `E0039` | Import cycle | Extract shared declarations into an acyclic dependency |
+| `E0039` | Import or constant dependency cycle | Remove a cyclic dependency; local constants reference earlier constants |
 | `E0040` | Module resource limit | Reduce graph/source/expansion size or choose explicit host limits |
 | `E0041` | Private imported member | Expose the intended declaration with pub or call a public wrapper |
 | `E0042` | Unknown module alias/member or wrong symbol kind | Check spelling and whether the member is a function or constant |

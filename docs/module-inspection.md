@@ -13,8 +13,9 @@ cargo run --locked --offline -- modules --help
 ```
 
 `modules` loads, links and statically checks the same bounded graph as run/check,
-then writes an inventory to stdout. It does **not** execute statements, defaults,
-contracts or arithmetic. A valid `print(1/0);` or nonterminating while loop can
+then writes an inventory to stdout. It does **not** execute runtime statements,
+defaults or contracts. Restricted [module constant expressions](constant-expressions.md)
+are evaluated during compilation. A valid `print(1/0);` or nonterminating while loop can
 be inspected. Literal validity, names, visibility, types and purity still undergo
 compilation checks. A missing/private/invalid declaration fails with status 1,
 diagnostics on stderr and no partial inventory.

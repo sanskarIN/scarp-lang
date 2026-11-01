@@ -60,7 +60,7 @@ have independent caps. No discovery step executes Scarp statements.
 
 `modules::resolve` builds per-file symbol/alias tables, checks visibility and
 declaration-only libraries, rewrites qualified names, substitutes typed scalar
-literal constants and gives every function in a multi-file graph a distinct
+folded scalar constants and gives every function in a multi-file graph a distinct
 module-qualified internal identity, including entry functions. This keeps entry
 function names from affecting a library's built-in calls or local declarations.
 Local lexical bindings and local function/built-in precedence are preserved.
@@ -84,15 +84,29 @@ imports and symbols, avoiding a full prefix scan for every printed declaration.
 defensive diagnostic rendering keeps its earlier clamping behavior.
 See [the inspection contract](proposals/0030-module-inspection.md).
 
+`modules::constants` validates scalar initializer forms before cloning/evaluation.
+Iterative local dependency traversal detects cycles, then enforces declaration
+order. Collection reuses the loader's dependency-first completion order while
+keeping exposed module/symbol/reference order unchanged. One lookup policy handles
+initializer visibility and ordinary expression lowering. Closed initializers use
+the existing typed expression resolver and checked scalar evaluator. Calls,
+vectors and indexing are excluded; user execution frames and I/O are unreachable.
+ConstantLimits counts all initializer nodes and selected evaluator tasks across
+the graph, independently of runtime options. Existing ModuleLimits remains intact;
+string reference copies and new folded storage use its expansion allowance.
+ModuleProgram retains immutable direct constant-reference edges with use and
+declaration locations. See [the constant contract](proposals/0031-constant-expressions.md).
+
 `ModuleProgram` owns the resolved plan and an immutable `Arc<SourceMap>`.
 Sources share one coordinate space: tokens are relocated before parsing, so all
 AST, resolver and runtime spans keep their existing public representation.
 Rendering maps each primary/related span to its own file and UTF-8 excerpt.
 Diagnostics own the source map and remain renderable after the loader/files are
-dropped. Existing single-file diagnostic formatting remains unchanged.
+dropped. Existing primary diagnostic codes/spans are retained; operand and function
+type failures add related declaration/expression sites and repair guidance.
 Each execution uses independent runtime state, writers and options. Loading caps
 are separate from runtime budgets. There are no runtime module globals or
-initialization side effects; all library values are scalar literal constants.
+initialization side effects; library values are compile-time scalar constants.
 
 The lexer cursor always advances by UTF-8 character boundaries. The parser uses
 an index into tokens and does not recursively process the top-level statement

@@ -1,5 +1,9 @@
 # Variables in the development language
 
+Unreleased module compilation adds [scalar constant expressions](constant-expressions.md).
+Imported file-level `bind` and entry `pub bind` declarations evaluate during
+compilation. Ordinary entry/local bindings retain the runtime rules below.
+
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 This document describes implemented variable behavior on development main. The published v0.0.1 interpreter does not support declarations.

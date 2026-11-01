@@ -2,8 +2,9 @@
 
 Unreleased development adds `scarp modules [--] <path>` and per-command help.
 It loads, links and statically checks files, then reports imports, dependencies
-and typed public/private declarations. It never evaluates statements/defaults/
-contracts/arithmetic and rejects runtime-budget flags. Loading limits still
+and typed public/private declarations. It never executes runtime statements,
+defaults or contracts, and rejects runtime-budget flags. Restricted scalar module
+constants evaluate during compilation with separate work limits. Loading limits still
 apply. Failure writes a diagnostic with no partial inventory; successful
 inventory goes to stdout. See [module inspection](../module-inspection.md).
 The package version remains 0.0.5-alpha.1; released alpha.1 has no modules command.

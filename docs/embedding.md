@@ -1,5 +1,10 @@
 # Embed Scarp in a Rust application
 
+Unreleased development adds bounded [constant compilation](constant-expressions.md)
+to module resolution. Existing entry points use default ConstantLimits; additive
+loader/native-path/resolve APIs let hosts select them. Source-only scarp::compile
+retains its behavior; runtime options do not configure constant compilation.
+
 Published alpha.4 adds public `value::NumericTile`, `Value::Tile` and
 `ValueType::Tile`; exhaustive enum matches need an additional arm. Construct a
 checked tile with `NumericTile::new` or `from_vector`. The latter shares a visible

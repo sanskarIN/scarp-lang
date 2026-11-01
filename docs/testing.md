@@ -1,5 +1,12 @@
 # Test and validate changes
 
+For unreleased constant compilation, run `--test constant_expressions --test module_files`.
+Coverage includes scalar/runtime parity, declaration order/cycles, imports,
+types/defaults/returns, Unicode/CRLF, exact node/task/string limits, long iterative
+expressions/chains, and six `.srp`/`.stderr` fixtures exercised by the embedding API
+and run/check/modules. The three-file `constant_expressions` example has exact
+stdout. Native package checks include invalid constant initializers.
+
 For unreleased module tooling, include `--test module_tooling --test module_files`.
 The suites cover validation before dependency I/O, precise cycle edges and limit
 spans, visibility-safe typo repairs, metadata/UTF-8 locations, direct/reverse/
