@@ -115,6 +115,15 @@ as `scarp::compile` and `scarp::run` never read files implicitly; use the explic
 
 ## Diagnose an import
 
+Unreleased development validates a file's portable import spelling and alias
+namespace before resolving any dependency from that file. Duplicate/reserved
+aliases and declaration collisions therefore precede child-file read failures.
+Root containment remains a loader check. Cycles identify actual import edges;
+unknown alias/member errors can suggest nearby valid names, using public members
+only. See [module inspection](module-inspection.md) for the new static command,
+metadata queries and precise compatibility/ordering rules. Published alpha.1
+does not include these tooling changes.
+
 | Code | Typical problem | Repair |
 | --- | --- | --- |
 | E0037 | Nested import, unsupported library statement or source-only API | Move declarations to file scope, move computation inside a function, or select a module API |

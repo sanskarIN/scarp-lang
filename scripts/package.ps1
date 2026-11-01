@@ -119,19 +119,29 @@ try {
         if ([Convert]::ToBase64String($actual.Stdout) -cne [Convert]::ToBase64String($expected)) { throw "Packaged $example output differs" }
         $checkOutput = & $executable check $source
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
+        $inventory = Invoke-ScarpProcess -Executable $executable -Arguments @('modules', $source)
+        if ($inventory.ExitCode -ne 0 -or $inventory.Stderr.Length -ne 0 -or -not [System.Text.Encoding]::UTF8.GetString($inventory.Stdout).StartsWith('modules: ')) {
+            throw "Packaged $example static module inspection failed"
+        }
     }
     $moduleEntry = Join-Path $stagingRoot 'module-main.srp'
     $moduleLibrary = Join-Path $stagingRoot 'module-library.srp'
     [System.IO.File]::WriteAllText($moduleEntry, 'import "module-library.srp" as lib; print("OUT"); eprint("ERR"); print(lib.secret);')
     foreach ($case in @(@('bind secret=7;', 'E0041'), @('import "module-main.srp" as entry;', 'E0039'))) {
         [System.IO.File]::WriteAllText($moduleLibrary, $case[0])
-        foreach ($verb in @('run', 'check')) {
+        foreach ($verb in @('run', 'check', 'modules')) {
             $failed = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, $moduleEntry)
             $diagnostic = [System.Text.Encoding]::UTF8.GetString($failed.Stderr)
             if ($failed.ExitCode -ne 1 -or $failed.Stdout.Length -ne 0 -or -not $diagnostic.StartsWith(('error[' + $case[1] + ']')) -or -not $diagnostic.Contains('module-library.srp')) {
                 throw 'Packaged module visibility/cycle diagnostic or stream atomicity failed'
             }
         }
+    }
+    [System.IO.File]::WriteAllText($moduleEntry, 'import "module-library.srp" as lib; print(lib.fail());')
+    [System.IO.File]::WriteAllText($moduleLibrary, 'pub pure funcra fail(n: integer=1/0)->integer needs false; {return n;}')
+    $staticInventory = Invoke-ScarpProcess -Executable $executable -Arguments @('modules', $moduleEntry)
+    if ($staticInventory.ExitCode -ne 0 -or $staticInventory.Stderr.Length -ne 0 -or -not [System.Text.Encoding]::UTF8.GetString($staticInventory.Stdout).Contains('pub pure funcra fail(n: integer = <default>) -> integer')) {
+        throw 'Packaged module inspection must not execute defaults or contracts'
     }
     [System.IO.File]::WriteAllText($moduleEntry, 'import "absent-module.srp" as absent;')
     $moduleTokens = Invoke-ScarpProcess -Executable $executable -Arguments @('tokens', $moduleEntry)

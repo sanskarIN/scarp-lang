@@ -1,5 +1,13 @@
 # Version and API compatibility
 
+Unreleased work toward alpha.2 adds the `modules` CLI command and additive
+module inspection APIs while keeping Cargo at 0.0.5-alpha.1. Published alpha.1
+has neither. Existing ModuleInfo/SymbolInfo/SymbolKind fields, Span/Diagnostic
+layouts, run/check/tokens behavior, source limits and runtime budgets remain
+unchanged. Invalid import lists now fail before child-loader callbacks, and
+module cycle/typo guidance is more precise. See [inspection](module-inspection.md)
+for the exact static-vs-execution and source/metadata ordering contract.
+
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Use this guide before copying an example into a different Scarp executable or

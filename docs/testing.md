@@ -1,5 +1,15 @@
 # Test and validate changes
 
+For unreleased module tooling, include `--test module_tooling --test module_files`.
+The suites cover validation before dependency I/O, precise cycle edges and limit
+spans, visibility-safe typo repairs, metadata/UTF-8 locations, direct/reverse/
+transitive graph queries, deterministic concurrent inspection and writer errors.
+CLI checks distinguish static inventory from evaluating run/check, cover usage,
+source failures, native paths and no-partial-inventory behavior. The new
+`module_inspection` example has both normal `.stdout` and an in-memory `.modules`
+snapshot. Native archives inspect every shipped entry and exercise static
+defaults/contracts plus module failures. None of this authorizes publication.
+
 For the 0.0.5-alpha.1 modules prerelease, run `cargo test --locked --offline --test modules
 --test module_files`. These cover in-memory graph/linker APIs, filesystem/CLI
 loading, visibility, cycles, canonical deduplication, exact loading caps,
