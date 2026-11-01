@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.0.5-alpha.1 — unpublished development candidate
+
+- Add explicit relative source imports, qualified aliases, public/private
+  functions and immutable scalar literal constants, with declaration-only
+  libraries and deterministic initialization-free linking.
+- Add filesystem/in-memory source loaders, independent graph/expansion limits,
+  canonical deduplication, cycle detection and source-aware E0037–E0043 errors.
+- Preserve function typing, local shadowing, defaults, purity, contracts,
+  numerical budgets, ordinary single-file diagnostics and atomic output.
+- Add cross-file type locations, owned source maps, public typed symbol metadata,
+  reusable compiled module programs and separate load/resolve/check/execute APIs.
+- Add API/CLI/path/limit regressions, exact diagnostic fixtures and a three-file
+  numerical example. Refresh introductory docs and require new/inherited package
+  contents without enabling publication. See [candidate notes](docs/releases/v0.0.5-alpha.1.md).
+
 ## 0.0.4-alpha.4 — prerelease, 2026-11-01
 
 - Integrate immutable shape-aware tiles and typed tile parameters/results from

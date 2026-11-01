@@ -11,14 +11,18 @@ fn every_shipped_example_matches_its_expected_output() {
     paths.sort();
     assert!(!paths.is_empty(), "the example corpus must not be empty");
     for path in &paths {
-        let source = fs::read_to_string(path).unwrap();
         let expected_path = path.with_extension("stdout");
         let expected = fs::read(&expected_path)
             .unwrap_or_else(|error| panic!("{}: {error}", expected_path.display()));
         let mut actual = Vec::new();
-        scarp::run(&source, &mut actual)
+        let mut stderr = Vec::new();
+        let program = scarp::modules::compile_file(path, scarp::modules::ModuleLimits::default())
+            .unwrap_or_else(|error| panic!("{}", error.render()));
+        program
+            .execute(&mut actual, &mut stderr, scarp::ExecutionOptions::default())
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
         assert_eq!(actual, expected, "{}", path.display());
+        assert!(stderr.is_empty(), "unexpected stderr: {}", path.display());
     }
     for entry in fs::read_dir(directory).unwrap() {
         let path = entry.unwrap().path();

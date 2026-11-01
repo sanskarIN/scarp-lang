@@ -1,0 +1,4 @@
+// café 🌍
+bind secret = 3;
+pub bind value = 4;
+pub pure funcra take(x: integer) -> integer { return x; }

@@ -1,0 +1,2 @@
+pub bind title = "Modular inference";
+pub bind gain = 1.0;

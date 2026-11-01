@@ -257,6 +257,17 @@ pub fn resolve(program: Program) -> Result<ResolvedProgram, Diagnostic> {
     let mut metadata: Vec<FunctionInfo> = Vec::new();
     let mut names: HashMap<String, usize> = HashMap::new();
     for statement in program.statements {
+        if matches!(
+            statement,
+            Statement::Import { .. } | Statement::Export { .. }
+        ) {
+            return Err(Diagnostic::new(
+                DiagnosticKind::ModuleSyntax,
+                statement.span(),
+                "module declarations require an explicit source loader",
+            )
+            .with_help("use modules::compile_with_loader or modules::compile_file"));
+        }
         if let Statement::Function(function) = statement {
             check_name(&function.name, function.name_span)?;
             if function.name == "repeat" {
@@ -396,6 +407,14 @@ impl<'a> Resolver<'a> {
         for statement in statements {
             let span = statement.span();
             match statement {
+                Statement::Import { .. } | Statement::Export { .. } => {
+                    return Err(Diagnostic::new(
+                        DiagnosticKind::ModuleSyntax,
+                        span,
+                        "module declarations require an explicit source loader",
+                    )
+                    .with_help("use modules::compile_with_loader or modules::compile_file"));
+                }
                 Statement::Function(function) => {
                     return Err(Diagnostic::new(
                         DiagnosticKind::FunctionUnsupported,
@@ -997,7 +1016,20 @@ fn resolve_expression(
                         types[argument.expression],
                         function.parameters[parameter].kind,
                         syntax.nodes()[argument.expression].span,
-                    )?;
+                    )
+                    .map_err(|error| {
+                        if function.name.contains("::") {
+                            error.with_related(
+                                function.parameters[parameter].span,
+                                format!(
+                                    "parameter {:?} is declared here",
+                                    function.parameters[parameter].name
+                                ),
+                            )
+                        } else {
+                            error
+                        }
+                    })?;
                     supplied[parameter] = true;
                     parameters.push(parameter);
                 }
@@ -1139,7 +1171,7 @@ pub(crate) fn require_type(
     }
 }
 
-fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
+pub(crate) fn check_name(name: &str, span: Span) -> Result<(), Diagnostic> {
     if matches!(
         name,
         "let"

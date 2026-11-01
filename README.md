@@ -3,9 +3,10 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-implements the 0.0.4-alpha.4 numerical and runtime prerelease, with finite binary64 values, a lexer, parser,
-name resolver, interpreter, and command-line interface. Syntax and library APIs
-may change.
+implements the unpublished **0.0.5-alpha.1 modules candidate**, extending the
+published 0.0.4-alpha.4 numerical/runtime prerelease. It has finite binary64
+values, a lexer, parser, name resolver, interpreter and command-line interface.
+Syntax and library APIs may change.
 
 Use immutable `bind` and mutable `var` declarations, checked integers, finite floats, strings,
 booleans, conditionals, while/repeat loops, and explicit output streams.
@@ -25,6 +26,15 @@ Hello from Scarp!
 The [documentation hub](docs/README.md) provides setup, tutorials, command and
 diagnostic references, Rust embedding, testing, troubleshooting, and compatibility
 guides. Start there for a reading path matched to your task.
+
+[Source modules](docs/modules.md) organize programs with relative `.srp` imports,
+explicit aliases and public functions/scalar constants. Follow the
+[import tutorial](docs/tutorials/modules.md), then run the three-file example:
+
+```sh
+cargo run --locked --offline -- run examples/module_demo.srp
+cargo run --locked --offline -- check examples/module_demo.srp
+```
 
 The [tile and linear-algebra guide](docs/tiles.md) covers immutable two-axis
 values, transpose, matrix-vector/matrix products and tile arithmetic. Shared
@@ -113,7 +123,9 @@ the CLI does not reject other filename extensions.
 - `while` and counted `repeat` loops, nearest-loop `break`/`continue`.
 - Typed file-level `funcra`, positional/named/default arguments, forward and
   mutual recursion, explicit returns, verified purity, and executable contracts.
-- Heap call frames and six deterministic CLI/embedding resource limits shared
+- Relative source modules, public/private functions and scalar literal constants,
+  explicit filesystem/in-memory loaders, cycle diagnostics and bounded graphs.
+- Heap call frames and seven deterministic CLI/embedding resource limits shared
   by `run` and `check`; see [budgets](docs/budgets.md).
 - Unicode text in strings and comments, Unicode whitespace, and LF or CRLF files.
 - Optional UTF-8 byte order mark at the very start of a file.
@@ -164,14 +176,14 @@ without writing program output. It returns zero and remains silent on success.
 It evaluates selected loops, declarations, and assignments in fresh local
 storage, so reachable unused arithmetic failures are still reported. The Rust
 library's `scarp::compile` only parses and resolves; it does not evaluate arithmetic.
-There is no `scarp compile` CLI command in beta.3.
+There is no `scarp compile` CLI command.
 
 `tokens` checks lexical validity without parsing or executing the file. It prints
 one token per line, including decoded string text, one-based line/column ranges,
 and half-open UTF-8 byte ranges. For the hello example, the first token is:
 
 ```text
-2:1..2:6  identifier(print)  [27..32]
+2:1..2:6  identifier(print)  [26..31]
 ```
 
 An end-of-file token is always included. Columns count Unicode scalar values;
@@ -201,6 +213,12 @@ The `scarp` library exposes `lexer::lex`, `parser::parse`, `compile`,
 an integer/float/string/boolean `Value`. `execute` and `run` validate all
 arguments before writing and return `RunError`. The output destination is explicit, making
 execution usable without redirecting process-wide standard output.
+
+For multiple files, use `modules::compile_file` or an explicit
+`modules::SourceLoader` with `modules::compile_with_loader`. `ModuleProgram`
+owns its source map and offers separate check/execute methods. Source-string
+APIs keep their existing signatures and never load files implicitly. See
+[module embedding](docs/embedding.md#load-modules-explicitly).
 
 ```rust
 let mut output = Vec::new();
@@ -236,11 +254,12 @@ The [performance guide](docs/performance.md) provides stage benchmarks and
 measured execution improvements. C/C++/Rust performance comparisons and native
 code generation remain future work.
 
-This is a small interpreter. It reads a complete file into memory
+This is a small interpreter. It loads bounded source graphs into memory
 and reports the first error. Functions are interpreted using heap call frames.
-It has immutable one-dimensional numerical vectors but no general-purpose
-collections, user-defined types, imports, standard library, package manager, native code
-generation, or self-hosting support. It does not execute arbitrary Rust code.
+It has immutable numerical vectors and tiles and a first source-module system.
+General-purpose collections, user-defined types, runtime module globals,
+re-exports, a standard library, a package manager, native code generation and
+self-hosting require further milestones. It does not execute arbitrary Rust code.
 The syntax and library API are experimental and may change.
 
 Read the [implemented language reference](docs/language.md) and
@@ -250,24 +269,23 @@ test suite.
 
 Future work is **planned**, in this order:
 
-1. Finite float stabilization, then numerical collections.
-2. Function tooling and further diagnostic improvements.
+1. Module tooling, additional conformance and source navigation.
+2. Explicit constant-expression and library organization design.
 3. User-defined types and callable values.
-4. A compiler backend.
-5. Developer tooling.
-6. Domain-specific libraries.
+4. A compiler backend and developer tooling.
+5. Domain-specific libraries.
 
 The remaining capabilities require separate milestones. Integer expressions are implemented as
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Integer, finite float, vector, string, and boolean bindings are implemented in this checkout. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [v0.0.4-alpha.1 notes](docs/releases/v0.0.4-alpha.1.md) describe the integrated
-scalar milestones, downloads, and limitations. This candidate adds numerical
-vectors; tensors and native backends require separate integration decisions.
+The [candidate notes](docs/releases/v0.0.5-alpha.1.md) describe implemented modules,
+compatibility changes, limits and the remaining publication gates. Tensors and
+native backends require separate integration decisions.
 
 The [function integration in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)
 integrated typed calls, defaults, contracts, and bounded heap frames into main.
-Beta.3 publishes that work with CLI resource controls. Beta.2 binaries do not
+Beta.3 published that work with CLI resource controls. Beta.2 binaries do not
 contain functions. Release notes
 describe immutable snapshots; branch names can move.
 

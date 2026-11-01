@@ -4,8 +4,9 @@ Use the error code to identify the class of failure, then use the source locatio
 and help to repair it. Codes `E0001` through `E0009` exist in v0.0.1; the remaining
 codes through `E0015` are available in v0.0.2. Beta.1 adds `E0016` through
 `E0019`; published beta.2 retains those assignments and adds contextual
-declaration/assignment repair help. This page covers beta.3; E0020–E0029 were added for functions and are absent
-from earlier beta.2 binaries.
+declaration/assignment repair help. E0020–E0029 cover functions, E0030–E0036
+cover numerical values/budgets, and the unpublished 0.0.5 candidate adds
+E0037–E0043 for modules. Existing assignments are unchanged.
 
 ## Codes and first repairs
 
@@ -25,12 +26,11 @@ from earlier beta.2 binaries.
 | `E0012` | Reserved variable name | Avoid statement words, boolean literals, and logical operator words |
 | `E0013` | Assignment to an immutable binding | Declare the intended target with `var` |
 | `E0014` | Block nesting exceeds 64 levels | Flatten unnecessary statement blocks |
-| `E0015` | Primitive type mismatch | Keep assignment types fixed; arithmetic/order use integers and logic uses booleans |
+| `E0015` | Primitive type mismatch | Keep assignment types fixed; numeric operands use matching types and logic uses booleans |
 | `E0016` | Loop control outside a loop | Place break/continue in the while/repeat body it should control |
 | `E0017` | Execution work budget exhausted | Check loop progress or raise the explicit budget |
 | `E0018` | Selected print count exhausted | Reduce prints or raise the explicit print budget |
 | `E0019` | Negative repeat count | Supply zero to skip the loop or a positive integer count |
-
 | `E0020` | Invalid or conflicting function definition | Check signature, duplicate names, and binding collisions |
 | `E0021` | Invalid return or unit value use | Match the declared result; use unit calls as statements |
 | `E0022` | Missing return path | Cover every branch or add a final return after loops |
@@ -47,12 +47,26 @@ from earlier beta.2 binaries.
 | `E0033` | Vector index outside bounds | Use an integer from zero through length minus one |
 | `E0034` | Numerical domain error | Supply nonempty input where required and ordered clamp bounds |
 | `E0035` | Vector buffer reservation failed | The bounded payload could not be reserved |
+| `E0036` | Cumulative numerical payload quota | Reduce new vector/tile buffers or raise max_vector_bytes |
+| `E0037` | Invalid module syntax/declaration or missing loader API | Use file-level imports/declarations and an explicit module compiler |
+| `E0038` | Module loading/UTF-8 failure | Check the importing file's relative path and save UTF-8 |
+| `E0039` | Import cycle | Extract shared declarations into an acyclic dependency |
+| `E0040` | Module resource limit | Reduce graph/source/expansion size or choose explicit host limits |
+| `E0041` | Private imported member | Expose the intended declaration with pub or call a public wrapper |
+| `E0042` | Unknown module alias/member or wrong symbol kind | Check spelling and whether the member is a function or constant |
+| `E0043` | Invalid module path | Use a relative /-separated .srp path inside the trusted root |
 
-File-read failures, invalid UTF-8, and output I/O failures are process errors
-without source error codes. They still use stderr and exit code `1`. Invalid
+Run/check file-read and UTF-8 failures use E0038; imported-file failures also
+identify the import location. Tokens file-read failures and output I/O failures
+remain process errors without source codes. They use stderr and exit code `1`. Invalid
 command-line usage uses exit code `2`; see the [CLI reference](cli.md).
 
 ## Read the location
+
+Module diagnostics own their sources. Each related location, including an
+imported parameter or runtime call site, names its own file. See
+[module repairs](../modules.md#diagnose-an-import) and the exact
+[`tests/fixtures/modules`](../../tests/fixtures/modules/) source/stderr pairs.
 
 The arrow identifies a filename and one-based line/column. The caret points at
 the unexpected token, the responsible operator, or an empty position at EOF

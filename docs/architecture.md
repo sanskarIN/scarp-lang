@@ -1,7 +1,7 @@
 # Prototype architecture
 
 The front end and interpreter are a reusable Rust library. The CLI is a thin
-process boundary that owns argument parsing, filesystem access, standard streams,
+process boundary that owns argument parsing, source-root selection, standard streams,
 and exit codes. There are no external Rust dependencies.
 
 ```text
@@ -35,12 +35,48 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `parser` | Precedence parsing, literal validation, and nesting limits |
 | `ast` | Ordered statements and flat postorder expression nodes with spans |
 | `resolver` | Lexical scopes, declaration ordering, mutability, immutable slot plans |
+| `modules` | Explicit loaders, bounded source graphs, typed module symbols, linking and owned source maps |
 | `evaluator` | Checked signed 64-bit arithmetic with operator diagnostics |
 | `value` | Integer/finite-float/string/boolean values, immutable string storage, primitive type names |
 | `interpreter` | Evaluate all arguments, then write values and propagate I/O failures |
 | `diagnostics` | Error codes, source locations, excerpts, and help |
 | `lib` | Public convenience functions and combined error type |
 | `main` | Native arguments, file loading, streams, and process status |
+
+## Source graphs (0.0.5 candidate)
+
+The source-string pipeline above remains free of implicit I/O. The CLI's run/check
+commands use `modules::compile_file`; tokens still lexes just the requested file.
+An embedder can instead supply `SourceLoader`, including `MemorySourceLoader`.
+The filesystem loader canonicalizes relative paths within an explicitly trusted
+root and performs bounded UTF-8 reads. It assumes a trusted tree, not concurrently
+hostile filesystem mutation; see the [path policy](modules.md#paths-and-trusted-sources).
+
+`modules::load` discovers a graph with iterative, source-ordered depth-first
+traversal. Stable loader identities deduplicate repeated imports, the active path
+detects cycles, and a postorder longest-path pass enforces depth even when cached
+diamond edges hide a longer path. File count, source bytes and import declarations
+have independent caps. No discovery step executes Scarp statements.
+
+`modules::resolve` builds per-file symbol/alias tables, checks visibility and
+declaration-only libraries, rewrites qualified names, substitutes typed scalar
+literal constants and gives every function in a multi-file graph a distinct
+module-qualified internal identity, including entry functions. This keeps entry
+function names from affecting a library's built-in calls or local declarations.
+Local lexical bindings and local function/built-in precedence are preserved.
+Expansion text is charged before cloning. The resulting syntax goes through the
+existing typed resolver and immutable execution plan; there is no second runtime.
+Public `ModuleInfo`/`SymbolInfo` expose types, visibility and owning source IDs.
+
+`ModuleProgram` owns the resolved plan and an immutable `Arc<SourceMap>`.
+Sources share one coordinate space: tokens are relocated before parsing, so all
+AST, resolver and runtime spans keep their existing public representation.
+Rendering maps each primary/related span to its own file and UTF-8 excerpt.
+Diagnostics own the source map and remain renderable after the loader/files are
+dropped. Existing single-file diagnostic formatting remains unchanged.
+Each execution uses independent runtime state, writers and options. Loading caps
+are separate from runtime budgets. There are no runtime module globals or
+initialization side effects; all library values are scalar literal constants.
 
 The lexer cursor always advances by UTF-8 character boundaries. The parser uses
 an index into tokens and does not recursively process the top-level statement
@@ -80,7 +116,7 @@ span buffers. This is a boundary for future typed lowering, without an unused
 IR or a native-backend claim. See [tiles](tiles.md) and
 [memory lifetimes](memory-lifetimes.md).
 
-The alpha.4 candidate records lexical binding retirement
+Alpha.4 records lexical binding retirement
 in the compiled operation stream. Scope exits clear their declared storage
 slots; `break` and `continue` clear all locally exited scopes, retaining the
 current repeat index and enclosing-loop values. Function completion drops
@@ -193,7 +229,7 @@ without additional recursion or dependencies. See [the contract](proposals/0016-
 
 ## Numerical vector layer
 
-The alpha.2 candidate uses NumericVector with private Arc<Vec<FiniteFloat>>
+The numerical layer uses NumericVector with private Arc<Vec<FiniteFloat>>
 storage. Elements are contiguous and immutable; clones share storage and moving
 an owned buffer into Arc avoids a second element copy. No rank/stride abstraction
 is added before tensors have their own reviewed design.

@@ -93,31 +93,31 @@ def verify(directory, version, commit, source_directory=None):
             "examples/loops.srp", "examples/loops.stdout",
             "examples/repeat.srp", "examples/repeat.stdout",
             "examples/control_escapes.srp", "examples/control_escapes.stdout",
-        ) if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4")) else ()
+        ) if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1")) else ()
         syntax_migration_files = (
             "examples/output.srp", "examples/output.stdout",
             "docs/output.md", "docs/syntax-migration.md",
-        ) if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4") else ()
+        ) if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1") else ()
         function_files = (
             "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
             "examples/function_contracts.srp", "examples/function_contracts.stdout",
             "examples/function_recursion.srp", "examples/function_recursion.stdout",
             "docs/budgets.md", "docs/reference/cli.md", "docs/embedding.md",
-        ) if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4") else ()
+        ) if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1") else ()
         float_files = (
             "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
             "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
-        ) if version in ("0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4") else ()
+        ) if version in ("0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1") else ()
         vector_files = (
             "docs/vectors.md", "examples/vectors.srp", "examples/vectors.stdout",
             "examples/vector_probabilities.srp", "examples/vector_probabilities.stdout",
             "examples/coefficient_fit.srp", "examples/coefficient_fit.stdout",
-        ) if version in ("0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4") else ()
+        ) if version in ("0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1") else ()
         alpha3_files = (
             "examples/scaled_norm.srp", "examples/scaled_norm.stdout",
             "examples/terminal_recursion.srp", "examples/terminal_recursion.stdout",
             "examples/vector_allocation.srp", "examples/vector_allocation.stdout",
-        ) if version in ("0.0.4-alpha.3", "0.0.4-alpha.4") else ()
+        ) if version in ("0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1") else ()
         alpha4_files = (
             "docs/tiles.md", "docs/memory-lifetimes.md",
             "docs/architecture.md", "docs/testing.md",
@@ -126,13 +126,18 @@ def verify(directory, version, commit, source_directory=None):
                 "matrix_probabilities", "matrix_targets", "matrix_forward", "tile_windows",
                 "vector_windows", "classification_training", "logit_loss", "log_space", "score_selection",
             ) for extension in ("srp", "stdout")),
-        ) if version == "0.0.4-alpha.4" else ()
+        ) if version in ("0.0.4-alpha.4", "0.0.5-alpha.1") else ()
+        module_files = (
+            "docs/modules.md", "docs/tutorials/modules.md", "docs/proposals/0029-source-modules.md",
+            "examples/module_demo.srp", "examples/module_demo.stdout",
+            "examples/modules/linear.srp", "examples/modules/settings.srp",
+        ) if version == "0.0.5-alpha.1" else ()
         for member in (
             executable, "LICENSE", "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
             f"docs/releases/v{version}.md", "examples/bindings.srp",
             "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             *iteration_examples, *syntax_migration_files, *function_files, *float_files, *vector_files,
-            *alpha3_files, *alpha4_files,
+            *alpha3_files, *alpha4_files, *module_files,
         ):
             if root + "/" + member not in paths:
                 raise ValueError(f"{name}: missing {member}")

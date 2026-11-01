@@ -113,6 +113,13 @@ pub enum DiagnosticKind {
     NumericDomain,
     VectorAllocation,
     VectorBudget,
+    ModuleSyntax,
+    ModuleLoad,
+    ModuleCycle,
+    ModuleLimit,
+    ModuleVisibility,
+    ModuleSymbol,
+    ModulePath,
 }
 
 impl DiagnosticKind {
@@ -154,6 +161,13 @@ impl DiagnosticKind {
             Self::NumericDomain => "E0034",
             Self::VectorAllocation => "E0035",
             Self::VectorBudget => "E0036",
+            Self::ModuleSyntax => "E0037",
+            Self::ModuleLoad => "E0038",
+            Self::ModuleCycle => "E0039",
+            Self::ModuleLimit => "E0040",
+            Self::ModuleVisibility => "E0041",
+            Self::ModuleSymbol => "E0042",
+            Self::ModulePath => "E0043",
         }
     }
 }
@@ -214,7 +228,7 @@ impl Diagnostic {
     }
 }
 
-fn excerpt(span: Span, filename: &str, source: &str) -> String {
+pub(crate) fn excerpt(span: Span, filename: &str, source: &str) -> String {
     let start = boundary(source, span.start);
     let end = boundary(source, span.end).max(start);
     let position = location(source, start);

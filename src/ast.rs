@@ -10,6 +10,17 @@ pub struct Program {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
+    Import {
+        path: String,
+        path_span: Span,
+        alias: String,
+        alias_span: Span,
+        span: Span,
+    },
+    Export {
+        declaration: Box<Statement>,
+        span: Span,
+    },
     Function(FunctionDeclaration),
     Return {
         value: Option<Expression>,
@@ -79,6 +90,7 @@ pub enum Statement {
 impl Statement {
     pub fn span(&self) -> Span {
         match self {
+            Self::Import { span, .. } | Self::Export { span, .. } => *span,
             Self::Function(function) => function.span,
             Self::Return { span, .. } | Self::Call { span, .. } => *span,
             Self::Repeat { span, .. }

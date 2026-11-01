@@ -3,17 +3,13 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Choose a guide by the task you want to complete. Current tutorials target the
-0.0.4-alpha.3 candidate implementation. They include variables, strings,
-booleans, conditionals, bounded while/repeat loops, five string escapes, and
-[output statements](output.md). Release notes describe fixed snapshots;
-beta.3 added [typed funcra functions](functions.md) and CLI resource controls.
-Alpha.1 added [finite floats](floats.md); this candidate adds [vectors](vectors.md).
-The [scaled L2 norms proposal](proposals/0018-scaled-l2-norms.md)
-describes `norm` and `normalize` in the alpha.3 candidate. The published
-alpha.2 version does not include them. See the
-[alpha.3 release notes](releases/v0.0.4-alpha.3.md) for publication status.
-Tensors, native backends and CLI redesign remain separate. See
-[release notes](releases/v0.0.4-alpha.2.md) for the planned publication; alpha.1 has no vectors.
+unpublished **0.0.5-alpha.1 development candidate**, adding [source modules](modules.md)
+to the finite floats, numerical vectors/tiles, typed functions, contracts, loops
+and output streams already implemented. The latest published prerelease is
+[0.0.4-alpha.4](releases/v0.0.4-alpha.4-validation.md), which has no imports.
+[Candidate notes](releases/v0.0.5-alpha.1.md) describe the new slice and publication
+gates. Historical release notes describe fixed snapshots. Tensors, native
+backends, a package manager and website deployment remain separate.
 
 ## Guides and what each adds
 
@@ -21,11 +17,13 @@ Tensors, native backends and CLI redesign remain separate. See
 | --- | --- |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
+| [Source modules](modules.md) | Organize files, choose public/private declarations and understand loading limits |
+| [Import tutorial](tutorials/modules.md) | Run a three-file numerical program and repair private-member/cycle errors |
 | [Finite floats](floats.md) | Use the alpha's binary64 scalars, numeric diagnostics, and function integration |
 | [Numerical vectors](vectors.md) | Use immutable numerical data, pure kernels, typed vector calls and bounded allocation |
 | [Your first numerical program](tutorials/numerical-program.md) | Build a small typed numerical calculation and compare probabilities safely |
 | [Numerical errors](reference/numerical-errors.md) | Repair type, shape, index, domain, overflow and quota failures |
-| [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources in beta.3 |
+| [Functions](functions.md) | Learn typed calls, defaults, contracts, and bounded invocation resources |
 | [Output](output.md) | Choose print/write, control newlines, and route explicit stderr |
 | [Variables and mutation](tutorials/variables.md) | Introduce names, copy values, choose mutability, and avoid forward references |
 | [Scopes and shadowing](tutorials/scopes.md) | Predict which declaration a name uses and what survives a block |
@@ -91,7 +89,8 @@ The [v0.0.2 notes](releases/v0.0.2.md) describe the variable prerelease.
 The [v0.0.3-beta.1 notes](releases/v0.0.3-beta.1.md) describe the iteration release;
 the [v0.0.3-beta.2 notes](releases/v0.0.3-beta.2.md) cover declaration migration,
 and output streams. The [v0.0.3-beta.3 notes](releases/v0.0.3-beta.3.md) cover
-functions, CLI resource controls, and current downloads. Use [compatibility](compatibility.md)
+functions and CLI resource controls. Current downloads are recorded in the
+[alpha.4 publication record](releases/v0.0.4-alpha.4-validation.md). Use [compatibility](compatibility.md)
 before running a current tutorial with an older installed executable.
 [Release preparation](releasing.md) describes the separate packaging and
 publication process. The root [changelog](../CHANGELOG.md) distinguishes released
@@ -99,7 +98,8 @@ work from unmerged development changes.
 
 ## Example conventions
 
-`scarp` code fences contain complete runnable programs for the stated version.
+`scarp` code fences contain complete runnable programs for the stated version,
+or explicitly named files in a documented multi-file example.
 An accompanying output block shows exact text, with a final line break after
 each print. Fences marked `scarp-invalid` intentionally fail with the discussed
 diagnostic; they are examples of repairs, not runnable success cases.
