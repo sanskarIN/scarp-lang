@@ -1,8 +1,9 @@
-# Tiles and linear algebra (alpha.4 candidate)
+# Tiles and linear algebra (alpha.4)
 
-This checkout implements bounded immutable two-axis numerical values. Published
-alpha.3 binaries do not include tiles or matrix kernels. Build this candidate
-from source to run the examples; publication requires separate approval.
+Scarp alpha.4 implements bounded immutable two-axis numerical values. Published
+alpha.3 binaries do not include tiles or matrix kernels. Use the
+[verified alpha.4 packages](releases/v0.0.4-alpha.4-validation.md) or build from
+source to run the examples.
 
 ```scarp
 bind weights = tile([1.0, 2.0, -1.0, 3.0], 2, 2);
