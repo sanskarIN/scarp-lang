@@ -9,7 +9,7 @@ and output streams already implemented. The latest published prerelease is
 [0.0.5-alpha.1](releases/v0.0.5-alpha.1-validation.md), with verified native
 packages and imports. [Preparation notes](releases/v0.0.5-alpha.1.md) preserve the
 original candidate contract. [Repository migration](migrations/scarp-lang-Scarp.md)
-records the planned maintainer transfer to scarp-lang/Scarp. Historical release
+records the verified maintainer transfer to scarp-lang/scarp. Historical release
 notes describe fixed snapshots. Tensors, native
 backends, a package manager and website deployment remain separate.
 

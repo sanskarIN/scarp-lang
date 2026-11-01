@@ -13,8 +13,9 @@ The beta.3 prerelease reports `scarp 0.0.3-beta.3`. It uses `bind` and
 old declaration includes replacement help. Typed functions require beta.3;
 the earlier beta.2 interpreter does not accept them.
 Finite floats require `0.0.4-alpha.1`; published beta.3 rejects decimal literals.
-Check the [alpha release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
-for publication status and native downloads.
+Imports require `0.0.5-alpha.1`. Check the
+[current prerelease](https://github.com/scarp-lang/scarp/releases/tag/v0.0.5-alpha.1)
+for native downloads.
 See [compatibility](compatibility.md) for the feature matrix.
 
 An older executable on `PATH` can differ from your checkout. Compare:

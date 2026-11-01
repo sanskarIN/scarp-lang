@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.74"
 description = "The Scarp programming language prototype"
 license = "Apache-2.0"
-repository = "https://github.com/sanskarIN/scarp-lang"
+repository = "https://github.com/scarp-lang/scarp"
 publish = false
 
 [lib]

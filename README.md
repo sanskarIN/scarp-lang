@@ -57,7 +57,7 @@ one-hot targets and explicit loss gradients. See [vectors](docs/vectors.md),
 [error repairs](docs/reference/numerical-errors.md).
 
 The latest published prerelease is
-[0.0.5-alpha.1](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.5-alpha.1),
+[0.0.5-alpha.1](https://github.com/scarp-lang/scarp/releases/tag/v0.0.5-alpha.1),
 published from `afe8b5380c9d6c4774162e51c6c9bc8b90901671` with verified Windows
 x64, Linux x64 and macOS ARM64 packages. Read the
 [publication and verification record](docs/releases/v0.0.5-alpha.1-validation.md)
@@ -65,14 +65,14 @@ for source, CI, checksums and public-download evidence. The
 [release preparation notes](docs/releases/v0.0.5-alpha.1.md) preserve the approved
 source snapshot; see [release engineering](docs/releasing.md) for future releases.
 
-A maintainer-performed transfer to **scarp-lang/Scarp** is prepared in the
-[migration record](docs/migrations/scarp-lang-Scarp.md). The transfer and rename
-have not been performed by this release work.
+The maintainer transferred this repository to **scarp-lang/scarp**. The
+[migration record](docs/migrations/scarp-lang-Scarp.md) documents identity,
+history, release/download verification and updated clone instructions.
 
 ## Build and run
 
 Binary archives and checksums are available through
-[GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
+[GitHub Releases](https://github.com/scarp-lang/scarp/releases). See the
 [0.0.5-alpha.1 verification record](docs/releases/v0.0.5-alpha.1-validation.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
@@ -83,8 +83,8 @@ Install a stable Rust toolchain with Cargo using the instructions at
 C++ build tools if the Rust installer requests them.
 
 ```sh
-git clone https://github.com/sanskarIN/scarp-lang.git
-cd scarp-lang
+git clone https://github.com/scarp-lang/scarp.git
+cd scarp
 git switch main
 cargo build --locked
 cargo run -- run examples/hello.srp
@@ -288,7 +288,7 @@ module contract; the [publication record](docs/releases/v0.0.5-alpha.1-validatio
 confirms the released source and checksums. Tensors and
 native backends require separate integration decisions.
 
-The [function integration in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)
+The [function integration in PR #41](https://github.com/scarp-lang/scarp/pull/41)
 integrated typed calls, defaults, contracts, and bounded heap frames into main.
 Beta.3 published that work with CLI resource controls. Beta.2 binaries do not
 contain functions. Release notes

@@ -3,8 +3,9 @@
 This tutorial uses the alpha.2 numerical implementation. Build the current source
 with `cargo build --locked --offline`, then verify `cargo run -- --version`.
 An older alpha.1 executable accepts floats but does not implement vectors.
-Check the [alpha.2 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.2)
-for publication status and downloads.
+For current downloads, use the
+[latest prerelease](https://github.com/scarp-lang/scarp/releases/tag/v0.0.5-alpha.1),
+which includes these kernels and the later module system.
 
 ## Construct data and read an element
 
