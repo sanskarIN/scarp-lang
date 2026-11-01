@@ -60,6 +60,30 @@ print(mse(a, [1.0, 2.0, 5.0]));
 print(clamp(scale(a, 0.5), 0.0, 1.0));
 ```
 
+## Development-only two-axis tiles
+
+A separate **unreleased** branch adds immutable `tile` values (not present in
+the published alpha.2 CLI). The `tile(vector, height, width)` constructor
+retains the existing immutable flat vector and requires height × width to
+exactly equal the vector's length. `height(t)`/`width(t)` inspect the shape,
+`cell(t, row, column)` selects one float, `lane(t, row)` returns a copied
+row, `unroll(t)` shares the original flat vector, and `turn(t)` swaps axes
+into a newly allocated bounded tile.
+
+```scarp
+bind matrix = tile([1.0, 2.0, 3.0, 4.0], 2, 2);
+print(matrix);
+print(cell(matrix, 1, 0));
+print(turn(matrix));
+```
+
+The proposed type is explicitly finite, immutable, and strictly capped at
+65,536 cells. A zero dimension is allowed with an empty source; both axes
+remain part of the value even when there are no elements. The full shape,
+step, diagnostic and memory contract is in
+[proposal 0021](proposals/0021-immutable-numeric-tiles.md).
+Do not use these calls with the released alpha.2 executable.
+
 ## Numerical guarantees and limits
 
 Every stored element and scalar result is finite. Invalid lengths, domains,

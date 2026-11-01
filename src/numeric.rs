@@ -3,7 +3,9 @@
 use crate::{
     diagnostics::{Diagnostic, DiagnosticKind, Span},
     limits::Budget,
-    value::{finite_number, FiniteFloat, NumericVector, Value, ValueType, MAX_VECTOR_LENGTH},
+    value::{
+        finite_number, FiniteFloat, NumericTile, NumericVector, Value, ValueType, MAX_VECTOR_LENGTH,
+    },
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,6 +34,13 @@ pub enum Builtin {
     OneHot,
     Window,
     Stitch,
+    Tile,
+    Height,
+    Width,
+    Cell,
+    Lane,
+    Unroll,
+    Turn,
 }
 
 impl Builtin {
@@ -61,12 +70,19 @@ impl Builtin {
             "onehot" => Self::OneHot,
             "window" => Self::Window,
             "stitch" => Self::Stitch,
+            "tile" => Self::Tile,
+            "height" => Self::Height,
+            "width" => Self::Width,
+            "cell" => Self::Cell,
+            "lane" => Self::Lane,
+            "unroll" => Self::Unroll,
+            "turn" => Self::Turn,
             _ => return None,
         })
     }
 
     pub fn parameter_types(self) -> &'static [ValueType] {
-        use ValueType::{Float, Integer, Vector};
+        use ValueType::{Float, Integer, Tile, Vector};
         match self {
             Self::Length
             | Self::Sum
@@ -87,12 +103,18 @@ impl Builtin {
             Self::Fill => &[Float, Integer],
             Self::LogProb | Self::CrossEntropy | Self::LossGrad => &[Vector, Integer],
             Self::OneHot => &[Integer, Integer],
+            Self::Tile => &[Vector, Integer, Integer],
+            Self::Height | Self::Width | Self::Unroll | Self::Turn => &[Tile],
+            Self::Cell => &[Tile, Integer, Integer],
+            Self::Lane => &[Tile, Integer],
         }
     }
 
     pub fn result_type(self) -> ValueType {
         match self {
-            Self::Length | Self::ArgMax | Self::ArgMin => ValueType::Integer,
+            Self::Length | Self::ArgMax | Self::ArgMin | Self::Height | Self::Width => {
+                ValueType::Integer
+            }
             Self::Sum
             | Self::Mean
             | Self::Dot
@@ -102,7 +124,9 @@ impl Builtin {
             | Self::MaxValue
             | Self::MinValue
             | Self::LogProb
-            | Self::CrossEntropy => ValueType::Float,
+            | Self::CrossEntropy
+            | Self::Cell => ValueType::Float,
+            Self::Tile | Self::Turn => ValueType::Tile,
             _ => ValueType::Vector,
         }
     }
@@ -330,6 +354,93 @@ pub(crate) fn evaluate_with_budget(
         if value.kind() != expected {
             return Err(crate::value::type_mismatch(span, expected, value.kind()));
         }
+    }
+    // Shape-aware tile operations are dispatched before one-dimensional kernels.
+    // The tile retains the immutable vector payload: no extra element storage
+    // or externally visible memory-management syntax is required.
+    if function == Builtin::Tile {
+        let height = usize::try_from(args[1].require_integer(span)?)
+            .ok()
+            .filter(|&axis| axis <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        let width = usize::try_from(args[2].require_integer(span)?)
+            .ok()
+            .filter(|&axis| axis <= MAX_VECTOR_LENGTH)
+            .ok_or_else(|| length_error(span))?;
+        let cells = args[0].require_vector(span)?;
+        if height.checked_mul(width) != Some(cells.len()) {
+            return Err(length_error(span));
+        }
+        budget.charge(1, span)?;
+        return NumericTile::from_vector(cells.clone(), height, width)
+            .map(Value::Tile)
+            .ok_or_else(|| length_error(span));
+    }
+    if matches!(
+        function,
+        Builtin::Height
+            | Builtin::Width
+            | Builtin::Cell
+            | Builtin::Lane
+            | Builtin::Unroll
+            | Builtin::Turn
+    ) {
+        let tile = args[0].require_tile(span)?;
+        return match function {
+            Builtin::Height => Ok(Value::Integer(tile.height() as i64)),
+            Builtin::Width => Ok(Value::Integer(tile.width() as i64)),
+            Builtin::Cell => {
+                let row = usize::try_from(args[1].require_integer(span)?).ok();
+                let column = usize::try_from(args[2].require_integer(span)?).ok();
+                let selected = row
+                    .zip(column)
+                    .and_then(|(row, column)| tile.cell(row, column))
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            DiagnosticKind::VectorIndex,
+                            span,
+                            "tile cell is outside its rectangular shape",
+                        )
+                    })?;
+                budget.charge(1, span)?;
+                Ok(Value::Float(selected))
+            }
+            Builtin::Lane => {
+                let index = usize::try_from(args[1].require_integer(span)?).ok();
+                let row = index.and_then(|index| tile.row(index)).ok_or_else(|| {
+                    Diagnostic::new(
+                        DiagnosticKind::VectorIndex,
+                        span,
+                        "tile lane is outside its row count",
+                    )
+                })?;
+                budget.charge(row.len() as u64, span)?;
+                let mut cells = buffer(row.len(), budget, span)?;
+                cells.extend_from_slice(row);
+                vector(cells, span)
+            }
+            Builtin::Unroll => {
+                budget.charge(1, span)?;
+                Ok(Value::Vector(tile.as_vector().clone()))
+            }
+            Builtin::Turn => {
+                let height = tile.height();
+                let width = tile.width();
+                budget.charge(tile.len() as u64, span)?;
+                let mut elements = buffer(tile.len(), budget, span)?;
+                for column in 0..if height == 0 { 0 } else { width } {
+                    for row in 0..height {
+                        elements.push(tile.cell(row, column).expect("validated tile coordinates"));
+                    }
+                }
+                let cells =
+                    NumericVector::from_finite(elements).ok_or_else(|| length_error(span))?;
+                let turned = NumericTile::from_vector(cells, width, height)
+                    .ok_or_else(|| length_error(span))?;
+                Ok(Value::Tile(turned))
+            }
+            _ => unreachable!("tile dispatch is exhaustive"),
+        };
     }
     if function == Builtin::Fill {
         let count = usize::try_from(args[1].require_integer(span)?)
@@ -620,8 +731,17 @@ pub(crate) fn evaluate_with_budget(
             }
             vector(values, span)
         }
-        Builtin::Length | Builtin::Fill | Builtin::OneHot | Builtin::Window | Builtin::Stitch => {
-            unreachable!("handled before vector kernels")
-        }
+        Builtin::Length
+        | Builtin::Fill
+        | Builtin::OneHot
+        | Builtin::Window
+        | Builtin::Stitch
+        | Builtin::Tile
+        | Builtin::Height
+        | Builtin::Width
+        | Builtin::Cell
+        | Builtin::Lane
+        | Builtin::Unroll
+        | Builtin::Turn => unreachable!("handled before vector kernels"),
     }
 }

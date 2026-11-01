@@ -547,6 +547,7 @@ fn charge_capture(
         PrintValue::String(text) => text.len(),
         PrintValue::Value(Value::String(text)) => text.len(),
         PrintValue::Value(Value::Vector(vector)) => vector.len().saturating_mul(8),
+        PrintValue::Value(Value::Tile(tile)) => tile.len().saturating_mul(8).saturating_add(16),
         _ => 8,
     };
     let amount = payload.saturating_add(64);

@@ -95,6 +95,14 @@ differentiation engine. They are not in published alpha.3.
 integration is validated against the current E0036 cumulative vector
 allocation ledger and classification numerical kernels. These functions
 are not in the published alpha.3 executable.
+## Unreleased two-axis numerical values
+
+[Proposal 0021: immutable numerical tiles](proposals/0021-immutable-numeric-tiles.md)
+defines a development-only `tile` type with rectangular row-major values,
+shape introspection, indexed cell and row access, flattening and axis swapping.
+It is **not** included in the published alpha.2 binaries or merged into main.
+Read the proposal for shape/empty-dimension rules, resource charges, and the
+integration review required with the other draft numerical PRs.
 
 ## Reading paths
 

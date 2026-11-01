@@ -474,6 +474,7 @@ impl Parser<'_> {
             "integer" => Ok(ValueType::Integer),
             "float" => Ok(ValueType::Float),
             "vector" => Ok(ValueType::Vector),
+            "tile" => Ok(ValueType::Tile),
             "boolean" => Ok(ValueType::Boolean),
             "string" => Ok(ValueType::String),
             "unit" if result => Ok(ValueType::Unit),
@@ -490,7 +491,7 @@ impl Parser<'_> {
                     if result { "result" } else { "parameter" }
                 ),
             )
-            .with_help("use integer, float, vector, boolean, string, or unit for a result")),
+            .with_help("use integer, float, vector, tile, boolean, string, or unit for a result")),
         }
     }
 

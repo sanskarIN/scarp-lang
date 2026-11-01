@@ -250,6 +250,9 @@ impl Workspace {
                     if let (Some(a), Some(b)) = (left.as_vector(), right.as_vector()) {
                         budget.charge(a.len().max(b.len()) as u64, span)?;
                     }
+                    if let (Some(a), Some(b)) = (left.as_tile(), right.as_tile()) {
+                        budget.charge(a.len().max(b.len()) as u64, span)?;
+                    }
                     values.push(apply_binary(operator, &left, &right, span)?);
                 }
                 Task::Logical(operator, right, span) => {

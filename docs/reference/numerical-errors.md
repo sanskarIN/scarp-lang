@@ -65,6 +65,16 @@ if index >= 0 and index < len(values) {
 This program succeeds without output. Runtime bounds are checked only when the
 access is selected; all branches still undergo static type checking.
 
+## Development-only tile shape and cell errors
+
+The **unreleased** two-axis numerical-tile prototype reports E0032 for
+`tile([1.0], 2, 2)` (inconsistent dimensions) and negative or excessive
+dimensions. `cell(tile([1.0], 1, 1), 1, 0)` reports E0033 because valid
+rows are 0 through height minus one. `lane` performs the same row check.
+An empty tile may have shape `0x3` or `3x0`, but no cell in either is
+addressable. See [proposal 0021](../proposals/0021-immutable-numeric-tiles.md).
+These features do not exist in published alpha.2.
+
 ## Decide what an empty result means
 
 ```scarp-invalid
