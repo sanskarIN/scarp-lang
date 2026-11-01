@@ -21,8 +21,12 @@ use crate::{
 };
 use std::{collections::HashMap, fmt, io, path::Path, sync::Arc};
 
+mod inspection;
+mod spelling;
+use spelling::spelling_hint;
 mod linker;
 mod loader;
+pub use inspection::{ImportInfo, SourceLocation};
 pub use loader::{
     FileSourceLoader, MemorySourceLoader, SourceLoadError, SourceLoadKind, SourceLoader,
 };
@@ -76,6 +80,32 @@ impl SourceMap {
     }
     pub fn source(&self, id: SourceId) -> Option<&str> {
         self.files.get(id).map(|file| &self.text[file.range()])
+    }
+    /// Locate a valid span within one source, including zero-width EOF spans.
+    /// Cross-source, reversed, out-of-range and non-UTF-8-boundary spans are None.
+    pub fn locate_span(&self, span: Span) -> Option<SourceLocation> {
+        if span.end < span.start {
+            return None;
+        }
+        let id = self
+            .files
+            .partition_point(|file| file.start <= span.start)
+            .checked_sub(1)?;
+        let file = &self.files[id];
+        if span.end > file.range().end {
+            return None;
+        }
+        let local = Span::new(span.start - file.start, span.end - file.start);
+        let source = self.source(id)?;
+        if !source.is_char_boundary(local.start) || !source.is_char_boundary(local.end) {
+            return None;
+        }
+        Some(SourceLocation {
+            source: id,
+            span: local,
+            start: diagnostics::location(source, local.start),
+            end: diagnostics::location(source, local.end),
+        })
     }
     fn locate(&self, span: Span) -> Option<(&SourceFile, Span, &str)> {
         let file = self
@@ -202,6 +232,7 @@ pub struct ModuleProgram {
     program: ResolvedProgram,
     sources: Arc<SourceMap>,
     modules: Vec<ModuleInfo>,
+    inspection: inspection::Inspection,
 }
 impl ModuleProgram {
     pub fn program(&self) -> &ResolvedProgram {
@@ -245,6 +276,7 @@ struct Import {
     alias: String,
     span: Span,
     alias_span: Span,
+    statement_span: Span,
 }
 #[derive(Debug, Clone)]
 struct ParsedModule {
@@ -301,31 +333,10 @@ impl ModuleGraph {
             shift(&mut token.span, base);
         }
         let program = parser::parse(&tokens)?;
-        let imports: Vec<_> = program
-            .statements
-            .iter()
-            .filter_map(|statement| match statement {
-                Statement::Import {
-                    path,
-                    alias,
-                    path_span,
-                    alias_span,
-                    ..
-                } => Some(Import {
-                    path: path.clone(),
-                    alias: alias.clone(),
-                    span: *path_span,
-                    alias_span: *alias_span,
-                }),
-                _ => None,
-            })
-            .collect();
-        if imports.len() > self.limits.max_imports.saturating_sub(self.imports) {
-            return Err(limit(
-                imports.first().map_or(span, |i| i.span),
-                "import declaration count",
-            ));
-        }
+        let imports = validate_imports(
+            &program,
+            self.limits.max_imports.saturating_sub(self.imports),
+        )?;
         self.imports += imports.len();
         let id = self.modules.len();
         self.modules.push(ParsedModule {
@@ -362,7 +373,6 @@ impl ModuleGraph {
             }
             stack.last_mut().unwrap().1 += 1;
             let import = self.modules[id].imports[index].clone();
-            loader::validate_path(&import.path, true).map_err(|e| load_error(e, import.span))?;
             let identity = loader
                 .resolve(Some(&self.modules[id].identity), &import.path)
                 .map_err(|e| load_error(e, import.span))?;
@@ -379,13 +389,13 @@ impl ModuleGraph {
                     .with_help(
                         "remove an import edge; mutually recursive functions belong in one module",
                     );
-                    for &(node, _) in stack.iter().skip(1) {
+                    let cycle_start = stack.iter().position(|&(node, _)| node == child).unwrap();
+                    // The closing edge is primary. Related spans are only the
+                    // remaining actual edges in this cycle, not its prefix.
+                    for &(node, next) in &stack[cycle_start..stack.len() - 1] {
                         error = error.with_related(
-                            Span::new(
-                                self.sources.files[node].start,
-                                self.sources.files[node].start,
-                            ),
-                            "module in this import cycle",
+                            self.modules[node].imports[next - 1].span,
+                            "this import continues the cycle",
                         );
                     }
                     return Err(error);
@@ -424,6 +434,77 @@ impl ModuleGraph {
         }
         Ok(())
     }
+}
+
+fn duplicate(name: &str, span: Span, previous: Span) -> Diagnostic {
+    Diagnostic::new(
+        Kind::DuplicateBinding,
+        span,
+        format!("module symbol {name:?} is already declared"),
+    )
+    .with_related(previous, "the conflicting declaration is here")
+    .with_help("choose distinct import aliases and exported declaration names")
+}
+
+/// Validate the whole list before any dependency-loader callback. Borrowed name
+/// maps avoid the previous repeated scans over imports and declarations.
+fn validate_imports(program: &Program, allowance: usize) -> Result<Vec<Import>, Diagnostic> {
+    if !program
+        .statements
+        .iter()
+        .any(|s| matches!(s, Statement::Import { .. }))
+    {
+        return Ok(Vec::new());
+    }
+    let mut declarations = HashMap::new();
+    for wrapped in &program.statements {
+        let statement = match wrapped {
+            Statement::Export { declaration, .. } => declaration.as_ref(),
+            other => other,
+        };
+        let declared = match statement {
+            Statement::Function(f) => Some((f.name.as_str(), f.name_span)),
+            Statement::Declaration {
+                name, name_span, ..
+            } => Some((name.as_str(), *name_span)),
+            _ => None,
+        };
+        if let Some((name, span)) = declared {
+            declarations.entry(name).or_insert(span);
+        }
+    }
+    let mut aliases = HashMap::new();
+    let mut imports = Vec::new();
+    for statement in &program.statements {
+        if let Statement::Import {
+            path,
+            alias,
+            path_span,
+            alias_span,
+            span,
+        } = statement
+        {
+            if imports.len() >= allowance {
+                return Err(limit(*path_span, "import declaration count"));
+            }
+            loader::validate_path(path, true).map_err(|e| load_error(e, *path_span))?;
+            crate::resolver::check_name(alias, *alias_span)?;
+            if let Some(previous) = aliases.insert(alias.as_str(), *alias_span) {
+                return Err(duplicate(alias, *alias_span, previous));
+            }
+            if let Some(previous) = declarations.get(alias.as_str()) {
+                return Err(duplicate(alias, *alias_span, *previous));
+            }
+            imports.push(Import {
+                path: path.clone(),
+                alias: alias.clone(),
+                span: *path_span,
+                alias_span: *alias_span,
+                statement_span: *span,
+            });
+        }
+    }
+    Ok(imports)
 }
 
 pub fn load(

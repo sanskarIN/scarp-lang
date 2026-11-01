@@ -3,9 +3,9 @@ error[E0039]: circular import reaches "cycle.srp"
   |
 1 | import "cycle.srp" as cycle;
   |        ^^^^^^^^^^^
- = note: module in this import cycle
- --> loop.srp:1:1
+ = note: this import continues the cycle
+ --> cycle.srp:1:8
   |
-1 | import "cycle.srp" as cycle;
-  | ^
+1 | import "loop.srp" as loop;
+  |        ^^^^^^^^^^
  = help: remove an import edge; mutually recursive functions belong in one module

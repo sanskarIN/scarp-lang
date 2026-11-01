@@ -258,3 +258,161 @@ fn reviewed_module_diagnostic_fixtures_match_library_and_cli() {
         }
     }
 }
+
+#[test]
+fn module_inspection_cli_is_static_while_run_and_check_keep_evaluating() {
+    let fixture = Fixture::new();
+    let entry=fixture.file("main.srp","import \"lib.srp\" as lib; print(\"PROGRAM OUTPUT\"); eprint(\"PROGRAM ERROR\"); print(lib.f()); while true {continue;}");
+    fixture.file(
+        "lib.srp",
+        "pub pure funcra f(n: integer=1/0)->integer needs false; {return n;}",
+    );
+    let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+        .arg("modules")
+        .arg(&entry)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert!(result.stderr.is_empty());
+    let text = String::from_utf8(result.stdout).unwrap();
+    assert!(text.starts_with("modules: 2, imports: 1\n"));
+    assert!(text.contains("pub pure funcra f(n: integer = <default>) -> integer"));
+    assert!(!text.contains("PROGRAM OUTPUT") && !text.contains("PROGRAM ERROR"));
+    for mode in ["run", "check"] {
+        let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+            .arg(mode)
+            .arg(&entry)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(result.stderr.starts_with(b"error[E0008]"));
+    }
+}
+
+#[test]
+fn module_inspection_help_and_usage_are_validated_before_file_io() {
+    for flag in ["--help", "-h"] {
+        let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+            .args(["modules", flag])
+            .output()
+            .unwrap();
+        assert!(result.status.success() && result.stderr.is_empty());
+        assert!(String::from_utf8(result.stdout)
+            .unwrap()
+            .contains("No statements, defaults, contracts"));
+    }
+    for args in [
+        vec!["modules"],
+        vec!["modules", "one.srp", "two.srp"],
+        vec!["modules", "--unknown"],
+        vec!["modules", "--max-steps", "0", "missing.srp"],
+        vec!["modules", "--max-vector-bytes", "0", "missing.srp"],
+    ] {
+        let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+            .args(args)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(2));
+        assert!(result.stdout.is_empty());
+        assert!(!String::from_utf8(result.stderr)
+            .unwrap()
+            .contains("could not read"));
+    }
+}
+
+#[test]
+fn inspection_cli_errors_have_no_partial_inventory_and_keep_cross_file_locations() {
+    let fixture = Fixture::new();
+    fixture.file("lib.srp", "bind secret=7;");
+    for (source, code) in [
+        ("import \"lib.srp\" as lib; print(lib.secret);", "E0041"),
+        ("import \"lib.srp\" as lib; print(lib.absent);", "E0042"),
+        ("import \"missing.srp\" as missing;", "E0038"),
+        ("import \"/outside.srp\" as outside;", "E0043"),
+    ] {
+        let entry = fixture.file("main.srp", source);
+        let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+            .arg("modules")
+            .arg(entry)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        let text = String::from_utf8(result.stderr).unwrap();
+        assert!(text.starts_with(&format!("error[{code}]")), "{text}");
+        assert!(text.contains("main.srp:1:"));
+        if code == "E0041" {
+            assert!(text.contains("lib.srp:1:"));
+        }
+    }
+}
+
+#[test]
+fn inspection_cli_supports_unicode_crlf_spaces_and_explicit_dash_paths() {
+    let fixture = Fixture::new();
+    fixture.file(
+        "-café.srp",
+        "// 🌍\r\nimport \"lib/値.srp\" as lib;\r\nprint(lib.answer);",
+    );
+    fixture.file("lib/値.srp", "pub bind answer=42;\r\n");
+    let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+        .current_dir(&fixture.directory)
+        .args(["modules", "--", "-café.srp"])
+        .output()
+        .unwrap();
+    assert!(result.status.success() && result.stderr.is_empty());
+    let text = String::from_utf8(result.stdout).unwrap();
+    assert!(
+        text.contains("lib/値.srp") && text.contains("@ 2:8"),
+        "{text}"
+    );
+    assert!(text.contains("pub bind answer: integer @ 1:10"));
+}
+
+#[test]
+fn inspection_cli_rejects_invalid_utf8_and_enforces_default_source_limits() {
+    let fixture = Fixture::new();
+    let entry = fixture.file("main.srp", "import \"lib.srp\" as lib;");
+    fixture.file("lib.srp", [0xff]);
+    let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+        .arg("modules")
+        .arg(&entry)
+        .output()
+        .unwrap();
+    assert_eq!(result.status.code(), Some(1));
+    assert!(result.stdout.is_empty() && result.stderr.starts_with(b"error[E0038]"));
+    fixture.file("main.srp", vec![b' '; 1024 * 1024 + 1]);
+    let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+        .arg("modules")
+        .arg(&entry)
+        .output()
+        .unwrap();
+    assert_eq!(result.status.code(), Some(1));
+    assert!(result.stdout.is_empty() && result.stderr.starts_with(b"error[E0040]"));
+}
+
+#[cfg(unix)]
+#[test]
+fn inspection_cli_preserves_native_non_unicode_entry_paths() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    let fixture = Fixture::new();
+    let entry = fixture
+        .directory
+        .join(OsString::from_vec(b"entry-\xff.srp".to_vec()));
+    fs::write(&entry, "import \"lib.srp\" as lib; print(lib.answer);").unwrap();
+    fixture.file("lib.srp", "pub bind answer=42;");
+    let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+        .arg("modules")
+        .arg(entry)
+        .output()
+        .unwrap();
+    assert!(result.status.success() && result.stderr.is_empty());
+    assert!(String::from_utf8(result.stdout)
+        .unwrap()
+        .contains("pub bind answer: integer"));
+}

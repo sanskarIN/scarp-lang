@@ -1,0 +1,13 @@
+pub bind label = "module tools";
+bind offset = 1;
+
+pub pure funcra adjusted(value: integer, step: integer = 2) -> integer
+    needs step >= 0;
+    ensures result >= value;
+{
+    return helper(value) + step;
+}
+
+pure funcra helper(value: integer) -> integer {
+    return value + offset;
+}

@@ -20,6 +20,7 @@ Usage:
   scarp run <file.srp>       Execute a Scarp program
   scarp check <file.srp>     Validate syntax, names, and arithmetic without printing
   scarp tokens <file.srp>    Inspect lexer tokens and source locations
+  scarp modules <file.srp>   Inspect checked modules without executing the program
   scarp --help               Show this help
   scarp --version            Show the prototype version
 
@@ -72,6 +73,16 @@ No execution-limit options are accepted. Use scarp check to evaluate source.
 Import declarations are tokenized without loading their target files.
 ";
 
+const MODULES_HELP: &str = "Usage: scarp modules [--] <file.srp>
+
+Load and statically check the module graph, then list files, imports, dependencies
+and public/private declarations with typed function signatures and source locations.
+No statements, defaults, contracts or arithmetic execute. No runtime-budget options.
+Uses the same trusted source root and default module-loading limits as run/check.
+Filenames are escaped; dependency labels use the loader's canonical paths.
+Example: scarp modules examples/module_inspection.srp
+";
+
 fn main() -> ExitCode {
     let stdout = io::stdout();
     let stderr = io::stderr();
@@ -96,6 +107,7 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             let help = match command.to_str() {
                 Some("run") => RUN_HELP,
                 Some("check") => CHECK_HELP,
+                Some("modules") => MODULES_HELP,
                 _ => TOKENS_HELP,
             };
             return write_output(output.write_all(help.as_bytes()), errors);
@@ -132,7 +144,9 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
                 return 1;
             }
         };
-        return if command == "check" {
+        return if command == "modules" {
+            write_output(program.write_inspection(output), errors)
+        } else if command == "check" {
             match program.check(options) {
                 Ok(()) => 0,
                 Err(error) => {
@@ -193,7 +207,10 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
 }
 
 fn file_command(command: &OsStr) -> bool {
-    matches!(command.to_str(), Some("run" | "tokens" | "check"))
+    matches!(
+        command.to_str(),
+        Some("run" | "tokens" | "check" | "modules")
+    )
 }
 
 fn invocation(args: &[OsString]) -> Result<(&OsStr, &OsStr, ExecutionOptions), &'static str> {
