@@ -56,6 +56,10 @@ pub(crate) enum Evaluation {
 }
 
 impl Workspace {
+    pub(crate) fn clear(&mut self) {
+        self.values.clear();
+        self.tasks.clear();
+    }
     pub(crate) fn evaluate(
         &mut self,
         expression: &ResolvedExpression,
@@ -74,8 +78,7 @@ impl Workspace {
     }
 
     pub(crate) fn start(&mut self, expression: &ResolvedExpression) {
-        self.values.clear();
-        self.tasks.clear();
+        self.clear();
         self.tasks.push(Task::Visit(expression.syntax.root()));
     }
 

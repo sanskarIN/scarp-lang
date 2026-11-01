@@ -58,6 +58,18 @@ struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
+    fn recycle_storage(&mut self) -> (Vec<Value>, Vec<bool>, Workspace) {
+        // Outgoing arguments already own their values. Release every old
+        // binding/temporary before starting the next invocation's defaults.
+        self.environment.fill(Value::Unit);
+        self.supplied.fill(false);
+        self.workspace.clear();
+        (
+            std::mem::take(&mut self.environment),
+            std::mem::take(&mut self.supplied),
+            std::mem::take(&mut self.workspace),
+        )
+    }
     fn start(&mut self, expression: &'a ResolvedExpression, completion: Completion) {
         self.workspace.start(expression);
         self.expression = Some(expression);
@@ -192,8 +204,15 @@ pub(super) fn prepare(
                         if !terminal {
                             live_slots += function.slots;
                         }
-                        let mut environment = vec![Value::Unit; function.slots];
-                        let mut supplied = vec![false; function.defaults.len()];
+                        let (mut environment, mut supplied, workspace) = if terminal {
+                            frame.recycle_storage()
+                        } else {
+                            (
+                                vec![Value::Unit; function.slots],
+                                vec![false; function.defaults.len()],
+                                Workspace::default(),
+                            )
+                        };
                         for (parameter, value) in parameters.iter().zip(arguments) {
                             environment[*parameter] = value;
                             supplied[*parameter] = true;
@@ -219,7 +238,7 @@ pub(super) fn prepare(
                             stage: Stage::Defaults(0),
                             expression: None,
                             completion: Completion::Discard,
-                            workspace: Workspace::default(),
+                            workspace,
                             output: None,
                             result: Value::Unit,
                         };
@@ -641,5 +660,12 @@ mod retirement_runtime_tests {
         assert_eq!(frame.environment[1].as_str(), Some("parameter"));
         assert_eq!(frame.environment[2], Value::Unit);
         assert!(matches!(frame.stage, Stage::Ensures(0)));
+        let slots_pointer = frame.environment.as_ptr();
+        let supplied_pointer = frame.supplied.as_ptr();
+        let (environment, supplied, _) = frame.recycle_storage();
+        assert_eq!(environment.as_ptr(), slots_pointer);
+        assert_eq!(supplied.as_ptr(), supplied_pointer);
+        assert!(environment.iter().all(|value| *value == Value::Unit));
+        assert!(supplied.iter().all(|&supplied| !supplied));
     }
 }
