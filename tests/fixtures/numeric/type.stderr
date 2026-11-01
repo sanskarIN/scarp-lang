@@ -1,0 +1,11 @@
+error[E0015]: expected tile, found vector
+ --> fixture.srp:1:14
+  |
+1 | print(matvec([1.0], [2.0]));
+  |              ^^^^^
+ = note: argument 1 of matvec requires tile
+ --> fixture.srp:1:7
+  |
+1 | print(matvec([1.0], [2.0]));
+  |       ^^^^^^
+ = help: keep primitive types consistent; numeric operands must share a numeric kind, logic requires booleans

@@ -274,6 +274,14 @@ pub(super) fn prepare(
                                 }
                             }
                             Completion::Output => {
+                                if let Some(tile) = value.as_tile() {
+                                    // Formatting visits cells and row delimiters,
+                                    // including rows of a zero-width tile.
+                                    budget.charge(
+                                        (tile.len() + tile.height()) as u64,
+                                        frame.output.as_ref().unwrap().span,
+                                    )?;
+                                }
                                 if let Some(vector) = value.as_vector() {
                                     budget.charge(
                                         vector.len() as u64,

@@ -1,0 +1,10 @@
+pure funcra forward(weights: tile, features: vector, bias: vector) -> vector
+    needs width(weights) == len(features);
+    needs height(weights) == len(bias);
+    ensures len(result) == height(weights);
+{
+    return softmax(add(matvec(weights, features), bias));
+}
+bind identity = tile([1.0, 0.0, 0.0, 1.0], 2, 2);
+bind weights = tileadd(identity, tilescale(identity, 1.0));
+print(forward(weights, [1.0, 1.0], [0.0, 0.0]));

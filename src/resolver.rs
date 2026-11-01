@@ -908,12 +908,27 @@ fn resolve_expression(
                             format!("{name} requires {} positional arguments", parameters.len()),
                         ));
                     }
-                    for (argument, &expected) in arguments.iter().zip(parameters) {
+                    for (position, (argument, &expected)) in
+                        arguments.iter().zip(parameters).enumerate()
+                    {
                         require_type(
                             types[argument.expression],
                             expected,
                             syntax.nodes()[argument.expression].span,
-                        )?;
+                        )
+                        .map_err(|error| {
+                            if builtin.is_tile() {
+                                error.with_related(
+                                    *function_span,
+                                    format!(
+                                        "argument {} of {name} requires {expected}",
+                                        position + 1
+                                    ),
+                                )
+                            } else {
+                                error
+                            }
+                        })?;
                     }
                     slots.push(None);
                     calls.push(Some(ResolvedCall::Builtin(builtin)));

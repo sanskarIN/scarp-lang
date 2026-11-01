@@ -1,0 +1,6 @@
+error[E0032]: matmul requires matching inner dimensions, found 1x2 and 1x2
+ --> fixture.srp:3:7
+  |
+3 | print(matmul(a, b));
+  |       ^^^^^^^^^^^^
+ = help: use compatible tile shapes with each axis and the cell count in 0..65536

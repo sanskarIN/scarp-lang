@@ -1,0 +1,16 @@
+error[E0033]: tile column index 2 is outside axis length 1
+ --> fixture.srp:1:56
+  |
+1 | pure funcra read(t: tile) -> float { return cell(t, 0, 2); }
+  |                                                        ^
+ = note: called funcra read here
+ --> fixture.srp:2:47
+  |
+2 | pure funcra caller(t: tile) -> float { return read(t); }
+  |                                               ^^^^^^^
+ = note: called funcra caller here
+ --> fixture.srp:4:8
+  |
+4 | eprint(caller(tile([1.0], 1, 1)));
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+ = help: use a zero-based index smaller than the corresponding tile axis

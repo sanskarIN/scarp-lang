@@ -253,7 +253,7 @@ fn nested_windows_define_every_visible_tile_operation() {
     assert_eq!(tile.to_string(), "tile(2x2)[[1.0, 2.0], [3.0, 4.0]]");
     let value = Value::Tile(tile);
     assert_eq!(
-        numeric::evaluate(Builtin::Unroll, &[value.clone()], 1).unwrap(),
+        numeric::evaluate(Builtin::Unroll, std::slice::from_ref(&value), 1).unwrap(),
         flat(&[1.0, 2.0, 3.0, 4.0])
     );
     assert_eq!(
@@ -313,4 +313,46 @@ fn tile_sharing_and_materialization_charge_exact_cumulative_payload() {
     };
     assert_eq!(error.kind, Kind::VectorBudget);
     assert!(output.is_empty());
+}
+
+#[test]
+fn empty_rows_still_pay_output_work_and_shape_snapshot_costs() {
+    let source = "bind t = tile([], 4, 0); print(t);";
+    let options = ExecutionOptions {
+        limits: ExecutionLimits {
+            max_steps: 14,
+            max_prints: 1,
+        },
+        max_capture_bytes: 80,
+        max_vector_bytes: 0,
+        ..ExecutionOptions::default()
+    };
+    scarp::check_with_options(source, options).unwrap();
+    assert_eq!(
+        scarp::check_with_options(
+            source,
+            ExecutionOptions {
+                limits: ExecutionLimits {
+                    max_steps: 13,
+                    ..options.limits
+                },
+                ..options
+            }
+        )
+        .unwrap_err()
+        .kind,
+        Kind::ExecutionLimit
+    );
+    assert_eq!(
+        scarp::check_with_options(
+            source,
+            ExecutionOptions {
+                max_capture_bytes: 79,
+                ..options
+            }
+        )
+        .unwrap_err()
+        .kind,
+        Kind::CaptureLimit
+    );
 }

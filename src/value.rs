@@ -182,6 +182,12 @@ impl NumericTile {
     }
 
     pub fn new(values: &[f64], height: usize, width: usize) -> Option<Self> {
+        if height > MAX_VECTOR_LENGTH
+            || width > MAX_VECTOR_LENGTH
+            || height.checked_mul(width)? != values.len()
+        {
+            return None;
+        }
         Self::from_vector(NumericVector::new(values)?, height, width)
     }
 
