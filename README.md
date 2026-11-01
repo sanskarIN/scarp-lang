@@ -3,8 +3,8 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-implements the unpublished **0.0.5-alpha.1 modules candidate**, extending the
-published 0.0.4-alpha.4 numerical/runtime prerelease. It has finite binary64
+implements the **0.0.5-alpha.1 source-modules prerelease**, extending the
+0.0.4-alpha.4 numerical/runtime milestone. It has finite binary64
 values, a lexer, parser, name resolver, interpreter and command-line interface.
 Syntax and library APIs may change.
 
@@ -57,19 +57,23 @@ one-hot targets and explicit loss gradients. See [vectors](docs/vectors.md),
 [error repairs](docs/reference/numerical-errors.md).
 
 The latest published prerelease is
-[alpha.4](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.4),
-published from `26e2fedc5ad492cdfd6ea986ca5b3017c286d310` with verified Windows
+[0.0.5-alpha.1](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.5-alpha.1),
+published from `afe8b5380c9d6c4774162e51c6c9bc8b90901671` with verified Windows
 x64, Linux x64 and macOS ARM64 packages. Read the
-[publication and verification record](docs/releases/v0.0.4-alpha.4-validation.md)
+[publication and verification record](docs/releases/v0.0.5-alpha.1-validation.md)
 for source, CI, checksums and public-download evidence. The
-[release preparation notes](docs/releases/v0.0.4-alpha.4.md) preserve the approved
+[release preparation notes](docs/releases/v0.0.5-alpha.1.md) preserve the approved
 source snapshot; see [release engineering](docs/releasing.md) for future releases.
+
+A maintainer-performed transfer to **scarp-lang/Scarp** is prepared in the
+[migration record](docs/migrations/scarp-lang-Scarp.md). The transfer and rename
+have not been performed by this release work.
 
 ## Build and run
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[alpha.4 verification record](docs/releases/v0.0.4-alpha.4-validation.md) for platform support, verification, and
+[0.0.5-alpha.1 verification record](docs/releases/v0.0.5-alpha.1-validation.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:
@@ -279,8 +283,9 @@ The remaining capabilities require separate milestones. Integer expressions are 
 specified in the [expression design](docs/proposals/0001-integer-expressions.md).
 Integer, finite float, vector, string, and boolean bindings are implemented in this checkout. Read the
 [variable reference](docs/variables.md) and [staged variable design](docs/proposals/0002-variables.md).
-The [candidate notes](docs/releases/v0.0.5-alpha.1.md) describe implemented modules,
-compatibility changes, limits and the remaining publication gates. Tensors and
+The [preparation notes](docs/releases/v0.0.5-alpha.1.md) preserve the original
+module contract; the [publication record](docs/releases/v0.0.5-alpha.1-validation.md)
+confirms the released source and checksums. Tensors and
 native backends require separate integration decisions.
 
 The [function integration in PR #41](https://github.com/sanskarIN/scarp-lang/pull/41)

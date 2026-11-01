@@ -1,7 +1,8 @@
 # Source modules
 
-Modules are implemented in the **unpublished 0.0.5-alpha.1 development
-candidate**. The latest published prerelease, 0.0.4-alpha.4, has no imports.
+Modules are implemented in the **published 0.0.5-alpha.1 prerelease**.
+Earlier 0.0.4-alpha.4 packages have no imports. See the
+[publication record](releases/v0.0.5-alpha.1-validation.md) for verified downloads.
 Start with the [import tutorial](tutorials/modules.md) for a complete example.
 The [design contract](proposals/0029-source-modules.md) records the grammar.
 

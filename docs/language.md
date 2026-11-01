@@ -5,7 +5,7 @@ two-axis values. `height`, `width`, `cell`, `lane`, `unroll`, `turn`, `matvec`,
 `matmul`, `tileadd` and `tilescale` follow [the tile contract](tiles.md).
 There is no broadcasting, implicit vector conversion or mutable cell indexing.
 
-This reference targets the unpublished **0.0.5-alpha.1 source candidate**,
+This reference targets the published **0.0.5-alpha.1 prerelease**,
 including [source modules](modules.md). Published alpha.4 does not include imports;
 published beta.3 does not include floats.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
@@ -266,7 +266,7 @@ success, `1` for source/file/output failures, and
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on main and described
 in [the variable reference](variables.md). Beta.3 adds typed
-`funcra` calls as described in [functions](functions.md). The 0.0.5 candidate
+`funcra` calls as described in [functions](functions.md). The 0.0.5-alpha.1 prerelease
 adds source modules with public/private functions and scalar literal constants.
 User-defined types, runtime module globals, re-exports, a compiler backend and
 a package manager are not implemented. The implemented expression semantics are also

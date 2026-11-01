@@ -1,0 +1,574 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-11-01T07:46:31Z",
+  "transfer_performed": false,
+  "repository_id": 1432976395,
+  "from": "sanskarIN/scarp-lang",
+  "to": "scarp-lang/Scarp",
+  "destination_organization_id": 350973173,
+  "default_branch": "main",
+  "prepublication_refs": {
+    "refs/heads/codex/alpha4-integration": "8521f5adeb2ce580c39d23782552979865a6278a",
+    "refs/heads/codex/modules": "8d80d1509582bed94ab919d3bc06b7f492e287c9",
+    "refs/heads/development": "05b4c40f63567267f5d9662ba8108d403d682f88",
+    "refs/heads/feature/log-space-kernels": "6b695c95198318ed3bd1d08572b7cb7c27deea37",
+    "refs/heads/feature/vector-selection": "e9dd32b14944e1d7c68ae340f688fedaf73ec2e9",
+    "refs/heads/main": "afe8b5380c9d6c4774162e51c6c9bc8b90901671",
+    "refs/heads/release/v0.0.4-alpha.3": "453b2d58968b7260885d38edad11fc1543d7e01c",
+    "refs/heads/scarp/alpha3-vector-norms": "6a47456a6ae7c75d95a4b31f1544e94d65c2c24c",
+    "refs/heads/scarp/bind-var-syntax": "3449af94910af2b25991a63c42254f99eb5c9667",
+    "refs/heads/scarp/bounded-loops": "6bc405b721914656e132f71fba965afeff70d8de",
+    "refs/heads/scarp/canonical-cli": "984c59e1cc1c40626949633f8ac165fd2ae5ca1d",
+    "refs/heads/scarp/classification-training-primitives": "0b34886ee322a0ee33576374f591f347830e7a51",
+    "refs/heads/scarp/cli-foundation": "2553e02ddaef4d3302e5dbd6c39098dff3eaad35",
+    "refs/heads/scarp/execution-workspace": "11ef2187adb9cf137acd2a3a5d3bcbaa58cefd56",
+    "refs/heads/scarp/finite-decimals": "9a14eb18ea2123c034b0eb465322a4e0701a89e8",
+    "refs/heads/scarp/freestanding-c-backend": "b47d69dc320d15968fccd81b26a7bfda87bc1e70",
+    "refs/heads/scarp/funcra-function-system": "6a0d1e7b6fe53f1aaa37eabc8ed947293969e64f",
+    "refs/heads/scarp/function-diagnostics": "20aa53274881b2ec82e3b27889d757ee72970c7a",
+    "refs/heads/scarp/integer-bit-operations": "fdd9a8effdefe57835ac593c4d2a6b9b8474e94d",
+    "refs/heads/scarp/logit-loss": "b042f9e024b80c60a6ec4913cad117805e41642c",
+    "refs/heads/scarp/native-build-cli": "49549f8cdb16e4b2ba05d011962b809e5c474ed0",
+    "refs/heads/scarp/numeric-vectors": "90be3968799becba2e35eb3bf74428f8c3605b8d",
+    "refs/heads/scarp/output-statements": "4b1b3e2532c7769c5fe011f693fc47c42de1a5a5",
+    "refs/heads/scarp/terminal-self-transfer": "1806119d63d8b3d3bf0c7c9dfb1bf20dfa0804ad",
+    "refs/heads/scarp/vector-allocation-ledger": "63be095c4cef8a1530e5addb5b80f033a463854d",
+    "refs/heads/scarp/vector-windows-stitch": "3f7ad8c0b2af2980a09a9bb94ae7cade242af5e1",
+    "refs/heads/scarp/windows-ledger-integration": "58db07a139eb43978c5c6784c898d2d48057a9d1",
+    "refs/tags/v0.0.1": "050461d5d9123c737adae47a99c1fc2d6d8fb6e9",
+    "refs/tags/v0.0.1^{}": "1055f5c8d2f45d08d2d010fdf8408079e6f65bf9",
+    "refs/tags/v0.0.2": "d05f8def9fd6ea2091d177872326b4fb9b0ff64e",
+    "refs/tags/v0.0.2^{}": "4ddace1c4753bca8889271deb7580290c8707158",
+    "refs/tags/v0.0.3-beta.1": "ed6f502f6ee1bfe47257ef344325412cca170828",
+    "refs/tags/v0.0.3-beta.1^{}": "d26bb370baa3963cb8cbc0c2d1c17a9bc30e7618",
+    "refs/tags/v0.0.3-beta.2": "577de4615702aa44c94efd13b75505072889b534",
+    "refs/tags/v0.0.3-beta.2^{}": "be9cfa5eaf05c0c895a7a8c377642c3d79c8ad0b",
+    "refs/tags/v0.0.3-beta.3": "2bdf86d2704e6768a2323a2b1320c5cd3290a3cf",
+    "refs/tags/v0.0.3-beta.3^{}": "455de30ba8d6e31e462b81673f7f394dec1997c6",
+    "refs/tags/v0.0.4-alpha.1": "cf8826fc71ae8eefe99aa9e5426f91a2d361ad41",
+    "refs/tags/v0.0.4-alpha.1^{}": "3b65b7dc93d57ff47966faaeb192b09d57f65a8a",
+    "refs/tags/v0.0.4-alpha.2": "fec85fe02c1e8a7690b4fa950087e9509d49c5df",
+    "refs/tags/v0.0.4-alpha.2^{}": "a4069d1e2a6a5bc2449a1ef1c05611ef20f83aed",
+    "refs/tags/v0.0.4-alpha.3": "8d6f7f1949e0baa92d011ebad5508dc8bbbdeb47",
+    "refs/tags/v0.0.4-alpha.3^{}": "a867bdbe5cd693bcf4cb10053f6adfcf7716f4e4",
+    "refs/tags/v0.0.4-alpha.4": "bb138571506cc62b8f139bfbdb9ea77cfbe1d388",
+    "refs/tags/v0.0.4-alpha.4^{}": "26e2fedc5ad492cdfd6ea986ca5b3017c286d310"
+  },
+  "open_historical_prs": [
+    27,
+    26,
+    25,
+    24,
+    23,
+    22,
+    20,
+    19,
+    18,
+    17,
+    16
+  ],
+  "published_release": {
+    "release_id": 430432379,
+    "tag": "v0.0.5-alpha.1",
+    "source": "afe8b5380c9d6c4774162e51c6c9bc8b90901671",
+    "tag_object": "c2c943e134bcb70179a34a69c2089575dd5ed6f2",
+    "published_at": "2026-11-01T07:45:33Z",
+    "release_url": "https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.5-alpha.1",
+    "historical_releases_preserved": 9,
+    "historical_refs_preserved": 44,
+    "assets": [
+      {
+        "id": 697676608,
+        "name": "scarp-0.0.5-alpha.1-aarch64-apple-darwin.tar.gz",
+        "bytes": 566573,
+        "sha256": "f4d8f1a1126c6e61682bce8735f9d70d482d864eb7143848e6b57892fd21da75",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/scarp-0.0.5-alpha.1-aarch64-apple-darwin.tar.gz"
+      },
+      {
+        "id": 697676636,
+        "name": "scarp-0.0.5-alpha.1-aarch64-apple-darwin.tar.gz.sha256",
+        "bytes": 114,
+        "sha256": "5cf32c15796d676a18e671387b750c5eff9ebf59af3a90d87e4dc3d6dc5f4b86",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/scarp-0.0.5-alpha.1-aarch64-apple-darwin.tar.gz.sha256"
+      },
+      {
+        "id": 697676604,
+        "name": "scarp-0.0.5-alpha.1-x86_64-pc-windows-msvc.zip",
+        "bytes": 570566,
+        "sha256": "1726b45c5f41c71316708318477c6691ebff83245a09213b7fa29111b9405c1e",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/scarp-0.0.5-alpha.1-x86_64-pc-windows-msvc.zip"
+      },
+      {
+        "id": 697676620,
+        "name": "scarp-0.0.5-alpha.1-x86_64-pc-windows-msvc.zip.sha256",
+        "bytes": 113,
+        "sha256": "c781151b47b03bc7c06abd0459eef556a8fce7d1e4187d7b36a1ddbc5e9b6053",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/scarp-0.0.5-alpha.1-x86_64-pc-windows-msvc.zip.sha256"
+      },
+      {
+        "id": 697676603,
+        "name": "scarp-0.0.5-alpha.1-x86_64-unknown-linux-gnu.tar.gz",
+        "bytes": 609253,
+        "sha256": "d6c36ddccf69ce5f041c840ce44b05e0568c87046bbddc0f053f5ca125dcdf7e",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/scarp-0.0.5-alpha.1-x86_64-unknown-linux-gnu.tar.gz"
+      },
+      {
+        "id": 697676607,
+        "name": "scarp-0.0.5-alpha.1-x86_64-unknown-linux-gnu.tar.gz.sha256",
+        "bytes": 118,
+        "sha256": "f7ecf01d7037baae850798abb04d605c8b6a16052960b21cc770acd35fef71fe",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/scarp-0.0.5-alpha.1-x86_64-unknown-linux-gnu.tar.gz.sha256"
+      },
+      {
+        "id": 697676640,
+        "name": "SHA256SUMS",
+        "bytes": 345,
+        "sha256": "da71c62ba21fe27416dbebe4c941c0fcfea27eccf39fdc4c780e3b7a53072f56",
+        "url": "https://github.com/sanskarIN/scarp-lang/releases/download/v0.0.5-alpha.1/SHA256SUMS"
+      }
+    ]
+  },
+  "previous_releases": [
+    {
+      "id": 430379213,
+      "tag": "v0.0.4-alpha.4",
+      "published_at": "2026-11-01T05:19:12Z",
+      "assets": [
+        {
+          "id": 697407406,
+          "name": "scarp-0.0.4-alpha.4-aarch64-apple-darwin.tar.gz",
+          "size": 502265,
+          "digest": "sha256:9616f7947965e7d60a07e9b5d2985ee558a81217a04beb52d8f2935625e39e7b"
+        },
+        {
+          "id": 697407408,
+          "name": "scarp-0.0.4-alpha.4-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 114,
+          "digest": "sha256:a1e52597b9fa051284f01fc5691471a70d730f3b89fed758be2f10845690a091"
+        },
+        {
+          "id": 697407413,
+          "name": "scarp-0.0.4-alpha.4-x86_64-pc-windows-msvc.zip",
+          "size": 487722,
+          "digest": "sha256:404636c42f2cad8c8529f9aaee52a94b882ff2a5f8d381717a28d11545a38885"
+        },
+        {
+          "id": 697407412,
+          "name": "scarp-0.0.4-alpha.4-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 113,
+          "digest": "sha256:6e506c83d6a21185ac6bd4962bab9056aa85cba6338474cc2b809ac54dab0c4f"
+        },
+        {
+          "id": 697407407,
+          "name": "scarp-0.0.4-alpha.4-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 540346,
+          "digest": "sha256:e1464a85dfba3eb3d156e92cbf38fe804d3d853d47337ef793df05e73a9eb9c4"
+        },
+        {
+          "id": 697407428,
+          "name": "scarp-0.0.4-alpha.4-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 118,
+          "digest": "sha256:d68df506fbc11169ab6e9055449f90cd4117b763acaf6bc4562bf4464a847916"
+        },
+        {
+          "id": 697407431,
+          "name": "SHA256SUMS",
+          "size": 345,
+          "digest": "sha256:a3815632a9683d064157da32a9d140d09671ea328db866fbc8b390203004a605"
+        }
+      ]
+    },
+    {
+      "id": 429829735,
+      "tag": "v0.0.4-alpha.3",
+      "published_at": "2026-10-31T09:08:50Z",
+      "assets": [
+        {
+          "id": 694903801,
+          "name": "scarp-0.0.4-alpha.3-aarch64-apple-darwin.tar.gz",
+          "size": 459841,
+          "digest": "sha256:b2bf248ec1ef9fd465164efc916b3589dc58b8f77b44368f75c18329ff44d0f3"
+        },
+        {
+          "id": 694903792,
+          "name": "scarp-0.0.4-alpha.3-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 114,
+          "digest": "sha256:cf2a5ce82088279d28437d99ddb29df00c9bb4a46969d1ff9bb784fb122a182f"
+        },
+        {
+          "id": 694903795,
+          "name": "scarp-0.0.4-alpha.3-x86_64-pc-windows-msvc.zip",
+          "size": 426028,
+          "digest": "sha256:6c9dc1cbb79364e37ab8f23db61c539508aa0fcb4e4e24100b570afa4ed13143"
+        },
+        {
+          "id": 694903793,
+          "name": "scarp-0.0.4-alpha.3-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 113,
+          "digest": "sha256:36764f1f7ef0b9122cbe680b3bb973fb741643c1630f3fe85c099d8071cea062"
+        },
+        {
+          "id": 694903794,
+          "name": "scarp-0.0.4-alpha.3-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 495219,
+          "digest": "sha256:cdd7bb1096085ffca65ca68b5019c0ee1dbb2bd14b64769d003c9e9d4526fb22"
+        },
+        {
+          "id": 694903810,
+          "name": "scarp-0.0.4-alpha.3-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 118,
+          "digest": "sha256:b767fa45995c4708892408e5a76ed464237fd2c7e0b6e0076c0a36b47f6b68be"
+        },
+        {
+          "id": 694903826,
+          "name": "SHA256SUMS",
+          "size": 345,
+          "digest": "sha256:15af315ba664894603d808c50ea616610f97b035cd87cc04c635ac9cae6fba0f"
+        }
+      ]
+    },
+    {
+      "id": 429766995,
+      "tag": "v0.0.4-alpha.2",
+      "published_at": "2026-10-31T06:35:50Z",
+      "assets": [
+        {
+          "id": 694597790,
+          "name": "scarp-0.0.4-alpha.2-aarch64-apple-darwin.tar.gz",
+          "size": 446629,
+          "digest": "sha256:ee23f879ad99afc67d74f2fc16fc549d5d45d00f0de109940529e07e7c9ecd0c"
+        },
+        {
+          "id": 694597791,
+          "name": "scarp-0.0.4-alpha.2-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 114,
+          "digest": "sha256:4cc84bb7c74d74510bae2a475ddcfde70d4590a817bdb844fbbb2ba3e864fce2"
+        },
+        {
+          "id": 694597787,
+          "name": "scarp-0.0.4-alpha.2-x86_64-pc-windows-msvc.zip",
+          "size": 406766,
+          "digest": "sha256:96755fdfa3d9f511c51d0cd5f89039c8f801c64200ca0744b68d475ccdf60457"
+        },
+        {
+          "id": 694597788,
+          "name": "scarp-0.0.4-alpha.2-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 113,
+          "digest": "sha256:8311e90ff2cef7b0d107eb18027e6b9a9d525ef2ec3a3d3b8eccf8621eadfd59"
+        },
+        {
+          "id": 694597789,
+          "name": "scarp-0.0.4-alpha.2-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 482080,
+          "digest": "sha256:faa78390635d56088dc22e60bf335364040165456cfd3ab33e05050b92c18969"
+        },
+        {
+          "id": 694597806,
+          "name": "scarp-0.0.4-alpha.2-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 118,
+          "digest": "sha256:8e38717c4f56541ab6754692b2650b8b869b1c6986f6d4d1e2d0fe7219d17bfb"
+        },
+        {
+          "id": 694597805,
+          "name": "SHA256SUMS",
+          "size": 345,
+          "digest": "sha256:7d0ae8f74c4675a07e0c69d92fed50cce663895f52792802b77cba00cbd8ebb1"
+        }
+      ]
+    },
+    {
+      "id": 428755194,
+      "tag": "v0.0.4-alpha.1",
+      "published_at": "2026-10-30T07:32:02Z",
+      "assets": [
+        {
+          "id": 691321137,
+          "name": "scarp-0.0.4-alpha.1-aarch64-apple-darwin.tar.gz",
+          "size": 414391,
+          "digest": "sha256:4defb924b7738432857815554337e1dc8d75a03d74fae6a09a870b2c8c7b56db"
+        },
+        {
+          "id": 691321135,
+          "name": "scarp-0.0.4-alpha.1-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 114,
+          "digest": "sha256:0aabfc5224771be504bf98c187a013dd1e0d4504c0eae85baef2ec369d3e2f1e"
+        },
+        {
+          "id": 691321138,
+          "name": "scarp-0.0.4-alpha.1-x86_64-pc-windows-msvc.zip",
+          "size": 368928,
+          "digest": "sha256:19988c6f9dc0ea3e7953f69a6867fc59483af6249c5026d5a87de5488a395ca1"
+        },
+        {
+          "id": 691321140,
+          "name": "scarp-0.0.4-alpha.1-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 113,
+          "digest": "sha256:2e37ebc7221218a3ed724e4f16e53effbfcca12671c969fa984dcccd81aa0488"
+        },
+        {
+          "id": 691321139,
+          "name": "scarp-0.0.4-alpha.1-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 446388,
+          "digest": "sha256:79c769224ded7c7bebc5d617f17c9710a8281921486bcc02ad04490c4fb753a2"
+        },
+        {
+          "id": 691321163,
+          "name": "scarp-0.0.4-alpha.1-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 118,
+          "digest": "sha256:5d55bc07c85f3963caf047ff6750c6366daf5b67028be304b89e75864a658e1c"
+        },
+        {
+          "id": 691321167,
+          "name": "SHA256SUMS",
+          "size": 345,
+          "digest": "sha256:8cc81ccb63cdec5c8669dbdc56539182d0bceb04bae828892507003722596a68"
+        }
+      ]
+    },
+    {
+      "id": 428034265,
+      "tag": "v0.0.3-beta.3",
+      "published_at": "2026-10-29T15:33:39Z",
+      "assets": [
+        {
+          "id": 688965625,
+          "name": "scarp-0.0.3-beta.3-aarch64-apple-darwin.tar.gz",
+          "size": 372952,
+          "digest": "sha256:18fa40d98f06e12057d22c900db3c148888a0ac2867a3998f7a3245dc2b38c20"
+        },
+        {
+          "id": 688965634,
+          "name": "scarp-0.0.3-beta.3-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 113,
+          "digest": "sha256:55a01406b2875c3a94d3c4ca27c9875b56cc497430f1a859b7774ebd340cb99a"
+        },
+        {
+          "id": 688965626,
+          "name": "scarp-0.0.3-beta.3-x86_64-pc-windows-msvc.zip",
+          "size": 321522,
+          "digest": "sha256:f9e966fa07e9e35a4bb0b10b84322a871d389c606cdd16c0feefe1f7240c4797"
+        },
+        {
+          "id": 688965662,
+          "name": "scarp-0.0.3-beta.3-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 112,
+          "digest": "sha256:9d71c5bc6aa1c6c81af5af00403bae78a1355ab9895b467cd1d0c35316ec579d"
+        },
+        {
+          "id": 688965630,
+          "name": "scarp-0.0.3-beta.3-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 403624,
+          "digest": "sha256:a9eed37e93c3b956370b0ef4cfdda4d0ee7a362c9c5eaec67425440780fc9bb0"
+        },
+        {
+          "id": 688965632,
+          "name": "scarp-0.0.3-beta.3-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 117,
+          "digest": "sha256:202953e7465df97d65f867c929e4f0c6dc088992b60bcb53337122bd96e86b1c"
+        },
+        {
+          "id": 688965661,
+          "name": "SHA256SUMS",
+          "size": 342,
+          "digest": "sha256:c8d29302327fe7f87ec7e7eb5bdd8172d4bce512597705d321bb4ac2620cdc12"
+        }
+      ]
+    },
+    {
+      "id": 426624933,
+      "tag": "v0.0.3-beta.2",
+      "published_at": "2026-10-28T12:13:15Z",
+      "assets": [
+        {
+          "id": 684888233,
+          "name": "scarp-0.0.3-beta.2-aarch64-apple-darwin.tar.gz",
+          "size": 307653,
+          "digest": "sha256:31a1d8c0eb231d6a270fccfc7df69ccc8aa78cff7a0af8ee76b02372a53f79f5"
+        },
+        {
+          "id": 684888234,
+          "name": "scarp-0.0.3-beta.2-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 113,
+          "digest": "sha256:4f28fd4ab174a9e109f499e9a5bcbce1e5e2028513a5141b832d4ef06e93a2e7"
+        },
+        {
+          "id": 684888227,
+          "name": "scarp-0.0.3-beta.2-x86_64-pc-windows-msvc.zip",
+          "size": 245400,
+          "digest": "sha256:415a666b8ac2c852a5cb6148a1efaa795e62c8289ff1d694c8dad90e55331ba3"
+        },
+        {
+          "id": 684888232,
+          "name": "scarp-0.0.3-beta.2-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 112,
+          "digest": "sha256:c21ab3d331bf56e90cf5c77735caa464d54a486ca8799489cac7e069abad5756"
+        },
+        {
+          "id": 684888269,
+          "name": "scarp-0.0.3-beta.2-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 329558,
+          "digest": "sha256:a6f277cb41695e79e52b14fcea16fa2485b0f1a8bb434d0f887caeaf23817799"
+        },
+        {
+          "id": 684888270,
+          "name": "scarp-0.0.3-beta.2-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 117,
+          "digest": "sha256:1f0b8fa7e51a1063d1ac61474d4285adfb9813573558e35e58537a0a23829ab0"
+        },
+        {
+          "id": 684888231,
+          "name": "SHA256SUMS",
+          "size": 342,
+          "digest": "sha256:938f02ee671d2120590f32e449d7ef337214d00ceef148534134b85c42e572e4"
+        }
+      ]
+    },
+    {
+      "id": 424976014,
+      "tag": "v0.0.3-beta.1",
+      "published_at": "2026-10-27T02:35:41Z",
+      "assets": [
+        {
+          "id": 680206399,
+          "name": "scarp-0.0.3-beta.1-aarch64-apple-darwin.tar.gz",
+          "size": 293166,
+          "digest": "sha256:2ee12791ee7b562e6e279b0e184a0e5600a29003f6dc09b9b03f7716927e9891"
+        },
+        {
+          "id": 680206405,
+          "name": "scarp-0.0.3-beta.1-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 113,
+          "digest": "sha256:81987b943197c0e6f89ecee23efdb428e752d024592e7f054d80f80f935e155a"
+        },
+        {
+          "id": 680206407,
+          "name": "scarp-0.0.3-beta.1-x86_64-pc-windows-msvc.zip",
+          "size": 226097,
+          "digest": "sha256:99370fed3782cfbcbf49774e73885249284551c185ab7adfdb755862eacd9011"
+        },
+        {
+          "id": 680206396,
+          "name": "scarp-0.0.3-beta.1-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 112,
+          "digest": "sha256:7c9ad1e4870f47837e8cd4c242af82a0f1ab6f2da61e884c1f3d9515b5bbbc40"
+        },
+        {
+          "id": 680206409,
+          "name": "scarp-0.0.3-beta.1-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 314890,
+          "digest": "sha256:467bc7cbc37fe11eff8e40ef4ac91bb9a01e90c451afb636ea2737e41ec5ab2a"
+        },
+        {
+          "id": 680206426,
+          "name": "scarp-0.0.3-beta.1-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 117,
+          "digest": "sha256:f46eefba45e01ff0b5ca551bd3bc0437ef5720f9e590a8758b320f4de8cd15ef"
+        },
+        {
+          "id": 680206428,
+          "name": "SHA256SUMS",
+          "size": 342,
+          "digest": "sha256:54342a83b5e2a431de57fdcf552e9394db959fa019431a6517899a8611edb3e0"
+        }
+      ]
+    },
+    {
+      "id": 423778790,
+      "tag": "v0.0.2",
+      "published_at": "2026-10-26T01:33:37Z",
+      "assets": [
+        {
+          "id": 676647677,
+          "name": "scarp-0.0.2-aarch64-apple-darwin.tar.gz",
+          "size": 273853,
+          "digest": "sha256:67d34c17f59e3f6814998f6ca5a5203465c34d2669ed6fdbacdf13eaf61fa48a"
+        },
+        {
+          "id": 676647685,
+          "name": "scarp-0.0.2-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 106,
+          "digest": "sha256:f655f82bc9e3be408761e6afde38922d768086ab577579428bc56924fcacc069"
+        },
+        {
+          "id": 676647713,
+          "name": "scarp-0.0.2-x86_64-pc-windows-msvc.zip",
+          "size": 199463,
+          "digest": "sha256:2f9df922b5cba2f18ba701da11fbfb663f9f17c1e95cfb40f198ee39fc3f57bb"
+        },
+        {
+          "id": 676647714,
+          "name": "scarp-0.0.2-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 105,
+          "digest": "sha256:a436c47920bb0a7cdbade48f6dbde14c0a63cc6f6c864c2ad9b98b9b562dbb4f"
+        },
+        {
+          "id": 676647674,
+          "name": "scarp-0.0.2-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 293600,
+          "digest": "sha256:4d4378ec78b4756606823fb58966bd28153aa5be46ff1053db280bd8c068c7e6"
+        },
+        {
+          "id": 676647679,
+          "name": "scarp-0.0.2-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 110,
+          "digest": "sha256:3bc736339a22266e07f06eb51e77858b97c16badf3bf4037c83ec61040a2b348"
+        },
+        {
+          "id": 676647684,
+          "name": "SHA256SUMS",
+          "size": 321,
+          "digest": "sha256:9b71118455d2dc6be7c45338e425903fce4b6a32e52467d578773763b4afc70e"
+        }
+      ]
+    },
+    {
+      "id": 423286517,
+      "tag": "v0.0.1",
+      "published_at": "2026-10-25T09:27:05Z",
+      "assets": [
+        {
+          "id": 674613047,
+          "name": "scarp-0.0.1-aarch64-apple-darwin.tar.gz",
+          "size": 213200,
+          "digest": "sha256:0da4299bf00ccfa02e147dff5317d1677c860299a13ddd0dd64d23c025d5eeca"
+        },
+        {
+          "id": 674613052,
+          "name": "scarp-0.0.1-aarch64-apple-darwin.tar.gz.sha256",
+          "size": 106,
+          "digest": "sha256:df437a97652e5954526de005a73d41d738888008fdbe2e6783c5c00ddbcda0e1"
+        },
+        {
+          "id": 674613053,
+          "name": "scarp-0.0.1-x86_64-pc-windows-msvc.zip",
+          "size": 120802,
+          "digest": "sha256:ef7438ef3bff8f54563d28df73df7b64e0d2a51fd5497369a3c64e7db8c080aa"
+        },
+        {
+          "id": 674613051,
+          "name": "scarp-0.0.1-x86_64-pc-windows-msvc.zip.sha256",
+          "size": 105,
+          "digest": "sha256:fea587310a59ab39947c7954eddd2ee6a9cb2865f943272ec5b72f68df41b74e"
+        },
+        {
+          "id": 674613070,
+          "name": "scarp-0.0.1-x86_64-unknown-linux-gnu.tar.gz",
+          "size": 229921,
+          "digest": "sha256:0c5342127ecdd827ffee406cb0026bf7c83e4b129429fbf6aeb4fa27f715d967"
+        },
+        {
+          "id": 674613075,
+          "name": "scarp-0.0.1-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "size": 110,
+          "digest": "sha256:9d9130a66bb1d7d79bc559f267cb2a92c4be58a9a7cc7f8465dc84fba6e54bd4"
+        },
+        {
+          "id": 674613076,
+          "name": "SHA256SUMS",
+          "size": 321,
+          "digest": "sha256:7e43afed87b16ac9591900343697e70806a9da09f72518abdf80e9373c9eebc6"
+        }
+      ]
+    }
+  ]
+}

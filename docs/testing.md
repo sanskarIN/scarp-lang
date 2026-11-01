@@ -1,6 +1,6 @@
 # Test and validate changes
 
-For the 0.0.5 modules candidate, run `cargo test --locked --offline --test modules
+For the 0.0.5-alpha.1 modules prerelease, run `cargo test --locked --offline --test modules
 --test module_files`. These cover in-memory graph/linker APIs, filesystem/CLI
 loading, visibility, cycles, canonical deduplication, exact loading caps,
 contracts, numerical budgets, atomic streams and owned cross-file diagnostics.

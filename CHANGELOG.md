@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.5-alpha.1 — unpublished development candidate
+## 0.0.5-alpha.1 — prerelease, 2026-11-01
 
 - Add explicit relative source imports, qualified aliases, public/private
   functions and immutable scalar literal constants, with declaration-only
@@ -13,7 +13,8 @@
   reusable compiled module programs and separate load/resolve/check/execute APIs.
 - Add API/CLI/path/limit regressions, exact diagnostic fixtures and a three-file
   numerical example. Refresh introductory docs and require new/inherited package
-  contents without enabling publication. See [candidate notes](docs/releases/v0.0.5-alpha.1.md).
+  contents. Publish the explicitly authorized source through the guarded
+  exact-source publisher. See the [verification record](docs/releases/v0.0.5-alpha.1-validation.md).
 
 ## 0.0.4-alpha.4 — prerelease, 2026-11-01
 
