@@ -42,17 +42,17 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
-## Alpha.4 numerical and runtime candidate
+## Alpha.4 numerical and runtime prerelease
 
 Read [tiles and linear algebra](tiles.md) for immutable two-axis values,
 matrix products, arithmetic, shape rules, costs and seven executable examples.
 [Automatic value retirement](memory-lifetimes.md) covers blocks, loops,
 function completion and shared immutable snapshots.
 
-The candidate also integrates windows/stitching, log-space kernels, selection,
+The release also integrates windows/stitching, log-space kernels, selection,
 and categorical loss/gradient helpers developed since alpha.3. The
-[candidate release notes](releases/v0.0.4-alpha.4.md) distinguish implementation
-from pending publication gates. Published alpha.3 assets remain unchanged.
+[publication record](releases/v0.0.4-alpha.4-validation.md) identifies the approved
+source, passing CI and verified public packages. Published alpha.3 assets remain unchanged.
 
 ## Reading paths
 

@@ -9,10 +9,12 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-candidate version is `0.0.4-alpha.4`. The completed alpha.3 request has
-been removed. No alpha.4 publication is requested or authorized yet. The
-[alpha.3 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.3)
-records the latest published prerelease; a source version alone is not a release.
+current published version is `0.0.4-alpha.4`, from approved source
+`26e2fedc5ad492cdfd6ea986ca5b3017c286d310`. Its completed publication request
+has been retired. The
+[alpha.4 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.4)
+and [verification record](releases/v0.0.4-alpha.4-validation.md) identify the
+published prerelease; a source version alone is not publication evidence.
 Earlier published tags/assets must remain unchanged. For a future
 release, choose an unused version, update Cargo/lockfile/docs consistently, and
 use its exact tag and archive names throughout the process. An unpublished
@@ -90,7 +92,7 @@ maintainer dispatch and scheduled runs, which check out the current default
 branch. Every path must pass the exact-main gates below. Only three-part alpha.N
 or beta.N prerelease versions are accepted.
 
-The completed alpha.3 request was removed while preparing alpha.4. After all
+Completed requests are removed after publication verification. After all
 candidate gates pass, obtain explicit maintainer approval for its version and
 full source SHA. A subsequent reviewed request supplies `version`,
 `source_commit`, `tagger_name` and `tagger_email`. `source_commit` must be a full

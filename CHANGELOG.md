@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4-alpha.4 — unpublished candidate, 2026-11-01
+## 0.0.4-alpha.4 — prerelease, 2026-11-01
 
 - Integrate immutable shape-aware tiles and typed tile parameters/results from
   PR #53 with visible vector windows and the cumulative allocation ledger.
@@ -13,9 +13,10 @@
   diagnostics, independent matrix reference tests and seven runnable examples.
 - Include the post-alpha.3 window/stitch, log-space, selection and classification
   kernels already integrated on main. Preserve existing language/CLI behavior.
-- Retire the completed alpha.3 publication request. Prepare alpha.4 packaging;
-  no tag or publication is authorized by this development change. See
-  [candidate notes](docs/releases/v0.0.4-alpha.4.md).
+- Retire completed publication requests. Publish alpha.4 from the separately
+  authorized source after exact-source CI, native-package, checksum, draft and
+  public-download gates. See the
+  [verification record](docs/releases/v0.0.4-alpha.4-validation.md).
 
 ## 0.0.4-alpha.3 — prerelease candidate, 2026-10-31
 

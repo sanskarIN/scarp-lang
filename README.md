@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-targets the unpublished 0.0.4-alpha.4 numerical and runtime candidate, with finite binary64 values, a lexer, parser,
+implements the 0.0.4-alpha.4 numerical and runtime prerelease, with finite binary64 values, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -47,17 +47,19 @@ one-hot targets and explicit loss gradients. See [vectors](docs/vectors.md),
 [error repairs](docs/reference/numerical-errors.md).
 
 The latest published prerelease is
-[alpha.3](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.3).
-Its binaries do not contain the newer matrix, window or classification additions.
-[Alpha.4 candidate notes](docs/releases/v0.0.4-alpha.4.md) distinguish implemented
-features from pending release gates. Publication requires exact-source CI,
-native packages and separately approved source SHA; see [release engineering](docs/releasing.md).
+[alpha.4](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.4),
+published from `26e2fedc5ad492cdfd6ea986ca5b3017c286d310` with verified Windows
+x64, Linux x64 and macOS ARM64 packages. Read the
+[publication and verification record](docs/releases/v0.0.4-alpha.4-validation.md)
+for source, CI, checksums and public-download evidence. The
+[release preparation notes](docs/releases/v0.0.4-alpha.4.md) preserve the approved
+source snapshot; see [release engineering](docs/releasing.md) for future releases.
 
 ## Build and run
 
 Binary archives and checksums are available through
 [GitHub Releases](https://github.com/sanskarIN/scarp-lang/releases). See the
-[v0.0.4-alpha.1 notes](docs/releases/v0.0.4-alpha.1.md) for platform support, verification, and
+[alpha.4 verification record](docs/releases/v0.0.4-alpha.4-validation.md) for platform support, verification, and
 running an extracted package. The [changelog](CHANGELOG.md) records this version.
 
 To build from source:
