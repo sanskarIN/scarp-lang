@@ -9,7 +9,9 @@ use std::{
 
 use scarp::{
     diagnostics::{Diagnostic, LocationTracker},
-    lexer, ExecutionOptions, RunError,
+    lexer,
+    modules::{self, ModuleLimits, ModuleRunError},
+    ExecutionOptions,
 };
 
 const HELP: &str = "Scarp — Build Beyond Boundaries.
@@ -43,6 +45,7 @@ Snapshot bytes are a logical storage cap, not an exact process-memory limit.
 Counts are unsigned decimal digits, zero is valid, and each option may occur once.
 Example: scarp run --max-steps 2000000 --max-prints 10 examples/repeat.srp
 Use scarp check with the same options to evaluate without printing.
+Imports use an explicit alias and resolve relative to each file within the entry directory.
 ";
 
 const CHECK_HELP: &str = "Usage: scarp check [budget options] [--] <file.srp>
@@ -59,12 +62,14 @@ All seven options take unsigned decimal counts, allow zero, and may occur once.
 Snapshot bytes are a logical storage cap, including when check discards output.
 Example: scarp check --max-steps 2000000 examples/repeat.srp
 Use tokens for lexing without executing a program. No execution-limit flags on tokens.
+All imported modules are loaded and checked before evaluation; see docs/modules.md.
 ";
 
 const TOKENS_HELP: &str = "Usage: scarp tokens [--] <file.srp>
 
 List tokens and UTF-8 byte/source locations without parsing or executing loops.
 No execution-limit options are accepted. Use scarp check to evaluate source.
+Import declarations are tokenized without loading their target files.
 ";
 
 fn main() -> ExitCode {
@@ -119,6 +124,33 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
         return 2;
     }
     let path = Path::new(filename);
+    if command != "tokens" {
+        let program = match modules::compile_file(path, ModuleLimits::default()) {
+            Ok(program) => program,
+            Err(error) => {
+                let _ = writeln!(errors, "{}", error.render());
+                return 1;
+            }
+        };
+        return if command == "check" {
+            match program.check(options) {
+                Ok(()) => 0,
+                Err(error) => {
+                    let _ = writeln!(errors, "{}", error.render());
+                    1
+                }
+            }
+        } else {
+            match program.execute(output, errors, options) {
+                Ok(()) => 0,
+                Err(ModuleRunError::Diagnostic(error)) => {
+                    let _ = writeln!(errors, "{}", error.render());
+                    1
+                }
+                Err(ModuleRunError::Output(error)) => write_output(Err(error), errors),
+            }
+        };
+    }
     let source = match fs::read_to_string(path) {
         Ok(source) => source,
         Err(error) => {
@@ -155,17 +187,8 @@ fn dispatch(args: Vec<OsString>, output: &mut impl Write, errors: &mut impl Writ
             }
             Err(error) => report_diagnostic(&error, path, &source, errors),
         }
-    } else if command == "check" {
-        match scarp::check_with_options(&source, options) {
-            Ok(()) => 0,
-            Err(error) => report_diagnostic(&error, path, &source, errors),
-        }
     } else {
-        match scarp::run_with_io_and_options(&source, output, errors, options) {
-            Ok(()) => 0,
-            Err(RunError::Diagnostic(error)) => report_diagnostic(&error, path, &source, errors),
-            Err(RunError::Output(error)) => write_output(Err(error), errors),
-        }
+        unreachable!("run/check handled by the module compiler")
     }
 }
 

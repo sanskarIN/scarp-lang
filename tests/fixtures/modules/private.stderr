@@ -1,0 +1,11 @@
+error[E0041]: library.secret is private
+ --> private.srp:2:7
+  |
+2 | print(library.secret);
+  |       ^^^^^^^^^^^^^^
+ = note: the private declaration is here
+ --> library.srp:2:6
+  |
+2 | bind secret = 3;
+  |      ^^^^^^
+ = help: mark the declaration pub in its defining module

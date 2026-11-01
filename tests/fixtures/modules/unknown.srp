@@ -1,0 +1,2 @@
+import "library.srp" as library;
+print(library.absent);

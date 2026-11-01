@@ -34,6 +34,7 @@ pub enum TokenKind {
     Semicolon,
     Comma,
     Colon,
+    Dot,
     Arrow,
     Eof,
 }
@@ -68,6 +69,7 @@ impl fmt::Display for TokenKind {
             Self::RightBrace => f.write_str("}"),
             Self::Comma => f.write_str(","),
             Self::Colon => f.write_str(":"),
+            Self::Dot => f.write_str("."),
             Self::Arrow => f.write_str("->"),
             Self::Semicolon => f.write_str(";"),
             Self::Eof => f.write_str("<eof>"),
@@ -214,6 +216,10 @@ impl Lexer<'_> {
                         "a float literal requires digits before the point",
                     )
                     .with_help("write 0.5 instead of .5"));
+                }
+                '.' => {
+                    self.bump();
+                    TokenKind::Dot
                 }
                 ch if ch.is_ascii_alphabetic() || ch == '_' => {
                     self.bump();

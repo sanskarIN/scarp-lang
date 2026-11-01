@@ -1,0 +1,6 @@
+error[E0037]: imports and public declarations are allowed only at file scope
+ --> syntax.srp:1:11
+  |
+1 | if true { import "library.srp" as library; }
+  |           ^^^^^^
+ = help: move this declaration outside the block

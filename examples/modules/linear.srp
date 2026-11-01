@@ -1,0 +1,9 @@
+import "settings.srp" as settings;
+
+pub pure funcra predict(features: vector) -> vector
+    needs len(features) == 2;
+    ensures len(result) == 2;
+{
+    bind weights = tile([1.0, 2.0, -1.0, 3.0], 2, 2);
+    return scale(matvec(weights, features), settings.gain);
+}

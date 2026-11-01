@@ -1,0 +1,6 @@
+error[E0042]: module "library" has no symbol "absent"
+ --> unknown.srp:2:7
+  |
+2 | print(library.absent);
+  |       ^^^^^^^^^^^^^^
+ = help: check the imported module's public declarations

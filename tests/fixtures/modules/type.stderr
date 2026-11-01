@@ -1,0 +1,11 @@
+error[E0015]: expected integer, found boolean
+ --> type.srp:2:20
+  |
+2 | print(library.take(true));
+  |                    ^^^^
+ = note: parameter "x" is declared here
+ --> library.srp:4:22
+  |
+4 | pub pure funcra take(x: integer) -> integer { return x; }
+  |                      ^
+ = help: keep primitive types consistent; numeric operands must share a numeric kind, logic requires booleans

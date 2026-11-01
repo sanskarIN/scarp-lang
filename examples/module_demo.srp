@@ -1,0 +1,7 @@
+import "modules/linear.srp" as linear;
+import "modules/settings.srp" as settings;
+
+bind scores = linear.predict([2.0, 1.0]);
+print(settings.title);
+print(scores);
+print(argmax(scores), onehot(len(scores), argmax(scores)));

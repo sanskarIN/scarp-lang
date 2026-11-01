@@ -90,6 +90,10 @@ impl Parser<'_> {
     ) -> Result<Vec<Statement>, ParseError> {
         let mut statements = Vec::new();
         while let Some(token) = self.current() {
+            if self.module_start() {
+                statements.push(self.module_statement(in_block)?);
+                continue;
+            }
             match &token.kind {
                 TokenKind::Eof => {
                     if in_block {
@@ -130,6 +134,93 @@ impl Parser<'_> {
             },
             _ => false,
         }
+    }
+
+    fn module_start(&self) -> bool {
+        (self.keyword("import") || self.keyword("pub"))
+            && !self.tokens.get(self.cursor + 1).is_some_and(|token| {
+                matches!(token.kind, TokenKind::LeftParen | TokenKind::Dot)
+                    || assignment_operator(&token.kind).is_some()
+            })
+    }
+
+    fn module_statement(&mut self, in_block: bool) -> Result<Statement, ParseError> {
+        let start = self.current().unwrap().span;
+        if in_block {
+            return Err(ParseError::new(
+                DiagnosticKind::ModuleSyntax,
+                start,
+                "imports and public declarations are allowed only at file scope",
+            )
+            .with_help("move this declaration outside the block"));
+        }
+        let import = self.keyword("import");
+        self.cursor += 1;
+        if import {
+            let (path, path_span) = match self.current() {
+                Some(Token {
+                    kind: TokenKind::String(path),
+                    span,
+                }) => (path.clone(), *span),
+                _ => {
+                    return Err(ParseError::new(
+                        DiagnosticKind::ModuleSyntax,
+                        start,
+                        "import requires a source path string and an explicit alias",
+                    )
+                    .with_help("use import \"library.srp\" as library;"))
+                }
+            };
+            self.cursor += 1;
+            if !self.keyword("as") {
+                return Err(ParseError::new(
+                    DiagnosticKind::ModuleSyntax,
+                    path_span,
+                    "import requires an explicit as alias",
+                )
+                .with_help("use import \"library.srp\" as library;"));
+            }
+            self.cursor += 1;
+            let (alias, alias_span) = self.identifier()?;
+            let end = self.punctuation(TokenKind::Semicolon, "';'")?.end;
+            Ok(Statement::Import {
+                path,
+                path_span,
+                alias,
+                alias_span,
+                span: Span::new(start.start, end),
+            })
+        } else {
+            let declaration = if self.keyword("funcra") || self.keyword("pure") {
+                Statement::Function(self.function()?)
+            } else if self.keyword("bind") {
+                self.declaration()?
+            } else {
+                return Err(ParseError::new(
+                    DiagnosticKind::ModuleSyntax,
+                    start,
+                    "pub requires a funcra declaration or an immutable scalar bind",
+                )
+                .with_help("export a function or write pub bind name = scalar_literal;"));
+            };
+            let end = declaration.span().end;
+            Ok(Statement::Export {
+                declaration: Box::new(declaration),
+                span: Span::new(start.start, end),
+            })
+        }
+    }
+
+    fn qualified_identifier(&mut self) -> Result<(String, Span), ParseError> {
+        let (mut name, mut span) = self.identifier()?;
+        if self.at(&TokenKind::Dot) {
+            self.cursor += 1;
+            let (member, member_span) = self.identifier()?;
+            name.push('.');
+            name.push_str(&member);
+            span.end = member_span.end;
+        }
+        Ok((name, span))
     }
 
     fn container_statement(
@@ -227,7 +318,7 @@ impl Parser<'_> {
         statements: &mut Vec<Statement>,
     ) -> Result<(), ParseError> {
         while let Some(token) = self.current() {
-            if self.container_start() {
+            if self.container_start() || self.module_start() {
                 break;
             }
             match &token.kind {
@@ -306,7 +397,26 @@ impl Parser<'_> {
                     if self
                         .tokens
                         .get(self.cursor + 1)
-                        .is_some_and(|t| t.kind == TokenKind::LeftParen)
+                        .is_some_and(|t| t.kind == TokenKind::Dot)
+                        && self
+                            .tokens
+                            .get(self.cursor + 3)
+                            .is_some_and(|t| assignment_operator(&t.kind).is_some())
+                    {
+                        let (_, span) = self.qualified_identifier()?;
+                        return Err(ParseError::new(
+                            DiagnosticKind::ModuleSyntax,
+                            span,
+                            "imported module members are not assignment targets",
+                        )
+                        .with_help(
+                            "read the exported value, or copy it into a local var before assigning",
+                        ));
+                    }
+                    if self
+                        .tokens
+                        .get(self.cursor + 1)
+                        .is_some_and(|t| matches!(t.kind, TokenKind::LeftParen | TokenKind::Dot))
                     {
                         let start = token.span.start;
                         let expression = self.expression()?;
@@ -936,7 +1046,7 @@ impl Parser<'_> {
         nodes: &mut Vec<ExpressionNode>,
         depth: usize,
     ) -> Result<usize, ParseError> {
-        let (name, function_span) = self.identifier()?;
+        let (name, function_span) = self.qualified_identifier()?;
         let opening = self.punctuation(TokenKind::LeftParen, "'('")?;
         self.expression_depth(depth, opening)?;
         let mut arguments = Vec::new();
@@ -977,6 +1087,23 @@ impl Parser<'_> {
         depth: usize,
     ) -> Result<usize, ParseError> {
         match self.current().map(|token| &token.kind) {
+            Some(TokenKind::Identifier(_))
+                if self
+                    .tokens
+                    .get(self.cursor + 1)
+                    .is_some_and(|t| t.kind == TokenKind::Dot) =>
+            {
+                if self
+                    .tokens
+                    .get(self.cursor + 3)
+                    .is_some_and(|t| t.kind == TokenKind::LeftParen)
+                {
+                    self.call_expression(nodes, depth)
+                } else {
+                    let (name, span) = self.qualified_identifier()?;
+                    Ok(push(nodes, ExpressionKind::Name(name), span))
+                }
+            }
             Some(TokenKind::LeftBracket) => self.vector_literal(nodes, depth),
             Some(TokenKind::LeftParen) => self.group_expression(nodes, depth),
             Some(TokenKind::Identifier(name))
