@@ -21,6 +21,13 @@ use its exact tag and archive names throughout the process. An unpublished
 development identifier is not evidence that a public release exists.
 `v0.0.0.1` is not a three-part version.
 
+This checkout prepares **0.0.5-alpha.1**, an unpublished source-module candidate.
+The [candidate notes](releases/v0.0.5-alpha.1.md) explain the version choice and
+limitations. There is no active publication request; fresh exact-version/source
+approval is required after all gates. The verifier requires nested module
+libraries and guides as well as inherited alpha.4 contents. Preparation does not
+authorize a tag, draft or release.
+
 Run local checks, then package on a machine with the matching native Rust
 toolchain and PowerShell 7:
 

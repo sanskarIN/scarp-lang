@@ -1,6 +1,6 @@
 # Embed Scarp in a Rust application
 
-The alpha.4 candidate adds public `value::NumericTile`, `Value::Tile` and
+Published alpha.4 adds public `value::NumericTile`, `Value::Tile` and
 `ValueType::Tile`; exhaustive enum matches need an additional arm. Construct a
 checked tile with `NumericTile::new` or `from_vector`. The latter shares a visible
 window without copying. `numeric::evaluate_with_vector_limit` accepts the new
@@ -9,7 +9,7 @@ inputs do not spend that call's new-allocation quota, while materialized outputs
 do. Existing entry-point signatures and `ExecutionLimits` literals remain valid.
 See [tiles](tiles.md) and [memory lifetimes](memory-lifetimes.md).
 
-This guide targets the beta.3 API and current main. It helps a host application choose
+This guide targets the 0.0.5-alpha.1 development API. It helps a host application choose
 between parsing, compilation, validation, and execution while retaining control
 of output and diagnostics. See [compatibility](compatibility.md) for v0.0.1 API
 differences.
@@ -30,6 +30,9 @@ these instructions use a local dependency rather than a registry release.
 
 ## Select a pipeline stage
 
+The source-string stages below never access files implicitly. For imports,
+select the explicit module API in the next section.
+
 | API | Input | Result | Evaluates arithmetic? | Writes program output? |
 | --- | --- | --- | --- | --- |
 | `lexer::lex` | Source text | Tokens with byte spans | No | No |
@@ -49,6 +52,49 @@ failures such as division by zero require validation or execution. Parsing alone
 can therefore succeed for a program whose names or operations are invalid.
 All branches undergo name and type checks, while validation and execution
 evaluate only selected conditions and bodies.
+
+## Load modules explicitly
+
+For a trusted source tree, `modules::compile_file(entry_path, limits)` roots
+imports at the entry file's parent. For virtual sources or isolated embedding,
+supply a `SourceLoader`. No global search path or mutable runtime cache is used.
+
+```rust
+use scarp::{modules::{self, MemorySourceLoader, ModuleLimits}, ExecutionOptions};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut loader = MemorySourceLoader::new();
+    loader.insert("main.srp", r#"import "math.srp" as math; print(math.twice(3));"#)?;
+    loader.insert("math.srp", "pub pure funcra twice(n: integer)->integer {return n*2;}")?;
+    let program = modules::compile_with_loader("main.srp", &loader, ModuleLimits::default())?;
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    program.execute(&mut out, &mut err, ExecutionOptions::default())?;
+    assert_eq!(out, b"6\n");
+    assert!(err.is_empty());
+    Ok(())
+}
+```
+
+`modules::load` performs bounded discovery and parsing, returning `ModuleGraph`;
+`modules::resolve` links and type-checks it into `ModuleProgram`. The convenience
+compiler combines those stages, without evaluating Scarp. `program.check(options)`
+evaluates without output, and `program.execute(stdout, stderr, options)` prepares
+and writes both streams. Compiled programs are immutable and reusable across
+threads, with independent execution state.
+
+`program.modules()` exposes module identities, imports and typed symbols.
+`program.sources()` retains file names and source text. Module errors own this
+map, so `ModuleDiagnostic::render` and Display identify each primary/related
+location even after the loader or source files disappear. `ModuleRunError`
+distinguishes source-aware diagnostics from writer failures.
+
+Custom loaders provide stable source identities, respect the byte allowance and
+own their trust policy. The compiler validates portable import spellings, graph
+limits and returned source sizes. Source limits and execution options are
+independent. Read [modules](modules.md) before selecting a filesystem trust root
+or changing loading caps. Passing only `program.program()` to old interpreter
+APIs gives raw combined-coordinate diagnostics; use ModuleProgram's wrappers
+when rendering multi-file errors.
 
 ## Capture output explicitly
 
@@ -222,7 +268,7 @@ Use `Value::as_float()` to inspect a float result, and `evaluate_value` for
 standalone float expressions. The integer evaluate helper intentionally rejects
 float results. Both streams use identical scalar formatting. See [floats](floats.md).
 
-## Numerical vector values and capped kernels (alpha.2 candidate)
+## Numerical vector values and capped kernels (since alpha.2)
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {

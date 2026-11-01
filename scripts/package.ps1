@@ -120,6 +120,24 @@ try {
         $checkOutput = & $executable check $source
         if ($LASTEXITCODE -ne 0 -or $checkOutput) { throw "Packaged $example validation failed" }
     }
+    $moduleEntry = Join-Path $stagingRoot 'module-main.srp'
+    $moduleLibrary = Join-Path $stagingRoot 'module-library.srp'
+    [System.IO.File]::WriteAllText($moduleEntry, 'import "module-library.srp" as lib; print("OUT"); eprint("ERR"); print(lib.secret);')
+    foreach ($case in @(@('bind secret=7;', 'E0041'), @('import "module-main.srp" as entry;', 'E0039'))) {
+        [System.IO.File]::WriteAllText($moduleLibrary, $case[0])
+        foreach ($verb in @('run', 'check')) {
+            $failed = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, $moduleEntry)
+            $diagnostic = [System.Text.Encoding]::UTF8.GetString($failed.Stderr)
+            if ($failed.ExitCode -ne 1 -or $failed.Stdout.Length -ne 0 -or -not $diagnostic.StartsWith(('error[' + $case[1] + ']')) -or -not $diagnostic.Contains('module-library.srp')) {
+                throw 'Packaged module visibility/cycle diagnostic or stream atomicity failed'
+            }
+        }
+    }
+    [System.IO.File]::WriteAllText($moduleEntry, 'import "absent-module.srp" as absent;')
+    $moduleTokens = Invoke-ScarpProcess -Executable $executable -Arguments @('tokens', $moduleEntry)
+    if ($moduleTokens.ExitCode -ne 0 -or $moduleTokens.Stderr.Length -ne 0) {
+        throw 'Packaged tokens must not follow imports'
+    }
     $streamSource = Join-Path $stagingRoot 'streams.srp'
     [System.IO.File]::WriteAllText($streamSource, 'bind word="ready"; write(word, true,); eprint("warning", 2); ewrite("tail");')
     $streams = Invoke-ScarpProcess -Executable $executable -Arguments @('run', $streamSource)

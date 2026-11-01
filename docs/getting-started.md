@@ -8,20 +8,20 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the vector guides | This checkout (0.0.4-alpha.2) | Immutable vectors, pure kernels and vector functions; check the release page for downloads |
-| Follow the float guides | Current `main` or the v0.0.4-alpha.1 prerelease | Finite binary64 scalars integrated with typed functions and six resource budgets |
+| Follow the module tutorial | This checkout (0.0.5-alpha.1 candidate) | Explicit imports, public/private functions and scalar constants; not yet published |
+| Use the latest published numerical release | v0.0.4-alpha.4 | Finite scalars, vectors, tiles, matrix operations and runtime budgets; no imports |
+| Reproduce scalar floats | v0.0.4-alpha.1 | Finite binary64 scalars integrated with typed functions |
 | Reproduce the function beta | v0.0.3-beta.3 | Typed functions, contracts, bind/var, output streams, loops; no floats |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
 | Reproduce the variable milestone | The v0.0.2 tag | Variables, scopes, strings, booleans, and decisions |
 | Reproduce the first interpreter | The v0.0.1 tag | Printing and checked integer expressions |
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
-This source identifies as `0.0.4-alpha.2` and adds [vectors](vectors.md).
-The [alpha.2 notes](releases/v0.0.4-alpha.2.md) describe the implementation and
-planned publication; its release page records when downloads become available.
-Published alpha.1 includes scalar floats and typed functions without vectors.
+This source identifies as `0.0.5-alpha.1` and adds [modules](modules.md).
+The [candidate notes](releases/v0.0.5-alpha.1.md) describe the implementation and
+remaining publication gates. A development version is not a published release.
 Syntax and APIs remain subject to change. Published packages retain their
-original syntax. Tensors, backends, project tooling, and CLI redesign remain separate.
+original syntax. Tensors, backends, package tooling and CLI redesign remain separate.
 Follow [your first numerical program](tutorials/numerical-program.md) after setup.
 
 ## Build the development checkout
@@ -42,7 +42,7 @@ cargo run -- --version
 Expected version:
 
 ```text
-scarp 0.0.4-alpha.2
+scarp 0.0.5-alpha.1
 ```
 
 Run commands from the repository root so relative example paths resolve:
@@ -52,6 +52,7 @@ cargo run -- run examples/hello.srp
 cargo run -- run examples/string_bindings.srp
 cargo run -- check examples/scopes.srp
 cargo run -- tokens examples/arithmetic.srp
+cargo run -- run examples/module_demo.srp
 ```
 
 `check` is silent on success. `tokens` prints debugging information instead of
@@ -87,7 +88,7 @@ development, `cargo run -- ...` selects the current checkout explicitly.
 
 Downloaded release archives already contain an executable and do not require
 Rust for running programs. Their platform and checksum instructions are in the
-[v0.0.4-alpha.1 release notes](releases/v0.0.4-alpha.1.md). Select Windows x64 MSVC,
+[alpha.4 verification record](releases/v0.0.4-alpha.4-validation.md). Select Windows x64 MSVC,
 Linux x64 GNU, or Apple Silicon macOS to match the host. Verify the archive's
 SHA-256 against its companion checksum before extracting, keep the supplied
 `examples/` and `docs/` directories, and run commands from the extracted root.

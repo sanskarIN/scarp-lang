@@ -1,12 +1,13 @@
 # Scarp prototype language reference
 
-The alpha.4 candidate adds the `tile` parameter/result type and immutable
+Published alpha.4 adds the `tile` parameter/result type and immutable
 two-axis values. `height`, `width`, `cell`, `lane`, `unroll`, `turn`, `matvec`,
 `matmul`, `tileadd` and `tilescale` follow [the tile contract](tiles.md).
 There is no broadcasting, implicit vector conversion or mutable cell indexing.
 
-This source reference targets the 0.0.4-alpha.4 source candidate on top of
-the Scarp 0.0.3-beta.3 baseline. Published beta.3 does not include floats.
+This reference targets the unpublished **0.0.5-alpha.1 source candidate**,
+including [source modules](modules.md). Published alpha.4 does not include imports;
+published beta.3 does not include floats.
 Published v0.0.3-beta.2 remains the earlier experimental baseline without functions. See the
 [syntax migration](syntax-migration.md) before using older programs. It is an
 experimental contract, not a stable language specification. Future proposals do
@@ -24,7 +25,7 @@ Identifiers match the ASCII pattern `[A-Za-z_][A-Za-z0-9_]*`. Statement forms us
 extend a preceding conditional. Variable names and assignment targets are
 resolved after parsing. Braces can also begin a standalone block.
 
-Punctuation tokens are `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;`, and `=`. Compound assignment tokens use
+Punctuation tokens include `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;`, `.`, `:`, `->` and `=`. Compound assignment tokens use
 longest match: `+=`, `-=`, `*=`, `/=`. Arithmetic operator tokens are `+`, `-`,
 `*`, and `/`. Comparison tokens use longest match: `==`, `!=`, `<`, `<=`, `>`,
 and `>=`. Integers contain one or more ASCII decimal digits; leading zeros
@@ -62,6 +63,11 @@ The following base grammar applies after trivia has been removed.
 Beta.3 extends it with typed function declarations, call
 expressions/statements, returns, and contracts; see [functions](functions.md).
 Those extensions additionally recognize `:` and `->` punctuation.
+The module extension adds file-level `import STRING as IDENTIFIER;`,
+`pub [pure] funcra ...` and `pub bind name = scalar-literal;`, with contextual
+`import`/`pub` words and `alias.member` expressions/calls. Imported library files
+are declaration-only. The exact grammar, visibility and path semantics are in
+[Proposal 0029](proposals/0029-source-modules.md) and [modules](modules.md).
 
 ```ebnf
 program         = { statement }, EOF ;
@@ -219,10 +225,19 @@ Carets cover the first affected line and remain visible for empty spans at EOF.
 | `E0019` | Negative repeat count |
 | `E0030` | Malformed or nonfinite float literal |
 | `E0031` | Nonfinite float arithmetic result |
+| `E0037` | Invalid module declaration or source-loader API required |
+| `E0038` | Module loading or UTF-8 failure |
+| `E0039` | Circular imports |
+| `E0040` | Module loading/linking resource limit |
+| `E0041` | Private imported member |
+| `E0042` | Unknown module alias/member or wrong symbol kind |
+| `E0043` | Invalid or escaping module path |
 
 Diagnostic wording and library types are experimental. Codes are intended to be
 more useful for tests than full platform-dependent file-error strings. Read
-errors, invalid UTF-8, and output errors are CLI errors without source spans.
+errors for imported modules carry the import span. Tokens file-read errors and
+output errors remain process errors. The [full diagnostic reference](reference/diagnostics.md)
+also covers functions and numerical E0032–E0036 errors.
 
 ## Command-line contract
 
@@ -251,8 +266,10 @@ success, `1` for source/file/output failures, and
 
 Integer bindings, explicit mutability, assignment, and lexical scopes are implemented on main and described
 in [the variable reference](variables.md). Beta.3 adds typed
-`funcra` calls as described in [functions](functions.md). User-defined types, modules,
-a compiler backend, and a package manager are not implemented. The implemented expression semantics are also
+`funcra` calls as described in [functions](functions.md). The 0.0.5 candidate
+adds source modules with public/private functions and scalar literal constants.
+User-defined types, runtime module globals, re-exports, a compiler backend and
+a package manager are not implemented. The implemented expression semantics are also
 recorded in [the expression design](proposals/0001-integer-expressions.md).
 
 The v0.0.3-beta.1 iteration milestone adds scoped `while`, `break`, and `continue`
@@ -269,7 +286,7 @@ and the same work/print budgets as while; it does not allocate an index array.
 including assignment to a variable named repeat. Same-scope index redeclaration
 is E0011; explicit inner scopes may shadow it. See [the repeat design](proposals/0007-counted-repeat.md).
 
-## Numerical vectors (alpha.2 candidate)
+## Numerical vectors (since alpha.2)
 
 `[1.0, 2.0]` and `[]` infer vector. Only float elements are accepted; a vector
 has at most 65,536 elements. `expression[integer]` returns a float or E0033,

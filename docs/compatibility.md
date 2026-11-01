@@ -6,9 +6,19 @@ Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
 v0.0.3-beta.1, beta.2, and beta.3 snapshots. Beta.3 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
-The current source targets `0.0.4-alpha.2` with numerical vectors.
-Published [alpha.1](releases/v0.0.4-alpha.1.md) supports scalar floats only.
-See [alpha.2 notes](releases/v0.0.4-alpha.2.md) and the release page for publication status.
+The latest published prerelease is [0.0.4-alpha.4](releases/v0.0.4-alpha.4-validation.md).
+The current source targets the unpublished [0.0.5-alpha.1 candidate](releases/v0.0.5-alpha.1.md).
+
+| Capability added after beta.3 | alpha.1 | alpha.2 | alpha.3 | alpha.4 | 0.0.5-alpha.1 candidate |
+| --- | --- | --- | --- | --- | --- |
+| Finite binary64 scalars | Yes | Yes | Yes | Yes | Yes |
+| Immutable vectors and numerical kernels | No | Yes | Yes | Yes | Yes |
+| Scaled norms, terminal self-call reuse and numerical payload quota | No | No | Yes | Yes | Yes |
+| Tiles, matrix operations and lexical value retirement | No | No | No | Yes | Yes |
+| Source modules and public/private functions/scalar constants | No | No | No | No | Yes |
+
+The four alpha columns above are the 0.0.4 series. Public alpha.4 also contains
+windows, log-space and classification kernels integrated after alpha.3.
 
 ## Identify the code you are running
 
@@ -101,7 +111,8 @@ their own source build and validation; a supported OS name is not enough.
 
 A successful source test on one host is not evidence of a universal binary.
 Use the matching archive or build with a compatible local Rust toolchain. The
-[release notes](releases/v0.0.3-beta.3.md) describe the current archive scope.
+[alpha.4 verification record](releases/v0.0.4-alpha.4-validation.md) describes
+the current published archive scope.
 
 ## Integration and future changes
 
@@ -160,7 +171,7 @@ The legacy integer evaluate helper keeps its result type. Default execution
 options and all six budget fields remain unchanged. Public alpha tagging and
 publication require explicit authorization after the final source/package gates.
 
-## Numerical vectors from alpha.1
+## Numerical vectors after alpha.1
 
 Alpha.2 adds Vector variants to ValueType/Value, vector/index syntax nodes and
 bracket tokens, plus diagnostics E0032–E0035. Exhaustive Rust matches must update.
@@ -174,3 +185,23 @@ positional arguments; existing user named/default calls are unchanged. The old
 unreleased #18 fill order is intentionally adapted to fill(value, count).
 There is no implicit integer conversion, vector arithmetic operator, element
 assignment, tensor or CLI rename. See [vectors](vectors.md).
+
+## Source modules after alpha.4
+
+0.0.5-alpha.1 adds `Statement::Import`, `Statement::Export`, `TokenKind::Dot`
+and E0037–E0043; exhaustive Rust matches must handle them. Existing public Span,
+Diagnostic, ExecutionOptions and source-string API signatures remain intact.
+Imports and public declarations in `scarp::compile/run` require switching to
+the explicit `modules` APIs. They never introduce implicit filesystem I/O.
+`ModuleProgram` owns source maps and provides source-aware check/execute errors.
+
+CLI run/check load modules with default source limits even for single files:
+the new 1 MiB per-file cap applies to those commands. Tokens still lexes only the
+entry file. Hosts needing different loading caps can supply `ModuleLimits`.
+Runtime budgets, defaults, purity, contracts, numerical kernels, output atomicity
+and ordinary lexical shadowing retain their established behavior. `import`,
+`pub` and `as` remain usable as ordinary contextual identifiers.
+
+Libraries permit functions and scalar literal constants, with explicit `pub`
+visibility. Runtime globals, re-exports and cyclic graphs are unsupported. This
+is an experimental language/API extension; see [modules](modules.md).

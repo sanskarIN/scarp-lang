@@ -52,20 +52,20 @@ class ReleaseAssets(unittest.TestCase):
                 f"docs/releases/v{version}.md", "examples/bindings.srp",
                 "examples/mutable.srp", "examples/scopes.srp", "examples/decisions.srp",
             ) if name != omit}
-            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4")):
+            if (version.startswith("0.0.3-") or version in ("0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1")):
                 for name in ("loops", "repeat", "control_escapes"):
                     for extension in ("srp", "stdout"):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
+            if version in ("0.0.3-beta.2", "0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1"):
                 for member in (
                     "examples/output.srp", "examples/output.stdout",
                     "docs/output.md", "docs/syntax-migration.md",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
+            if version in ("0.0.3-beta.3", "0.0.4-dev", "0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1"):
                 for member in (
                     "docs/functions.md", "examples/functions.srp", "examples/functions.stdout",
                     "examples/function_contracts.srp", "examples/function_contracts.stdout",
@@ -74,14 +74,14 @@ class ReleaseAssets(unittest.TestCase):
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
+            if version in ("0.0.4-alpha.1", "0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1"):
                 for member in (
                     "docs/floats.md", "examples/float_refinement.srp", "examples/float_refinement.stdout",
                     "examples/float_smoothing.srp", "examples/float_smoothing.stdout",
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4"):
+            if version in ("0.0.4-alpha.2", "0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1"):
                 for member in (
                     "docs/vectors.md", "examples/vectors.srp", "examples/vectors.stdout",
                     "examples/vector_probabilities.srp", "examples/vector_probabilities.stdout",
@@ -89,13 +89,13 @@ class ReleaseAssets(unittest.TestCase):
                 ):
                     if member != omit:
                         files[member] = b"fixture"
-            if version in ("0.0.4-alpha.3", "0.0.4-alpha.4"):
+            if version in ("0.0.4-alpha.3", "0.0.4-alpha.4", "0.0.5-alpha.1"):
                 for name in ("scaled_norm", "terminal_recursion", "vector_allocation"):
                     for extension in ("srp", "stdout"):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
-            if version == "0.0.4-alpha.4":
+            if version in ("0.0.4-alpha.4", "0.0.5-alpha.1"):
                 for member in ("docs/tiles.md", "docs/memory-lifetimes.md", "docs/architecture.md", "docs/testing.md"):
                     if member != omit:
                         files[member] = b"fixture"
@@ -106,6 +106,14 @@ class ReleaseAssets(unittest.TestCase):
                         member = f"examples/{name}.{extension}"
                         if member != omit:
                             files[member] = b"fixture"
+            if version == "0.0.5-alpha.1":
+                for member in (
+                    "docs/modules.md", "docs/tutorials/modules.md", "docs/proposals/0029-source-modules.md",
+                    "examples/module_demo.srp", "examples/module_demo.stdout",
+                    "examples/modules/linear.srp", "examples/modules/settings.srp",
+                ):
+                    if member != omit:
+                        files[member] = b"fixture"
             files.update(extra_files or {})
             files["BUILD-INFO.txt"] = (
                 f"version={record_version or version}\ntarget={target}\ncommit={commit}\n"
@@ -156,6 +164,29 @@ class ReleaseAssets(unittest.TestCase):
     def test_wrong_source_commit_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "unexpected commit"):
             verifier.verify(self.directory, "0.0.2", "b" * 40)
+
+    def test_modules_candidate_requires_new_and_inherited_package_content(self):
+        version = "0.0.5-alpha.1"
+        self.build(version=version)
+        self.assertEqual(len(verifier.verify(self.directory, version, COMMIT).splitlines()), 3)
+        for member in (
+            "docs/modules.md", "docs/tutorials/modules.md", "docs/proposals/0029-source-modules.md",
+            "examples/module_demo.srp", "examples/module_demo.stdout",
+            "examples/modules/linear.srp", "examples/modules/settings.srp",
+            "docs/tiles.md", "docs/memory-lifetimes.md", "docs/architecture.md", "docs/testing.md",
+            "docs/vectors.md", "docs/floats.md", "docs/functions.md", "docs/budgets.md",
+            "docs/output.md", "docs/syntax-migration.md", "docs/reference/cli.md", "docs/embedding.md",
+            "examples/repeat.srp", "examples/control_escapes.stdout", "examples/output.srp",
+            "examples/function_contracts.srp", "examples/float_smoothing.stdout", "examples/coefficient_fit.srp",
+            "examples/scaled_norm.srp", "examples/terminal_recursion.stdout", "examples/vector_allocation.stdout",
+            "examples/matrix_inference.srp", "examples/matrix_forward.stdout", "examples/tile_windows.srp",
+            "examples/vector_windows.stdout", "examples/logit_loss.srp", "examples/score_selection.stdout",
+            "docs/releases/v0.0.5-alpha.1.md",
+        ):
+            with self.subTest(member=member):
+                self.build(version=version, omit=member)
+                with self.assertRaisesRegex(ValueError, "missing " + member):
+                    verifier.verify(self.directory, version, COMMIT)
 
     def test_corrupt_archive_is_rejected_before_opening(self):
         next(self.directory.glob("*.zip")).write_bytes(b"damaged")

@@ -1,5 +1,14 @@
 # Test and validate changes
 
+For the 0.0.5 modules candidate, run `cargo test --locked --offline --test modules
+--test module_files`. These cover in-memory graph/linker APIs, filesystem/CLI
+loading, visibility, cycles, canonical deduplication, exact loading caps,
+contracts, numerical budgets, atomic streams and owned cross-file diagnostics.
+Unix symlink/escape tests and Windows canonical case-alias tests run on their
+respective hosts. The three-file `examples/module_demo.srp` has exact stdout and
+empty stderr, checked alongside every existing entry example. Negative fixture
+goldens under `tests/fixtures/modules` run through both memory and CLI loaders.
+
 For alpha.4, run `cargo test --locked --offline --test numeric_tiles --test
 linear_algebra --test numeric_diagnostics --test scope_retirement` plus the
 existing vector/window/allocation/function suites. Library unit tests include
@@ -175,4 +184,5 @@ cargo bench --locked --offline --bench numerics -- --quick
 The new benchmark smoke workloads run on stable native hosts and Rust 1.74,
 with outputs verified before timing. Full performance records and raw repeated
 runs are in [performance](performance.md#numerical-vector-measurements).
-Native archives run all 23 exact-output examples and vector stream/failure probes.
+Native archives discover and run all exact-output entry examples, including the
+multi-file entry and its nested library sources, plus stream/failure probes.

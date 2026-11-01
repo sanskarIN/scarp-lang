@@ -1,6 +1,6 @@
 # Command-line reference
 
-The alpha.4 candidate keeps these commands, options and exit codes. Tile and
+The 0.0.5-alpha.1 candidate keeps these commands, options and exit codes. Tile and
 matrix calls work through `run` and `check`; `tokens` only lexes their source.
 `--max-vector-bytes` counts new vector and tile element buffers together, including
 matrix outputs, and retirement does not refund the cumulative quota. E0017
@@ -28,8 +28,8 @@ development stack; see [compatibility](../compatibility.md).
 
 The `tokens` and `check` commands also accept `--help` and `-h` after the
 command name. Only one source path is accepted. There is no stdin input mode,
-watch mode, import path, or `scarp build` command.
-`exec`, `verify`, `inspect`, and `compile` are not accepted commands in beta.3;
+watch mode, import search-path option, or `scarp build` command.
+`exec`, `verify`, `inspect`, and `compile` are not accepted commands;
 proposed CLI designs do not change the shipped command contract.
 
 v0.0.3 keeps these spellings and adds contextual guidance for run/check/tokens.
@@ -49,10 +49,10 @@ native executable.
 
 ## What each file command validates
 
-`run` validates the complete file before writing program output. Validation
+`run` validates the complete source graph before writing program output. Validation
 includes names, scopes, mutability, primitive types, and typed function bodies.
-Selected calls, defaults, contracts, and arithmetic
-is checked before any pending prints are written.
+Selected calls, defaults, contracts and arithmetic
+are checked before any pending prints are written.
 
 `check` uses the same preparation pass as execution, discarding each print value
 immediately instead of retaining pending output. It evaluates declarations and assignments in fresh local storage, so
@@ -62,7 +62,8 @@ format or write the program's print values.
 
 `tokens` only checks lexical validity. It can succeed when a file has missing
 punctuation, unknown variables, or arithmetic failures. It never executes the
-program. Use `check` rather than a token listing to validate development source.
+program or follows imports. Use `check` rather than a token listing to validate
+development source.
 
 ## Paths and encoding
 
@@ -74,7 +75,8 @@ status 1 and leave output empty; malformed options use status 2. See
 
 Beta.3 also accepts `--max-call-depth`, `--max-calls`, `--max-live-slots`, and
 `--max-capture-bytes`. They follow the same placement, decimal-count, duplicate,
-separator, and usage-error rules as steps/prints; `tokens` rejects all six.
+separator, and usage-error rules as steps/prints. Alpha.3 adds
+`--max-vector-bytes`; current `tokens` rejects all seven runtime options.
 Defaults and exact accounting are in the [budget guide](../budgets.md).
 
 The [budget guide](../budgets.md) provides copy-paste invocations and explains
@@ -101,8 +103,19 @@ Scarp command; when using Cargo, that means `cargo run -- check -- -hello.srp`.
 Paths use the operating system's native encoding. Source contents must be UTF-8.
 A single leading UTF-8 byte order mark is accepted. LF and CRLF files work.
 Missing files, directories used as files, unreadable files, and invalid UTF-8
-contents produce read errors with a nonzero status. The `.srp` extension is a
-convention, not a file-extension check.
+contents produce read errors with a nonzero status. The entry file's `.srp`
+extension is conventional, not required.
+
+Starting in the 0.0.5 candidate, `run` and `check` load imports relative to each
+importing file and trust the entry file's parent directory. Import strings require
+portable `/`-separated relative `.srp` paths; escaping the root, absolute paths,
+backslashes and drive/URI prefixes are rejected. Canonical sources are loaded
+once and cycles fail before execution. No network/search-path loading occurs.
+Default source limits are 128 files, 32 import edges per path, 1 MiB per file,
+8 MiB total, 1,024 imports and 8 MiB expansion text. These are fixed CLI defaults,
+independent of the seven runtime flags; Rust hosts can configure `ModuleLimits`.
+Read [modules](../modules.md) for exact semantics and filesystem trust assumptions.
+Imported-file load/path failures use E0038/E0043 at the importing source span.
 
 ## Standard streams and status
 
