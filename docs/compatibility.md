@@ -6,10 +6,11 @@ Use this guide before copying an example into a different Scarp executable or
 updating a Rust embedding host. It compares the published v0.0.1, v0.0.2,
 v0.0.3-beta.1, beta.2, and beta.3 snapshots. Beta.3 uses the syntax described below;
 separate feature branches can differ from both main and downloaded binaries.
-The latest published prerelease is [0.0.4-alpha.4](releases/v0.0.4-alpha.4-validation.md).
-The current source targets the unpublished [0.0.5-alpha.1 candidate](releases/v0.0.5-alpha.1.md).
+The latest published prerelease is [0.0.5-alpha.1](releases/v0.0.5-alpha.1-validation.md).
+The current source retains its implemented module/language contract.
+[Preparation notes](releases/v0.0.5-alpha.1.md) are the immutable candidate snapshot.
 
-| Capability added after beta.3 | alpha.1 | alpha.2 | alpha.3 | alpha.4 | 0.0.5-alpha.1 candidate |
+| Capability added after beta.3 | alpha.1 | alpha.2 | alpha.3 | alpha.4 | 0.0.5-alpha.1 |
 | --- | --- | --- | --- | --- | --- |
 | Finite binary64 scalars | Yes | Yes | Yes | Yes | Yes |
 | Immutable vectors and numerical kernels | No | Yes | Yes | Yes | Yes |
@@ -111,7 +112,7 @@ their own source build and validation; a supported OS name is not enough.
 
 A successful source test on one host is not evidence of a universal binary.
 Use the matching archive or build with a compatible local Rust toolchain. The
-[alpha.4 verification record](releases/v0.0.4-alpha.4-validation.md) describes
+[0.0.5-alpha.1 verification record](releases/v0.0.5-alpha.1-validation.md) describes
 the current published archive scope.
 
 ## Integration and future changes

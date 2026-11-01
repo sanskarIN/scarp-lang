@@ -15,7 +15,8 @@ concurrency:
 
 jobs:
   prune:
-    if: github.repository == 'sanskarIN/scarp-lang' && github.ref == 'refs/heads/main'
+    # Stable repository identity survives owner/name changes; forks have other IDs.
+    if: github.repository_id == '1432976395' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

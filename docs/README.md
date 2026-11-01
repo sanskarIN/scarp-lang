@@ -3,12 +3,14 @@
 Development declarations use `bind` and `var`; see the [migration guide](syntax-migration.md). Published tags retain their original syntax.
 
 Choose a guide by the task you want to complete. Current tutorials target the
-unpublished **0.0.5-alpha.1 development candidate**, adding [source modules](modules.md)
+**0.0.5-alpha.1 prerelease**, adding [source modules](modules.md)
 to the finite floats, numerical vectors/tiles, typed functions, contracts, loops
 and output streams already implemented. The latest published prerelease is
-[0.0.4-alpha.4](releases/v0.0.4-alpha.4-validation.md), which has no imports.
-[Candidate notes](releases/v0.0.5-alpha.1.md) describe the new slice and publication
-gates. Historical release notes describe fixed snapshots. Tensors, native
+[0.0.5-alpha.1](releases/v0.0.5-alpha.1-validation.md), with verified native
+packages and imports. [Preparation notes](releases/v0.0.5-alpha.1.md) preserve the
+original candidate contract. [Repository migration](migrations/scarp-lang-Scarp.md)
+records the planned maintainer transfer to scarp-lang/Scarp. Historical release
+notes describe fixed snapshots. Tensors, native
 backends, a package manager and website deployment remain separate.
 
 ## Guides and what each adds

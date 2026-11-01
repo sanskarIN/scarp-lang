@@ -9,7 +9,7 @@ inputs do not spend that call's new-allocation quota, while materialized outputs
 do. Existing entry-point signatures and `ExecutionLimits` literals remain valid.
 See [tiles](tiles.md) and [memory lifetimes](memory-lifetimes.md).
 
-This guide targets the 0.0.5-alpha.1 development API. It helps a host application choose
+This guide targets the 0.0.5-alpha.1 API. It helps a host application choose
 between parsing, compilation, validation, and execution while retaining control
 of output and diagnostics. See [compatibility](compatibility.md) for v0.0.1 API
 differences.

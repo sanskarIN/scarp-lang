@@ -8,8 +8,8 @@ you are running matches the documentation. Start with
 
 | Goal | Choose | What to expect |
 | --- | --- | --- |
-| Follow the module tutorial | This checkout (0.0.5-alpha.1 candidate) | Explicit imports, public/private functions and scalar constants; not yet published |
-| Use the latest published numerical release | v0.0.4-alpha.4 | Finite scalars, vectors, tiles, matrix operations and runtime budgets; no imports |
+| Follow the module tutorial | v0.0.5-alpha.1 or this checkout | Explicit imports, public/private functions and scalar constants; verified native downloads |
+| Reproduce the numerical milestone | v0.0.4-alpha.4 | Finite scalars, vectors, tiles, matrix operations and runtime budgets; no imports |
 | Reproduce scalar floats | v0.0.4-alpha.1 | Finite binary64 scalars integrated with typed functions |
 | Reproduce the function beta | v0.0.3-beta.3 | Typed functions, contracts, bind/var, output streams, loops; no floats |
 | Reproduce the iteration beta | The v0.0.3-beta.1 tag | Original let/let mut and println, loops, budgets, and five escapes |
@@ -18,8 +18,9 @@ you are running matches the documentation. Start with
 | Inspect one proposed feature | Its individual feature branch | Only that branch and its prerequisites |
 
 This source identifies as `0.0.5-alpha.1` and adds [modules](modules.md).
-The [candidate notes](releases/v0.0.5-alpha.1.md) describe the implementation and
-remaining publication gates. A development version is not a published release.
+The [publication record](releases/v0.0.5-alpha.1-validation.md) identifies
+the released source, verified downloads and checksums. A package version alone
+does not prove that a local build is the published source.
 Syntax and APIs remain subject to change. Published packages retain their
 original syntax. Tensors, backends, package tooling and CLI redesign remain separate.
 Follow [your first numerical program](tutorials/numerical-program.md) after setup.
@@ -88,7 +89,7 @@ development, `cargo run -- ...` selects the current checkout explicitly.
 
 Downloaded release archives already contain an executable and do not require
 Rust for running programs. Their platform and checksum instructions are in the
-[alpha.4 verification record](releases/v0.0.4-alpha.4-validation.md). Select Windows x64 MSVC,
+[0.0.5-alpha.1 verification record](releases/v0.0.5-alpha.1-validation.md). Select Windows x64 MSVC,
 Linux x64 GNU, or Apple Silicon macOS to match the host. Verify the archive's
 SHA-256 against its companion checksum before extracting, keep the supplied
 `examples/` and `docs/` directories, and run commands from the extracted root.

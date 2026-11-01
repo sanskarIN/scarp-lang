@@ -43,7 +43,7 @@ returns errors; the CLI renders them using the source and path it already owns.
 | `lib` | Public convenience functions and combined error type |
 | `main` | Native arguments, file loading, streams, and process status |
 
-## Source graphs (0.0.5 candidate)
+## Source graphs (0.0.5-alpha.1)
 
 The source-string pipeline above remains free of implicit I/O. The CLI's run/check
 commands use `modules::compile_file`; tokens still lexes just the requested file.

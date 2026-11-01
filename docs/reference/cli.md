@@ -1,6 +1,6 @@
 # Command-line reference
 
-The 0.0.5-alpha.1 candidate keeps these commands, options and exit codes. Tile and
+The 0.0.5-alpha.1 prerelease keeps these commands, options and exit codes. Tile and
 matrix calls work through `run` and `check`; `tokens` only lexes their source.
 `--max-vector-bytes` counts new vector and tile element buffers together, including
 matrix outputs, and retirement does not refund the cumulative quota. E0017
@@ -106,7 +106,7 @@ Missing files, directories used as files, unreadable files, and invalid UTF-8
 contents produce read errors with a nonzero status. The entry file's `.srp`
 extension is conventional, not required.
 
-Starting in the 0.0.5 candidate, `run` and `check` load imports relative to each
+Starting in 0.0.5-alpha.1, `run` and `check` load imports relative to each
 importing file and trust the entry file's parent directory. Import strings require
 portable `/`-separated relative `.srp` paths; escaping the root, absolute paths,
 backslashes and drive/URI prefixes are rejected. Canonical sources are loaded

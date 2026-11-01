@@ -9,11 +9,11 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-current published version is `0.0.4-alpha.4`, from approved source
-`26e2fedc5ad492cdfd6ea986ca5b3017c286d310`. Its completed publication request
+current published version is `0.0.5-alpha.1`, from approved source
+`afe8b5380c9d6c4774162e51c6c9bc8b90901671`. Its completed publication request
 has been retired. The
-[alpha.4 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.4)
-and [verification record](releases/v0.0.4-alpha.4-validation.md) identify the
+[0.0.5-alpha.1 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.5-alpha.1)
+and [verification record](releases/v0.0.5-alpha.1-validation.md) identify the
 published prerelease; a source version alone is not publication evidence.
 Earlier published tags/assets must remain unchanged. For a future
 release, choose an unused version, update Cargo/lockfile/docs consistently, and
@@ -21,12 +21,13 @@ use its exact tag and archive names throughout the process. An unpublished
 development identifier is not evidence that a public release exists.
 `v0.0.0.1` is not a three-part version.
 
-This checkout prepares **0.0.5-alpha.1**, an unpublished source-module candidate.
-The [candidate notes](releases/v0.0.5-alpha.1.md) explain the version choice and
-limitations. There is no active publication request; fresh exact-version/source
-approval is required after all gates. The verifier requires nested module
-libraries and guides as well as inherited alpha.4 contents. Preparation does not
-authorize a tag, draft or release.
+The source-module prerelease is published and its fulfilled request is
+retired. [Preparation notes](releases/v0.0.5-alpha.1.md) preserve the original
+candidate contract. Every future release needs fresh exact-version/source
+approval after all gates. The verifier requires nested module libraries/guides
+as well as inherited alpha.4 contents. The [migration record](migrations/scarp-lang-Scarp.md)
+prepares the maintainer-performed transfer and rename without altering published
+tags, archives or their historical source metadata.
 
 Run local checks, then package on a machine with the matching native Rust
 toolchain and PowerShell 7:
