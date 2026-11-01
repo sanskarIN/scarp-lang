@@ -125,6 +125,24 @@ fn contextual_module_words_preserve_old_single_file_identifiers() {
 }
 
 #[test]
+fn ordinary_single_file_semantic_errors_keep_their_established_diagnostics() {
+    for source in [
+        "funcra f()->unit {} funcra f()->unit {}",
+        "funcra repeat()->unit {}",
+        "bind value=1; bind value=2;",
+        "pure funcra f(x: integer)->integer{return x;} print(f(true));",
+        "bind global=1; funcra f()->integer{return global;}",
+    ] {
+        let expected = scarp::compile(source).unwrap_err();
+        assert_eq!(
+            compile(&[("main.srp", source)]).unwrap_err().diagnostic,
+            expected,
+            "{source}"
+        );
+    }
+}
+
+#[test]
 fn forward_mutual_recursion_and_builtin_precedence_are_module_local() {
     assert_eq!(output(&[("main.srp","import \"local.srp\" as lib; print(lib.even(8), sum([1.0,2.0]), lib.sum(3));"),
         ("local.srp", "pub pure funcra even(n: integer)->boolean {if n==0{return true;} return odd(n-1);} pure funcra odd(n: integer)->boolean {if n==0{return false;} return even(n-1);} pub pure funcra sum(n: integer)->integer{return n+10;}")]),b"true 3.0 13\n");

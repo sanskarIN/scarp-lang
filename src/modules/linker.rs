@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 struct Symbol {
     info: SymbolInfo,
+    definition: Span,
     target: Option<String>,
     constant: Option<ExpressionKind>,
 }
@@ -106,7 +107,11 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                 Statement::Function(function) => {
                     crate::resolver::check_name(&function.name, function.name_span)?;
                     if function.name == "repeat" {
-                        return Err(syntax(function.name_span, "repeat cannot name a function"));
+                        return Err(Diagnostic::new(
+                            Kind::FunctionDefinition,
+                            function.name_span,
+                            "repeat cannot name a function because it starts a loop statement",
+                        ));
                     }
                     let size = if id == 0 {
                         function.name.len()
@@ -125,6 +130,7 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                         format!("{}::{}", module.identity, function.name)
                     };
                     Symbol {
+                        definition: function.span,
                         info: SymbolInfo {
                             name: function.name.clone(),
                             public,
@@ -152,6 +158,7 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                     }
                     let value = scalar(initializer)?;
                     Symbol {
+                        definition: *name_span,
                         info: SymbolInfo {
                             name: name.clone(),
                             public,
@@ -171,6 +178,14 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                 _ => continue,
             };
             if let Some(previous) = table.symbols.get(&symbol.info.name) {
+                if symbol.target.is_some() && previous.target.is_some() {
+                    return Err(Diagnostic::new(
+                        Kind::FunctionDefinition,
+                        symbol.info.span,
+                        format!("function {:?} is already declared", symbol.info.name),
+                    )
+                    .with_related(previous.definition, "the first definition is here"));
+                }
                 return Err(duplicate(
                     &symbol.info.name,
                     symbol.info.span,
