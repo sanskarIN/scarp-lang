@@ -111,6 +111,14 @@ def validate_resume(request, release, annotated_tag):
     return commit
 
 
+def approved_source(request):
+    """New publication requests must identify the reviewed source, not a moving ref."""
+    commit = request.get("source_commit")
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("publication requires an explicitly approved full source_commit SHA")
+    return commit
+
+
 def verified_workflows(endpoint, commit):
     runs = api(f"{endpoint}/actions/runs?head_sha={commit}&event=push&per_page=100")["workflow_runs"]
     selected = selected_runs(runs, commit)
@@ -199,6 +207,11 @@ def main():
         subprocess.run(["git", "merge-base", "--is-ancestor", commit, head], check=True)
     elif tag_ref is not None or "resume_commit" in request or "resume_release_id" in request:
         raise ValueError("orphaned tag or unmatched recovery request needs maintainer inspection")
+    else:
+        commit = approved_source(request)
+        # The authorization commit can follow its candidate. Both the current
+        # main control revision and approved source need their own green jobs.
+        subprocess.run(["git", "merge-base", "--is-ancestor", commit, head], check=True)
     cargo = subprocess.check_output(["git", "show", f"{commit}:Cargo.toml"], text=True)
     if f'version = "{version}"' not in cargo:
         raise ValueError("release source version differs from the explicit request")

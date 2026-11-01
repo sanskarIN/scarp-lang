@@ -9,10 +9,10 @@ publication; changing a package version alone does not authorize a release.
 ## Build inputs and packages
 
 The package version comes from `Cargo.toml`; use a three-part version. The
-requested version is `0.0.4-alpha.2`, scheduled for 31 October 2026 at 10:00 AM
-IST (04:30 UTC). The [alpha.2 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.2)
-records actual publication status; a version in source alone does not prove
-publication. Published alpha.1 remains unchanged.
+candidate version is `0.0.4-alpha.4`. The completed alpha.3 request has
+been removed. No alpha.4 publication is requested or authorized yet. The
+[alpha.3 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.3)
+records the latest published prerelease; a source version alone is not a release.
 Earlier published tags/assets must remain unchanged. For a future
 release, choose an unused version, update Cargo/lockfile/docs consistently, and
 use its exact tag and archive names throughout the process. An unpublished
@@ -90,14 +90,19 @@ maintainer dispatch and scheduled runs, which check out the current default
 branch. Every path must pass the exact-main gates below. Only three-part alpha.N
 or beta.N prerelease versions are accepted.
 
-The reviewed `.github/release-request.json` requests alpha.2 with the maintainer's
-name and email, an inclusive `not_before` of `2026-10-31T04:30:00Z` and exclusive
-`not_after` of `2026-10-31T18:30:00Z`. This permits publication on 31 October from
-10:00 AM IST until midnight IST, subject to verification. The workflow attempts
-at 10:00, 10:15 and 10:35 AM IST (04:30, 04:45 and 05:05 UTC). These cron entries
-match 31 October annually; the request's full year/date window makes subsequent
-years inert. Scheduled runs require explicit dates and cannot activate an
-undated immediate request. Do not reuse beta.3 recovery fields.
+The completed alpha.3 request was removed while preparing alpha.4. After all
+candidate gates pass, obtain explicit maintainer approval for its version and
+full source SHA. A subsequent reviewed request supplies `version`,
+`source_commit`, `tagger_name` and `tagger_email`. `source_commit` must be a full
+lowercase 40-digit SHA, reachable from current main and independently validated
+by exact-main Rust/package jobs. The request's own main revision also needs all
+seven jobs. This allows authorization to follow the approved candidate without
+requiring a self-referential commit hash. Preparation is not authorization.
+
+Scheduled requests additionally require inclusive `not_before` and exclusive
+`not_after` UTC timestamps. The legacy 31 October cron attempts cannot publish
+without a matching dated request. Do not reuse completed alpha.3 or beta.3
+recovery fields. An absent request makes all publisher triggers inert.
 
 Time checks apply to scheduled, manual and workflow-completion runs before any
 Git/API action, again before tag creation, and again before publication. Missing,
@@ -115,7 +120,7 @@ See GitHub's [schedule documentation](https://docs.github.com/en/actions/referen
 
 Without a request the publisher exits before any Git/API action. A request PR
 changes main and must pass all seven fresh checks and package verification for
-its new exact final source. Preparation or a package version is not approval.
+its control revision and the approved source. Preparation or a package version is not approval.
 An already published release is left unchanged. A draft requires an explicit
 `resume_release_id` and full `resume_commit` in the reviewed request. An orphaned
 tag or unmatched draft stops the job for inspection.

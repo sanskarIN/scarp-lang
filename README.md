@@ -3,7 +3,7 @@
 **Build Beyond Boundaries.**
 
 Scarp is an experimental programming language implemented in Rust. This checkout
-targets the 0.0.4-alpha.3 numerical and memory-control candidate, with finite binary64 values, a lexer, parser,
+targets the unpublished 0.0.4-alpha.4 numerical and runtime candidate, with finite binary64 values, a lexer, parser,
 name resolver, interpreter, and command-line interface. Syntax and library APIs
 may change.
 
@@ -26,58 +26,32 @@ The [documentation hub](docs/README.md) provides setup, tutorials, command and
 diagnostic references, Rust embedding, testing, troubleshooting, and compatibility
 guides. Start there for a reading path matched to your task.
 
-The [finite-float guide](docs/floats.md) describes the alpha implementation in this
-checkout: decimal/scientific literals, checked finite arithmetic, and float
-function parameters/results. Published beta.3 binaries remain integer/string/
-Boolean only. The [alpha release notes](docs/releases/v0.0.4-alpha.1.md)
-describe the new scope. The [prerelease page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.1)
-records publication status and provides verified native downloads after publication.
+The [tile and linear-algebra guide](docs/tiles.md) covers immutable two-axis
+values, transpose, matrix-vector/matrix products and tile arithmetic. Shared
+vector windows keep their visible-slice boundaries through all operations.
 
-The [scaled L2 proposal](docs/proposals/0018-scaled-l2-norms.md) documents
-the implemented pure `norm` and `normalize` functions. The alpha.3
-candidate also includes terminal self-transfer for `funcra` and
-the optional `--max-vector-bytes` runtime allocation gate.
-These are **not** present in the published alpha.2 binaries.
-See [alpha.3 notes](docs/releases/v0.0.4-alpha.3.md) for release status
-and [branch conventions](docs/branches.md) for the repository workflow.
+```scarp
+bind weights = tile([1.0, 2.0, -1.0, 3.0], 2, 2);
+print(matvec(weights, [2.0, 1.0])); // [4.0, 1.0]
+```
 
-The [log-space numerical proposal](docs/proposals/0024-bounded-log-space-kernels.md)
-tracks development-only `logsumexp` and `logsoftmax` for finite model
-logits. Published alpha.3 binaries do not contain these functions.
+[Automatic value retirement](docs/memory-lifetimes.md) releases inaccessible
+scope values while preserving returned values, contracts and output snapshots.
+[Independent runtime budgets](docs/budgets.md) bound work, calls, slots, snapshots
+and cumulative new numerical payload. These do not measure total process memory.
 
-The [stable selection proposal](docs/proposals/0025-stable-vector-selection.md)
-tracks development-only `argmax`, `argmin`, `maxval`, and `minval`
-for deterministic model score decoding. Published alpha.3 binaries do
-not include these functions.
+Existing numerical capabilities include compensated vector reductions, scaled
+norms, softmax, log-space operations, deterministic selection, categorical losses,
+one-hot targets and explicit loss gradients. See [vectors](docs/vectors.md),
+[the numerical tutorial](docs/tutorials/numerical-program.md), and
+[error repairs](docs/reference/numerical-errors.md).
 
-The [categorical logit loss proposal](docs/proposals/0026-logit-loss.md)
-documents the unreleased `crossentropy(logits, target)` and
-`logprob(logits, target)` kernels. Both work directly on finite score
-vectors and integer class indices, with bounded execution and no new
-vector payload allocation. Published alpha.3 packages do not include
-these operations.
-
-The [explicit training primitives proposal](docs/proposals/0027-classification-training-primitives.md)
-covers the unreleased `lossgrad(logits, target)` and `onehot(count, target)`
-vector kernels, both with bounded work and element-allocation budgets.
-They are not a general autograd, GPU, or optimizer implementation, and
-are **not present in published alpha.3**.
-
-The [vector-window proposal](docs/proposals/0020-vector-windows-stitch.md)
-documents development-only `window(v, start, count)` for zero-copy
-immutable visible ranges, and `stitch(a, b)` for bounded vector
-concatenation. Windowing charges no new element payload, while stitching
-precharges the current vector allocation ledger. **These functions
-are not included in published alpha.3.**
-
-The [vector guide](docs/vectors.md) covers this checkout's immutable vectors,
-indexing, ten pure kernels, typed functions and resource accounting. These are
-new alpha.2 features, absent from published alpha.1. See
-[alpha.2 release notes](docs/releases/v0.0.4-alpha.2.md). Publication is scheduled
-for 31 October at 10:00 AM IST, subject to the verified source/package gates.
-The [release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.2)
-records actual publication status. Start with [a numerical program](docs/tutorials/numerical-program.md)
-or [numerical error repairs](docs/reference/numerical-errors.md).
+The latest published prerelease is
+[alpha.3](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.4-alpha.3).
+Its binaries do not contain the newer matrix, window or classification additions.
+[Alpha.4 candidate notes](docs/releases/v0.0.4-alpha.4.md) distinguish implemented
+features from pending release gates. Publication requires exact-source CI,
+native packages and separately approved source SHA; see [release engineering](docs/releasing.md).
 
 ## Build and run
 

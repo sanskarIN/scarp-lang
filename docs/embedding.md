@@ -1,5 +1,14 @@
 # Embed Scarp in a Rust application
 
+The alpha.4 candidate adds public `value::NumericTile`, `Value::Tile` and
+`ValueType::Tile`; exhaustive enum matches need an additional arm. Construct a
+checked tile with `NumericTile::new` or `from_vector`. The latter shares a visible
+window without copying. `numeric::evaluate_with_vector_limit` accepts the new
+`Builtin::MatVec`, `MatMul`, `TileAdd` and `TileScale` variants. Host-provided
+inputs do not spend that call's new-allocation quota, while materialized outputs
+do. Existing entry-point signatures and `ExecutionLimits` literals remain valid.
+See [tiles](tiles.md) and [memory lifetimes](memory-lifetimes.md).
+
 This guide targets the beta.3 API and current main. It helps a host application choose
 between parsing, compilation, validation, and execution while retaining control
 of output and diagnostics. See [compatibility](compatibility.md) for v0.0.1 API

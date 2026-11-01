@@ -1,0 +1,6 @@
+workload,compile_us,validate_us,execute_us,source_bytes,operations,bindings,output_bytes
+assignments,6217.733,381.195,402.415,28693,4098,1,5
+branches,10653.900,406.355,411.355,56341,3074,1,5
+prints,11949.467,1119.605,1781.965,77824,4096,0,8192
+long_expression,2398.833,434.750,408.985,16391,1,0,5
+terminal_calls_4096,17.267,5409.055,4679.940,184,1,0,5

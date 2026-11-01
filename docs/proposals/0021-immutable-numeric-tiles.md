@@ -1,8 +1,8 @@
 # Proposal 0021 — Scarp immutable numerical tiles
 
-Status: **unreleased development branch only**. Neither the published
-`v0.0.4-alpha.2` binaries nor the current main branch implement `tile`.
-This proposal does not authorize a merge, tag, release request, or prerelease.
+Status: **implemented in the alpha.4 integration candidate**, including
+visible windows, the cumulative allocation ledger and scope retirement.
+Published alpha.3 binaries do not implement tiles. Publication is separately gated.
 
 ## Why this value type
 
@@ -96,22 +96,13 @@ The step, vector length, frame-slot and output quotas remain independently
 bounded. This is **not** a universal process-RAM cap, general escape
 analysis or an original physical memory allocator.
 
-## Integration boundaries
+## Alpha.4 integration
 
-This branch is based on `main` and deliberately does not merge:
-- PR #50 — scaled norm and normalization of flat vectors
-- PR #51 — compiler-planned scope retirement
-- PR #52 — zero-copy vector windows and bounded stitching
-
-The following integration is expected to remain valid once those changes
-are independently reviewed: `NumericTile` wraps an existing immutable
-vector, so adopting a visible-window vector representation would require
-explicitly checking that row and cell selection use only its visible slice;
-retirement must treat `Tile` as an ordinary immutable `Value`; memory
-snapshots continue to use the logical number of visible cells. Do not assume
-those separate branches are integrated or published today.
-
-Review source, Rust 1.74, debug/release integration tests, formatting,
-Clippy, docs, native Windows/Linux/macOS packages and the output-snapshot
-budget before shipping any combined milestone. Never claim that conventional
-row-major layouts or immutable values were invented by Scarp.
+Tiles wrap the current visible-window `NumericVector`, so row/cell/flattening
+never expose hidden backing cells. `lane` and `turn` prepay new element payload
+through the same cumulative E0036 ledger as every other materialization.
+Retirement handles tiles as ordinary immutable values and preserves snapshots.
+Selected tile output additionally prepays cell count plus height, including
+empty rows. See [the current guide](../tiles.md) for all resource formulas and
+the new matrix kernels, and [the baseline audit](../releases/alpha4-baseline.md)
+for reviewed experimental heads. Original PR history remains preserved.

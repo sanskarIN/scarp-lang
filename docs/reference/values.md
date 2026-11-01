@@ -10,7 +10,8 @@ bindings and string-valued expressions require the development stack.
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |
 | Float (alpha) | `0.5`, `1e3`, `-0.0` | Finite binary64; no integer coercion |
-| Vector (alpha.2 candidate) | `[1.0, -0.0]`, `[]` | Immutable finite floats, at most 65,536 elements |
+| Vector (since alpha.2) | `[1.0, -0.0]`, `[]` | Immutable finite floats, at most 65,536 elements |
+| Tile (alpha.4 candidate) | `tile([1.0, 2.0], 1, 2)` | Immutable row-major finite floats with explicit shape |
 | Boolean | `true`, `false` | v0.0.2 and later; explicit booleans without truthiness |
 | String | `"Scarp"`, `""`, `"line\nbreak"` | UTF-8 text; v0.0.3 adds tab/CR to the three older escapes |
 

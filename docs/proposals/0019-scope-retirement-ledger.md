@@ -1,6 +1,6 @@
 # Proposal 0019: Scarp scope-retirement ledger
 
-Status: **development prototype, not a released language specification**.
+Status: **implemented in the alpha.4 integration candidate**; not a stable language specification.
 This work does not change the Scarp source syntax, package version, CLI
 contract, existing `.srp` programs, or published v0.0.4-alpha.2 assets.
 

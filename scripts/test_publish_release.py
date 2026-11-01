@@ -19,6 +19,12 @@ COMMIT = "a" * 40
 
 
 class PublicationGates(unittest.TestCase):
+    def test_new_requests_require_the_exact_approved_source(self):
+        for value in (None, "main", "v0.0.4-alpha.4", "a" * 39, "A" * 40, 1):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "approved full source_commit"):
+                publisher.approved_source(dict(source_commit=value))
+        self.assertEqual(publisher.approved_source(dict(source_commit=COMMIT)), COMMIT)
+
     def test_absent_request_never_reads_identity_runs_git_or_contacts_github(self):
         with patch.object(Path, "exists", return_value=False), \
              patch.object(Path, "read_text") as read_request, \
@@ -200,7 +206,7 @@ class PublicationWindow(unittest.TestCase):
     end = datetime(2026, 10, 31, 18, 30, tzinfo=timezone.utc)
 
     def request(self):
-        return dict(version="0.0.4-alpha.2", tagger_name="Sanskar", tagger_email="sanskarin@outlook.in",
+        return dict(version="0.0.4-alpha.2", source_commit=COMMIT, tagger_name="Sanskar", tagger_email="sanskarin@outlook.in",
                     not_before="2026-10-31T04:30:00Z", not_after="2026-10-31T18:30:00Z")
 
     def test_future_request_exits_before_git_environment_or_api(self):
@@ -278,9 +284,9 @@ class PublicationWindow(unittest.TestCase):
                 publisher.main()
             api_call.assert_not_called()
 
-    def drive_publication(self, clocks, move_after_draft=False, allow_publish=False):
+    def drive_publication(self, clocks, move_after_draft=False, allow_publish=False, approved_commit=COMMIT):
         """Exercise real stage ordering; external CI/archive behavior has separate tests."""
-        state = dict(created=False, mutations=[], gh_calls=[], files={}, public_downloads=[])
+        state = dict(created=False, mutations=[], gh_calls=[], files={}, public_downloads=[], source_reads=[])
         names = [f"archive-{i}.bin" for i in range(3)]
         manifest = "".join("a" * 64 + "  " + name + "\n" for name in names)
         draft = dict(id=42, tag_name="v0.0.4-alpha.2", draft=True, prerelease=True)
@@ -289,8 +295,10 @@ class PublicationWindow(unittest.TestCase):
             if args[1] == "rev-parse":
                 return COMMIT + "\n"
             if args[-1].endswith(":Cargo.toml"):
+                state["source_reads"].append(args[-1])
                 return 'version = "0.0.4-alpha.2"\n'
             if ":docs/releases/" in args[-1]:
+                state["source_reads"].append(args[-1])
                 return "verified release notes\n"
             raise AssertionError(args)
 
@@ -311,6 +319,7 @@ class PublicationWindow(unittest.TestCase):
             if path.endswith("/branches/main"):
                 return dict(commit=dict(sha="b" * 40 if move_after_draft and state["created"] else COMMIT))
             if path.endswith("/git/tags"):
+                state["tag_source"] = payload["object"]
                 return dict(sha="b" * 40)
             if path.endswith("/git/refs"):
                 return {}
@@ -343,12 +352,13 @@ class PublicationWindow(unittest.TestCase):
 
         selected = {path: dict(id=i + 1) for i, path in enumerate(publisher.WORKFLOWS)}
         with patch.object(Path, "exists", return_value=True), \
-             patch.object(Path, "read_text", return_value=json.dumps(self.request())), \
+             patch.object(Path, "read_text", return_value=json.dumps(dict(self.request(), source_commit=approved_commit))), \
              patch.object(publisher, "utc_now", side_effect=clocks), \
              patch.object(publisher.subprocess, "check_output", side_effect=fake_git), \
+             patch.object(publisher.subprocess, "run") as ancestry_check, \
              patch.object(publisher, "api", side_effect=fake_api), \
              patch.object(publisher, "gh", side_effect=fake_gh), \
-             patch.object(publisher, "verified_workflows", return_value=selected), \
+             patch.object(publisher, "verified_workflows", return_value=selected) as workflows, \
              patch.object(publisher.verifier, "verify", return_value=manifest), \
              patch.object(publisher, "check_release"), \
              patch.object(publisher, "download_draft_asset", side_effect=download), \
@@ -357,7 +367,16 @@ class PublicationWindow(unittest.TestCase):
                                         GITHUB_EVENT_NAME="schedule"), clear=True), \
              contextlib.redirect_stdout(io.StringIO()):
             publisher.main()
+        ancestry_check.assert_called_once_with(["git", "merge-base", "--is-ancestor", approved_commit, COMMIT], check=True)
+        state["workflow_sources"] = [call.args[1] for call in workflows.call_args_list]
         return state
+
+    def test_authorization_can_follow_source_without_changing_tagged_candidate(self):
+        approved = "c" * 40
+        state = self.drive_publication([self.start, self.start, self.start], allow_publish=True, approved_commit=approved)
+        self.assertEqual(state["workflow_sources"], [COMMIT, approved])
+        self.assertEqual(state["tag_source"], approved)
+        self.assertTrue(all(source.startswith(approved + ":") for source in state["source_reads"]))
 
     def test_expiry_during_artifact_verification_prevents_tag_creation(self):
         state = self.drive_publication([self.start, self.end])

@@ -38,6 +38,7 @@ Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
 Function defaults: --max-call-depth 256, --max-calls 100000,
 --max-live-slots 1000000, --max-capture-bytes 16777216,
 --max-vector-bytes 8388608 (cumulative numerical element payload).
+Vector and tile buffers share this cumulative quota; retirement does not refund it.
 Snapshot bytes are a logical storage cap, not an exact process-memory limit.
 Counts are unsigned decimal digits, zero is valid, and each option may occur once.
 Example: scarp run --max-steps 2000000 --max-prints 10 examples/repeat.srp
@@ -53,6 +54,7 @@ Defaults: --max-steps 1000000 and --max-prints 100000. Options precede the path.
 Function defaults: --max-call-depth 256, --max-calls 100000,
 --max-live-slots 1000000, --max-capture-bytes 16777216,
 --max-vector-bytes 8388608 (cumulative numerical element payload).
+Vector and tile buffers share this cumulative quota; retirement does not refund it.
 All seven options take unsigned decimal counts, allow zero, and may occur once.
 Snapshot bytes are a logical storage cap, including when check discards output.
 Example: scarp check --max-steps 2000000 examples/repeat.srp

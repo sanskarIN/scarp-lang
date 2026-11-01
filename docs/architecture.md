@@ -70,9 +70,17 @@ rounds offsets inside UTF-8 characters down to valid boundaries. Source control
 characters are escaped in excerpts. This keeps diagnostic rendering safe for
 callers that construct their own diagnostics.
 
-## Development-only scope-retirement plan
+## Compiler-planned scope retirement (alpha.4)
 
-A separate, unreleased internal improvement records lexical binding retirement
+`NumericTile` wraps a visible-window `NumericVector` and checked axes. Shared
+built-in signature metadata serves static resolution and host validation;
+`numeric/tiles.rs` owns shape checks and execution without parser/frame coupling.
+Source argument spans are borrowed from resolved expressions without per-call
+span buffers. This is a boundary for future typed lowering, without an unused
+IR or a native-backend claim. See [tiles](tiles.md) and
+[memory lifetimes](memory-lifetimes.md).
+
+The alpha.4 candidate records lexical binding retirement
 in the compiled operation stream. Scope exits clear their declared storage
 slots; `break` and `continue` clear all locally exited scopes, retaining the
 current repeat index and enclosing-loop values. Function completion drops

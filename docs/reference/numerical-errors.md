@@ -1,5 +1,12 @@
 # Repair numerical errors
 
+In alpha.4, E0032 also identifies incompatible tile shapes and invalid dimensions.
+For example, `matmul` reports both operand shapes and requires matching inner
+axes. E0033 reports the row or column and highlights that index argument.
+`matvec` expects a tile and a vector of its width; `tileadd` expects equal shapes;
+`tilescale` takes a float factor. See [the tile contract](../tiles.md).
+Matrix work exhaustion is E0017; fresh vector/tile payload exhaustion is E0036.
+
 Use the error code, highlighted source and call trace together. Run/check
 discard pending stdout and stderr on source, type, evaluation, contract or
 quota failure. A diagnostic can quote a print statement from the source; that

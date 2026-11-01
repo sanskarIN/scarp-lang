@@ -42,71 +42,17 @@ Tensors, native backends and CLI redesign remain separate. See
 | [Compatibility](compatibility.md) | Compare released/development behavior and migrate an embedding host |
 | [Performance](performance.md) | Reproduce stage benchmarks and assess measured runtime improvements |
 
-## Development-only function-frame optimization
+## Alpha.4 numerical and runtime candidate
 
-[Proposal 0022: terminal self-transfer](proposals/0022-terminal-self-transfer.md)
-specifies bounded frame reuse for direct self-recursive returns in functions
-without postconditions. Defaults, preconditions, call-count budgets and
-diagnostic traces remain enforced. This feature is included in the alpha.3 release candidate and is not
-available in published alpha.2.
+Read [tiles and linear algebra](tiles.md) for immutable two-axis values,
+matrix products, arithmetic, shape rules, costs and seven executable examples.
+[Automatic value retirement](memory-lifetimes.md) covers blocks, loops,
+function completion and shared immutable snapshots.
 
-## Unreleased memory-control development
-
-[Proposal 0023](proposals/0023-vector-allocation-ledger.md) adds a
-deterministic `max_vector_bytes` allocation ledger, with the CLI flag
-`--max-vector-bytes` and diagnostic E0036. It is distinct from live
-frame-slot and output-snapshot limits, and does not claim to bound the
-entire process's resident memory. This feature is included in the alpha.3 release candidate but not
-available in published alpha.2.
-
-## Upcoming numerical features
-
-[Proposal 0024](proposals/0024-bounded-log-space-kernels.md) specifies
-the development-only `logsumexp` and `logsoftmax` operations for
-large finite model logits. They are bounded by existing work/memory
-budgets and **not included in published alpha.3**.
-
-## Upcoming deterministic selection
-
-[Proposal 0025](proposals/0025-stable-vector-selection.md) defines
-`argmax`, `argmin`, `maxval` and `minval` for bounded, tie-stable
-score decoding. These operations are experimental and not in alpha.3.
-
-## Upcoming categorical logit loss
-
-[Proposal 0026](proposals/0026-logit-loss.md) covers the typed,
-allocation-free `crossentropy(logits, target)` and
-`logprob(logits, target)` kernels for single-class classification.
-These development kernels are not in published alpha.3.
-
-## Experimental explicit training helpers
-
-[Proposal 0027](proposals/0027-classification-training-primitives.md)
-documents `lossgrad`, the finite categorical-loss gradient, and
-`onehot`, a bounded target encoder. Both work within the native step
-and cumulative vector allocation limits. Neither constitutes an automatic
-differentiation engine. They are not in published alpha.3.
-
-## Development-only immutable vector windows
-
-[Proposal 0020](proposals/0020-vector-windows-stitch.md) specifies
-`window` (shared immutable storage, constant native work) and
-`stitch` (checked concatenation, charged element payload). This
-integration is validated against the current E0036 cumulative vector
-allocation ledger and classification numerical kernels. These functions
-are not in the published alpha.3 executable.
-## Unreleased two-axis numerical values
-
-[Proposal 0021: immutable numerical tiles](proposals/0021-immutable-numeric-tiles.md)
-defines a development-only `tile` type with rectangular row-major values,
-shape introspection, indexed cell and row access, flattening and axis swapping.
-It is **not** included in the published alpha.2 binaries or merged into main.
-Read the proposal for shape/empty-dimension rules, resource charges, and the
-integration review required with the other draft numerical PRs.
-An [unreleased scope-retirement ledger](proposals/0019-scope-retirement-ledger.md)
-documents compiler-planned disposal of out-of-scope binding values, without
-adding any user-facing memory-management syntax. It is development work only,
-not part of the published alpha.2 binaries.
+The candidate also integrates windows/stitching, log-space kernels, selection,
+and categorical loss/gradient helpers developed since alpha.3. The
+[candidate release notes](releases/v0.0.4-alpha.4.md) distinguish implementation
+from pending publication gates. Published alpha.3 assets remain unchanged.
 
 ## Reading paths
 

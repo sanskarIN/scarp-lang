@@ -1,0 +1,7 @@
+workload,compile_us,validate_us,execute_us,native_us,repetitions,samples,source_bytes
+indexed_dot_16,29.150,12.426,8.478,0.648,50,3,108
+kernel_dot_16,7.750,1.816,1.822,0.714,50,3,57
+indexed_dot_32768,12.550,13287.050,14247.400,368.400,2,3,114
+kernel_dot_32768,7.100,396.950,417.450,368.050,2,3,63
+repeated_funcra_1024,28.550,762.550,810.400,701.850,2,3,139
+allocation_pipeline_1024,19.300,940.450,1035.100,408.850,2,3,89

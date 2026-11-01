@@ -48,7 +48,7 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/escapes.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/control_escapes.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/control_escapes.srp')
-    foreach ($example in @('vectors', 'vector_probabilities', 'coefficient_fit', 'scaled_norm', 'terminal_recursion', 'vector_allocation', 'logit_loss', 'classification_training', 'vector_windows')) {
+    foreach ($example in @('vectors', 'vector_probabilities', 'coefficient_fit', 'scaled_norm', 'terminal_recursion', 'vector_allocation', 'logit_loss', 'classification_training', 'vector_windows', 'matrix_inference', 'linear_transform', 'matrix_classification', 'matrix_probabilities', 'matrix_targets', 'matrix_forward', 'tile_windows')) {
         Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', "examples/$example.srp")
         Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', "examples/$example.srp")
     }

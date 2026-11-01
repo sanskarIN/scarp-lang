@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.4-alpha.4 — unpublished candidate, 2026-11-01
+
+- Integrate immutable shape-aware tiles and typed tile parameters/results from
+  PR #53 with visible vector windows and the cumulative allocation ledger.
+- Add `matvec`, `matmul`, `tileadd` and `tilescale`, checked shapes, compensated
+  products, finite intermediates and prepaid work/payload limits.
+- Integrate scope retirement from PR #51 across lexical exits, loop transfers,
+  function completion and shared snapshots. Strengthen invalid-plan tests for
+  postcondition parameter lifetimes, slots, defaults and control flow.
+- Add precise dimension/index spans, contextual tile argument errors, reviewed
+  diagnostics, independent matrix reference tests and seven runnable examples.
+- Include the post-alpha.3 window/stitch, log-space, selection and classification
+  kernels already integrated on main. Preserve existing language/CLI behavior.
+- Retire the completed alpha.3 publication request. Prepare alpha.4 packaging;
+  no tag or publication is authorized by this development change. See
+  [candidate notes](docs/releases/v0.0.4-alpha.4.md).
+
 ## 0.0.4-alpha.3 — prerelease candidate, 2026-10-31
 
 - Add pure, overflow-resistant `norm(v)` and `normalize(v)` kernels with
