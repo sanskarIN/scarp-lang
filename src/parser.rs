@@ -91,7 +91,7 @@ impl Parser<'_> {
         let mut statements = Vec::new();
         while let Some(token) = self.current() {
             if self.module_start() {
-                statements.push(self.module_statement(in_block)?);
+                self.module_into(&mut statements, in_block)?;
                 continue;
             }
             match &token.kind {
@@ -211,6 +211,16 @@ impl Parser<'_> {
         }
     }
 
+    // Keep an extra Statement-sized temporary out of every recursive block frame.
+    fn module_into(
+        &mut self,
+        statements: &mut Vec<Statement>,
+        in_block: bool,
+    ) -> Result<(), ParseError> {
+        statements.push(self.module_statement(in_block)?);
+        Ok(())
+    }
+
     fn qualified_identifier(&mut self) -> Result<(String, Span), ParseError> {
         let (mut name, mut span) = self.identifier()?;
         if self.at(&TokenKind::Dot) {
@@ -221,6 +231,25 @@ impl Parser<'_> {
             span.end = member_span.end;
         }
         Ok((name, span))
+    }
+
+    // Qualified names add owned text only on this leaf path, not on each nested
+    // grouping/call frame in atom.
+    fn qualified_atom(
+        &mut self,
+        nodes: &mut Vec<ExpressionNode>,
+        depth: usize,
+    ) -> Result<usize, ParseError> {
+        if self
+            .tokens
+            .get(self.cursor + 3)
+            .is_some_and(|t| t.kind == TokenKind::LeftParen)
+        {
+            self.call_expression(nodes, depth)
+        } else {
+            let (name, span) = self.qualified_identifier()?;
+            Ok(push(nodes, ExpressionKind::Name(name), span))
+        }
     }
 
     fn container_statement(
@@ -1093,16 +1122,7 @@ impl Parser<'_> {
                     .get(self.cursor + 1)
                     .is_some_and(|t| t.kind == TokenKind::Dot) =>
             {
-                if self
-                    .tokens
-                    .get(self.cursor + 3)
-                    .is_some_and(|t| t.kind == TokenKind::LeftParen)
-                {
-                    self.call_expression(nodes, depth)
-                } else {
-                    let (name, span) = self.qualified_identifier()?;
-                    Ok(push(nodes, ExpressionKind::Name(name), span))
-                }
+                self.qualified_atom(nodes, depth)
             }
             Some(TokenKind::LeftBracket) => self.vector_literal(nodes, depth),
             Some(TokenKind::LeftParen) => self.group_expression(nodes, depth),

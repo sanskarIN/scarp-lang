@@ -113,7 +113,8 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                             "repeat cannot name a function because it starts a loop statement",
                         ));
                     }
-                    let size = if id == 0 {
+                    let unqualified = graph.modules.len() == 1;
+                    let size = if unqualified {
                         function.name.len()
                     } else {
                         module
@@ -124,7 +125,7 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                             .ok_or_else(|| limit(function.name_span, "symbol identity bytes"))?
                     };
                     consume(remaining, size, function.name_span)?;
-                    let target = if id == 0 {
+                    let target = if unqualified {
                         function.name.clone()
                     } else {
                         format!("{}::{}", module.identity, function.name)
@@ -254,6 +255,21 @@ struct Rewriter<'a> {
     scopes: Vec<HashSet<String>>,
 }
 impl Rewriter<'_> {
+    fn binding_name(&self, name: &str, span: Span) -> Result<(), Diagnostic> {
+        if let Some(symbol) = self.tables[self.id]
+            .symbols
+            .get(name)
+            .filter(|symbol| symbol.target.is_some())
+        {
+            return Err(Diagnostic::new(
+                Kind::FunctionDefinition,
+                span,
+                format!("binding {name:?} collides with a function"),
+            )
+            .with_related(symbol.definition, "function declared here"));
+        }
+        Ok(())
+    }
     fn symbol(&self, name: &str, span: Span) -> Result<Option<&Symbol>, Diagnostic> {
         if let Some((alias, member)) = name.split_once('.') {
             let target = self.tables[self.id].aliases.get(alias).ok_or_else(|| {
@@ -354,13 +370,14 @@ impl Rewriter<'_> {
                     let old = std::mem::take(&mut self.scopes);
                     self.scopes.push(HashSet::new());
                     for parameter in &mut function.parameters {
+                        self.binding_name(&parameter.name, parameter.span)?;
                         if let Some(default) = &mut parameter.default {
                             self.expression(default)?;
                         }
                         self.scopes[0].insert(parameter.name.clone());
                     }
                     for contract in &mut function.contracts {
-                        if contract.postcondition {
+                        if contract.postcondition && function.result != ValueType::Unit {
                             self.scopes[0].insert("result".into());
                         }
                         self.expression(&mut contract.expression)?;
@@ -375,8 +392,12 @@ impl Rewriter<'_> {
                         .clone();
                 }
                 Statement::Declaration {
-                    name, initializer, ..
+                    name,
+                    name_span,
+                    initializer,
+                    ..
                 } => {
+                    self.binding_name(name, *name_span)?;
                     self.expression(initializer)?;
                     self.scopes.last_mut().unwrap().insert(name.clone());
                 }
@@ -409,10 +430,12 @@ impl Rewriter<'_> {
                 Statement::Repeat {
                     count,
                     index,
+                    index_span,
                     statements,
                     ..
                 } => {
                     self.expression(count)?;
+                    self.binding_name(index, *index_span)?;
                     self.scopes.push(HashSet::from([index.clone()]));
                     self.list(statements, false)?;
                     self.scopes.pop();

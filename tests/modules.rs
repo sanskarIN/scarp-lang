@@ -149,6 +149,53 @@ fn forward_mutual_recursion_and_builtin_precedence_are_module_local() {
 }
 
 #[test]
+fn entry_functions_do_not_capture_library_builtins_or_binding_names() {
+    assert_eq!(output(&[("main.srp", "import \"lib.srp\" as lib; pure funcra sum(n: integer)->integer {return n+10;} pure funcra local()->integer {return 99;} print(sum(3), lib.f());"),
+        ("lib.srp", "pub pure funcra f()->float {bind local=2.0; return sum([local,3.0]);}")]), b"13 5.0\n");
+}
+
+#[test]
+fn library_bindings_still_cannot_collide_with_their_own_functions() {
+    for body in [
+        "pub pure funcra f()->integer {bind f=1; return f;}",
+        "pub pure funcra f(f: integer)->integer {return f;}",
+        "pub pure funcra f()->integer {repeat 1 as f {} return 0;}",
+    ] {
+        assert_eq!(
+            compile(&[
+                ("main.srp", "import \"lib.srp\" as lib;"),
+                ("lib.srp", body)
+            ])
+            .unwrap_err()
+            .diagnostic
+            .kind,
+            Kind::FunctionDefinition
+        );
+    }
+}
+
+#[test]
+fn public_and_qualified_syntax_preserves_the_small_parser_stack_boundary() {
+    use scarp::parser::{MAX_BLOCK_DEPTH, MAX_EXPRESSION_DEPTH};
+    let syntax = std::thread::Builder::new()
+        .stack_size(512 * 1024)
+        .spawn(|| {
+            let source = format!(
+                "pub pure funcra f()->integer{{{}return {}math.value{};{}}}",
+                "{".repeat(MAX_BLOCK_DEPTH - 1),
+                "(".repeat(MAX_EXPRESSION_DEPTH),
+                ")".repeat(MAX_EXPRESSION_DEPTH),
+                "}".repeat(MAX_BLOCK_DEPTH - 1)
+            );
+            scarp::parse(&source).unwrap()
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+    assert_eq!(syntax.statements.len(), 1);
+}
+
+#[test]
 fn constant_shadowing_defaults_and_postcondition_result_names_stay_lexical() {
     assert_eq!(output(&[("main.srp","import \"constants.srp\" as c; print(c.f(),c.g(),c.minimum,c.minuszero);"),
         ("constants.srp", "bind value=7; bind result=999; pub bind minimum=-9223372036854775808; pub bind minuszero=-0.0; pub pure funcra f(value: integer=value)->integer ensures result==value; {return value;} pub pure funcra g()->integer {bind value=value+1; {bind value=2;} return value;}")]),b"7 8 -9223372036854775808 -0.0\n");
