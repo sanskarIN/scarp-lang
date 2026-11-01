@@ -398,21 +398,34 @@ fn inspection_cli_rejects_invalid_utf8_and_enforces_default_source_limits() {
 
 #[cfg(unix)]
 #[test]
-fn inspection_cli_preserves_native_non_unicode_entry_paths() {
+fn inspection_cli_handles_native_non_unicode_entry_paths_according_to_the_filesystem() {
     use std::{ffi::OsString, os::unix::ffi::OsStringExt};
     let fixture = Fixture::new();
     let entry = fixture
         .directory
         .join(OsString::from_vec(b"entry-\xff.srp".to_vec()));
-    fs::write(&entry, "import \"lib.srp\" as lib; print(lib.answer);").unwrap();
+    let creation = fs::write(&entry, "import \"lib.srp\" as lib; print(lib.answer);");
     fixture.file("lib.srp", "pub bind answer=42;");
     let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
         .arg("modules")
         .arg(entry)
         .output()
         .unwrap();
-    assert!(result.status.success() && result.stderr.is_empty());
-    assert!(String::from_utf8(result.stdout)
-        .unwrap()
-        .contains("pub bind answer: integer"));
+    match creation {
+        Ok(()) => {
+            assert!(result.status.success() && result.stderr.is_empty());
+            assert!(String::from_utf8(result.stdout)
+                .unwrap()
+                .contains("pub bind answer: integer"));
+        }
+        // macOS can reject the filename itself with EILSEQ (illegal byte sequence).
+        Err(error) if cfg!(target_os = "macos") && error.raw_os_error() == Some(92) => {
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            let stderr = String::from_utf8(result.stderr).unwrap();
+            assert!(stderr.contains("could not read"), "{stderr}");
+            assert!(!stderr.contains("panicked"), "{stderr}");
+        }
+        Err(error) => panic!("could not create native-path fixture: {error}"),
+    }
 }

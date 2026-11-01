@@ -62,8 +62,10 @@ The tool neither exports them nor changes function call resolution.
 The CLI uses loader-provided file labels; filesystem dependencies show canonical
 paths, so paths differ across hosts/checkouts. Labels and specifiers use escaped
 quoted strings, preventing raw terminal control injection. Non-Unicode native
-paths remain usable; their display labels can be lossy, while loader identity is
-preserved. In-memory sources use their stable virtual labels as shown above.
+paths remain usable where the filesystem accepts them; their display labels can
+be lossy, while loader identity is preserved. Filesystems that reject such names
+produce the normal read diagnostic. In-memory sources use their stable virtual
+labels as shown above.
 Ordering is deterministic for the same sources/loader: module discovery order,
 then source-ordered imports and declarations.
 
