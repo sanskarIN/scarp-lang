@@ -1,0 +1,21 @@
+error[E0015]: expected integer, found float
+ --> type.srp:2:26
+  |
+2 | pub bind invalid = count + (1.5 * 2.0);
+  |                          ^
+ = note: left operand has type integer
+ --> type.srp:2:20
+  |
+2 | pub bind invalid = count + (1.5 * 2.0);
+  |                    ^^^^^
+ = note: right operand has type float
+ --> type.srp:2:28
+  |
+2 | pub bind invalid = count + (1.5 * 2.0);
+  |                            ^^^^^^^^^^^
+ = note: constant initialized here
+ --> type.srp:2:10
+  |
+2 | pub bind invalid = count + (1.5 * 2.0);
+  |          ^^^^^^^
+ = help: keep primitive types consistent; numeric operands must share a numeric kind, logic requires booleans

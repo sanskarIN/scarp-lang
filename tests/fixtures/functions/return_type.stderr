@@ -3,3 +3,14 @@ error[E0021]: return must produce integer
   |
 2 |     return "text";
   |     ^^^^^^^^^^^^^^
+ = note: function declares result type integer here
+ --> return_type.srp:1:8
+  |
+1 | funcra wrong() -> integer {
+  |        ^^^^^
+ = note: returned expression has type string
+ --> return_type.srp:2:12
+  |
+2 |     return "text";
+  |            ^^^^^^
+ = help: return an expression of type integer

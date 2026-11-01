@@ -80,7 +80,7 @@ fn cycles_missing_sources_and_library_side_effects_are_rejected() {
         (
             vec![
                 ("main.srp", "import \"b.srp\" as b;"),
-                ("b.srp", "pub bind value=1+2;"),
+                ("b.srp", "pub bind value=fill(1.0,2);"),
             ],
             Kind::ModuleSyntax,
         ),
@@ -261,7 +261,7 @@ fn module_alias_collisions_and_mutable_or_dynamic_library_globals_fail() {
         "var value=3;",
         "bind vector=[1.0];",
         "bind value=fill(1.0,3);",
-        "pub bind value=1+2;",
+        "pub bind value=[1.0];",
         "pub var value=1;",
     ] {
         assert_eq!(

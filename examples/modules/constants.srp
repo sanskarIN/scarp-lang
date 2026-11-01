@@ -1,0 +1,13 @@
+import "constant_base.srp" as settings;
+bind step = 2;
+pub bind answer = settings.base * settings.multiplier + step;
+pub bind label = settings.label;
+pub bind ready = answer == 42 and not false;
+pub bind ratio = (1.5 * 2.0) / 4.0;
+
+pub pure funcra adjust(value: integer = answer) -> integer
+needs ready;
+ensures result >= answer;
+{
+    return value;
+}

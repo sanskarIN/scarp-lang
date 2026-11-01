@@ -1,0 +1,3 @@
+// café 🌍
+pub bind divisor = 2 - 2;
+pub bind invalid = 10 / divisor;

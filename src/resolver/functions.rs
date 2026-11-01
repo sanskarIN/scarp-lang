@@ -6,7 +6,7 @@ pub(super) fn resolve_function(
     names: &HashMap<String, usize>,
 ) -> Result<ResolvedFunction, Diagnostic> {
     let mut resolver = Resolver::new(signatures, names);
-    resolver.result = Some(function.result);
+    resolver.result = Some((function.result, function.name_span));
     resolver.pure = true;
     let mut defaults = Vec::new();
     let mut optional = false;

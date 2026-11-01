@@ -1,0 +1,2 @@
+pure funcra compute() -> integer { return 42; }
+pub bind invalid = compute();
