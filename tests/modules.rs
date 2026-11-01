@@ -177,22 +177,63 @@ fn library_bindings_still_cannot_collide_with_their_own_functions() {
 #[test]
 fn public_and_qualified_syntax_preserves_the_small_parser_stack_boundary() {
     use scarp::parser::{MAX_BLOCK_DEPTH, MAX_EXPRESSION_DEPTH};
-    let syntax = std::thread::Builder::new()
+    let (source, syntax) = std::thread::Builder::new()
         .stack_size(512 * 1024)
         .spawn(|| {
             let source = format!(
-                "pub pure funcra f()->integer{{{}return {}math.value{};{}}}",
+                "import \"math.srp\" as math; pub pure funcra f()->integer{{{}return {}math.value{};{}}} print(f());",
                 "{".repeat(MAX_BLOCK_DEPTH - 1),
                 "(".repeat(MAX_EXPRESSION_DEPTH),
                 ")".repeat(MAX_EXPRESSION_DEPTH),
                 "}".repeat(MAX_BLOCK_DEPTH - 1)
             );
-            scarp::parse(&source).unwrap()
+            let syntax = scarp::parse(&source).unwrap();
+            (source, syntax)
         })
         .unwrap()
         .join()
         .unwrap();
-    assert_eq!(syntax.statements.len(), 1);
+    assert_eq!(syntax.statements.len(), 3);
+    // Link/resolve/execute at the same boundaries on the ordinary worker stack.
+    assert_eq!(
+        output(&[("main.srp", &source), ("math.srp", "pub bind value=42;")]),
+        b"42\n"
+    );
+}
+
+#[test]
+fn module_writer_failures_preserve_io_kind_and_partial_replay_behavior() {
+    use std::io::{self, Write};
+    struct Closed;
+    impl Write for Closed {
+        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+            Err(io::ErrorKind::BrokenPipe.into())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let program = compile(&[
+        (
+            "main.srp",
+            "import \"lib.srp\" as lib; print(lib.text); eprint(lib.text);",
+        ),
+        ("lib.srp", "pub bind text=\"ready\";"),
+    ])
+    .unwrap();
+    let mut stdout = Vec::new();
+    let error = program
+        .execute(&mut stdout, &mut Closed, ExecutionOptions::default())
+        .unwrap_err();
+    assert!(std::error::Error::source(&error).is_some());
+    assert!(matches!(error, ModuleRunError::Output(e) if e.kind()==io::ErrorKind::BrokenPipe));
+    assert_eq!(stdout, b"ready\n");
+    let mut stderr = Vec::new();
+    assert!(
+        matches!(program.execute(&mut Closed, &mut stderr, ExecutionOptions::default()),
+        Err(ModuleRunError::Output(e)) if e.kind()==io::ErrorKind::BrokenPipe)
+    );
+    assert!(stderr.is_empty());
 }
 
 #[test]

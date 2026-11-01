@@ -183,7 +183,7 @@ one token per line, including decoded string text, one-based line/column ranges,
 and half-open UTF-8 byte ranges. For the hello example, the first token is:
 
 ```text
-2:1..2:6  identifier(print)  [27..32]
+2:1..2:6  identifier(print)  [26..31]
 ```
 
 An end-of-file token is always included. Columns count Unicode scalar values;

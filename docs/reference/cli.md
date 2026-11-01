@@ -147,7 +147,7 @@ diagnosing a failure.
 The hello example starts with this token:
 
 ```text
-2:1..2:6  identifier(print)  [27..32]
+2:1..2:6  identifier(print)  [26..31]
 ```
 
 The first range is one-based line/column information. The bracketed range is a
