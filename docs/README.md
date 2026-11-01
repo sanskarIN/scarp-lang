@@ -103,6 +103,10 @@ shape introspection, indexed cell and row access, flattening and axis swapping.
 It is **not** included in the published alpha.2 binaries or merged into main.
 Read the proposal for shape/empty-dimension rules, resource charges, and the
 integration review required with the other draft numerical PRs.
+An [unreleased scope-retirement ledger](proposals/0019-scope-retirement-ledger.md)
+documents compiler-planned disposal of out-of-scope binding values, without
+adding any user-facing memory-management syntax. It is development work only,
+not part of the published alpha.2 binaries.
 
 ## Reading paths
 
