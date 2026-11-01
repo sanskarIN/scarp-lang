@@ -38,7 +38,7 @@ intentionally retained until separately reviewed. The script defaults to
 read-only dry-run when invoked locally:
 
 ```sh
-GITHUB_REPOSITORY=sanskarIN/scarp-lang python3 scripts/prune-merged-branches.py
+GITHUB_REPOSITORY=scarp-lang/scarp python3 scripts/prune-merged-branches.py
 python3 -m unittest discover -s scripts -p 'test_prune_branches.py'
 ```
 

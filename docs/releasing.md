@@ -12,7 +12,7 @@ The package version comes from `Cargo.toml`; use a three-part version. The
 current published version is `0.0.5-alpha.1`, from approved source
 `afe8b5380c9d6c4774162e51c6c9bc8b90901671`. Its completed publication request
 has been retired. The
-[0.0.5-alpha.1 release page](https://github.com/sanskarIN/scarp-lang/releases/tag/v0.0.5-alpha.1)
+[0.0.5-alpha.1 release page](https://github.com/scarp-lang/scarp/releases/tag/v0.0.5-alpha.1)
 and [verification record](releases/v0.0.5-alpha.1-validation.md) identify the
 published prerelease; a source version alone is not publication evidence.
 Earlier published tags/assets must remain unchanged. For a future
@@ -26,7 +26,7 @@ retired. [Preparation notes](releases/v0.0.5-alpha.1.md) preserve the original
 candidate contract. Every future release needs fresh exact-version/source
 approval after all gates. The verifier requires nested module libraries/guides
 as well as inherited alpha.4 contents. The [migration record](migrations/scarp-lang-Scarp.md)
-prepares the maintainer-performed transfer and rename without altering published
+records the completed maintainer transfer and rename without altering published
 tags, archives or their historical source metadata.
 
 Run local checks, then package on a machine with the matching native Rust

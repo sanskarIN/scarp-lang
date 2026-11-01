@@ -33,8 +33,8 @@ the project also validates a current stable toolchain. Scarp has no third-party
 Rust dependencies.
 
 ```sh
-git clone https://github.com/sanskarIN/scarp-lang.git
-cd scarp-lang
+git clone https://github.com/scarp-lang/scarp.git
+cd scarp
 git switch main
 cargo build --locked --offline
 cargo run -- --version
