@@ -120,6 +120,8 @@ pub enum DiagnosticKind {
     ModuleVisibility,
     ModuleSymbol,
     ModulePath,
+    NumericConversion,
+    TextIndex,
 }
 
 impl DiagnosticKind {
@@ -168,6 +170,8 @@ impl DiagnosticKind {
             Self::ModuleVisibility => "E0041",
             Self::ModuleSymbol => "E0042",
             Self::ModulePath => "E0043",
+            Self::NumericConversion => "E0044",
+            Self::TextIndex => "E0045",
         }
     }
 }

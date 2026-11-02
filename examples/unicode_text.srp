@@ -1,0 +1,4 @@
+bind text: string = "café 🌍";
+print(text_len(text), text_bytes(text), text_codepoint(text, 5));
+print(text_find(text, "🌍"), text_contains(text, "é"));
+print(text_starts_with(text, "caf"), text_ends_with(text, "🌍"));

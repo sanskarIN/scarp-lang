@@ -1,4 +1,4 @@
-//! Checked finite-vector kernels, independent of syntax and function frames.
+//! Checked pure built-ins and finite numerical kernels, independent of user frames.
 
 use crate::{
     diagnostics::{Diagnostic, DiagnosticKind, Span},
@@ -6,10 +6,20 @@ use crate::{
     value::{finite_number, FiniteFloat, NumericVector, Value, ValueType, MAX_VECTOR_LENGTH},
 };
 
+mod scalar_text;
 mod tiles;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Builtin {
+    ToFloat,
+    ToInteger,
+    TextLength,
+    TextBytes,
+    TextCodepoint,
+    TextFind,
+    TextContains,
+    TextStartsWith,
+    TextEndsWith,
     Length,
     Sum,
     Mean,
@@ -50,6 +60,15 @@ pub enum Builtin {
 impl Builtin {
     pub fn from_name(name: &str) -> Option<Self> {
         Some(match name {
+            "to_float" => Self::ToFloat,
+            "to_integer" => Self::ToInteger,
+            "text_len" => Self::TextLength,
+            "text_bytes" => Self::TextBytes,
+            "text_codepoint" => Self::TextCodepoint,
+            "text_find" => Self::TextFind,
+            "text_contains" => Self::TextContains,
+            "text_starts_with" => Self::TextStartsWith,
+            "text_ends_with" => Self::TextEndsWith,
             "len" => Self::Length,
             "sum" => Self::Sum,
             "mean" => Self::Mean,
@@ -90,8 +109,15 @@ impl Builtin {
     }
 
     pub fn parameter_types(self) -> &'static [ValueType] {
-        use ValueType::{Float, Integer, Tile, Vector};
+        use ValueType::{Float, Integer, String, Tile, Vector};
         match self {
+            Self::ToFloat => &[Integer],
+            Self::ToInteger => &[Float],
+            Self::TextLength | Self::TextBytes => &[String],
+            Self::TextCodepoint => &[String, Integer],
+            Self::TextFind | Self::TextContains | Self::TextStartsWith | Self::TextEndsWith => {
+                &[String, String]
+            }
             Self::Length
             | Self::Sum
             | Self::Mean
@@ -123,6 +149,13 @@ impl Builtin {
 
     pub fn result_type(self) -> ValueType {
         match self {
+            Self::ToInteger
+            | Self::TextLength
+            | Self::TextBytes
+            | Self::TextCodepoint
+            | Self::TextFind => ValueType::Integer,
+            Self::ToFloat => ValueType::Float,
+            Self::TextContains | Self::TextStartsWith | Self::TextEndsWith => ValueType::Boolean,
             Self::Length | Self::ArgMax | Self::ArgMin | Self::Height | Self::Width => {
                 ValueType::Integer
             }
@@ -158,6 +191,21 @@ impl Builtin {
                 | Self::MatMul
                 | Self::TileAdd
                 | Self::TileScale
+        )
+    }
+
+    fn is_scalar_text(self) -> bool {
+        matches!(
+            self,
+            Self::ToFloat
+                | Self::ToInteger
+                | Self::TextLength
+                | Self::TextBytes
+                | Self::TextCodepoint
+                | Self::TextFind
+                | Self::TextContains
+                | Self::TextStartsWith
+                | Self::TextEndsWith
         )
     }
 }
@@ -398,6 +446,9 @@ pub(crate) fn evaluate_with_spans(
                 value.kind(),
             ));
         }
+    }
+    if function.is_scalar_text() {
+        return scalar_text::evaluate(function, args, budget, span, argument_span);
     }
     if function.is_tile() {
         return tiles::evaluate(function, args, budget, span, argument_span);
@@ -692,6 +743,15 @@ pub(crate) fn evaluate_with_spans(
             vector(values, span)
         }
         Builtin::Length
+        | Builtin::ToFloat
+        | Builtin::ToInteger
+        | Builtin::TextLength
+        | Builtin::TextBytes
+        | Builtin::TextCodepoint
+        | Builtin::TextFind
+        | Builtin::TextContains
+        | Builtin::TextStartsWith
+        | Builtin::TextEndsWith
         | Builtin::Fill
         | Builtin::OneHot
         | Builtin::Window

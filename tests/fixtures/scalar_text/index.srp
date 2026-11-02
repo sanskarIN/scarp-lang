@@ -1,0 +1,2 @@
+// café 🌍
+print(text_codepoint("aé🌍", 3));
