@@ -523,6 +523,22 @@ impl Parser<'_> {
             }
         };
         self.cursor += 1;
+        let annotation = if self.at(&TokenKind::Colon) {
+            self.cursor += 1;
+            let span = self
+                .current()
+                .map_or_else(Span::default, |token| token.span);
+            let kind = self.value_type(false).map_err(|mut error| {
+                if error.0.kind == DiagnosticKind::FunctionDefinition {
+                    error.0.kind = DiagnosticKind::UnexpectedToken;
+                    error.0.message = error.0.message.replace("parameter", "binding");
+                }
+                error.with_help("binding types are integer, float, vector, tile, boolean or string; an initializer is required")
+            })?;
+            Some(crate::ast::TypeAnnotation { kind, span })
+        } else {
+            None
+        };
         self.punctuation(TokenKind::Equal, "'='").map_err(|error|
             error.with_help("declarations require an initializer: bind name = expression; or var name = expression;"))?;
         let mut nodes = Vec::new();
@@ -543,6 +559,7 @@ impl Parser<'_> {
             name,
             name_span,
             mutable,
+            annotation,
             initializer: Expression { nodes, root },
             span: Span::new(start, end),
         })
@@ -609,14 +626,12 @@ impl Parser<'_> {
 
     fn value_type(&mut self, result: bool) -> Result<ValueType, ParseError> {
         let (name, span) = self.identifier()?;
+        if let Some(kind) =
+            ValueType::from_name(&name).filter(|kind| result || *kind != ValueType::Unit)
+        {
+            return Ok(kind);
+        }
         match name.as_str() {
-            "integer" => Ok(ValueType::Integer),
-            "float" => Ok(ValueType::Float),
-            "vector" => Ok(ValueType::Vector),
-            "tile" => Ok(ValueType::Tile),
-            "boolean" => Ok(ValueType::Boolean),
-            "string" => Ok(ValueType::String),
-            "unit" if result => Ok(ValueType::Unit),
             "funcra" | "pure" => Err(ParseError::new(
                 DiagnosticKind::FunctionUnsupported,
                 span,

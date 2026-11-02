@@ -199,6 +199,7 @@ impl Work {
     pub(super) fn evaluate(
         &mut self,
         expression: &Expression,
+        annotation: Option<crate::ast::TypeAnnotation>,
         mut reference: impl FnMut(&str, Span) -> Result<ExpressionKind, Diagnostic>,
     ) -> Result<Value, Diagnostic> {
         let mut syntax = expression.clone();
@@ -208,6 +209,11 @@ impl Work {
             }
         }
         let resolved = crate::resolver::resolve_closed_expression(syntax)?;
+        crate::resolver::require_annotation(
+            annotation,
+            resolved.kind,
+            expression.nodes()[expression.root()].span,
+        )?;
         self.workspace
             .evaluate(&resolved, &[], &mut self.budget)
             .map_err(|error| {

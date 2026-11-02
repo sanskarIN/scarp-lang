@@ -103,13 +103,14 @@ fn collect(
                     name_span,
                     mutable,
                     initializer,
+                    annotation,
                     ..
                 } if id != 0 || public => {
                     crate::resolver::check_name(name, *name_span)?;
                     if *mutable {
                         return Err(syntax(*name_span, "library variables cannot be mutable"));
                     }
-                    let value = work.evaluate(initializer, |name, span| {
+                    let value = work.evaluate(initializer, *annotation, |name, span| {
                         let symbol = lookup_symbol(&table, |target| tables[target].as_ref().expect("completed dependency"), name, span)?
                             .ok_or_else(|| crate::resolver::unknown_name(name, span)
                                 .with_help("constant initializers may reference only earlier module constants or imported public constants"))?;

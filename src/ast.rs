@@ -74,6 +74,7 @@ pub enum Statement {
         name: String,
         name_span: Span,
         mutable: bool,
+        annotation: Option<TypeAnnotation>,
         initializer: Expression,
         span: Span,
     },
@@ -85,6 +86,13 @@ pub enum Statement {
         value: Expression,
         span: Span,
     },
+}
+
+/// Optional explicit binding type, retaining its source token location.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TypeAnnotation {
+    pub kind: crate::value::ValueType,
+    pub span: Span,
 }
 
 impl Statement {

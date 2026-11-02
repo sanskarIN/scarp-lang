@@ -648,6 +648,7 @@ impl<'a> Resolver<'a> {
                     name_span,
                     initializer,
                     mutable,
+                    annotation,
                     ..
                 } => {
                     self.binding_name(&name, name_span)?;
@@ -664,6 +665,11 @@ impl<'a> Resolver<'a> {
                     // Resolve before insertion: a shadowing initializer sees the outer name.
                     let value = self.expression(initializer)?;
                     require_value(value.kind, span)?;
+                    require_annotation(
+                        annotation,
+                        value.kind,
+                        value.syntax.nodes()[value.syntax.root()].span,
+                    )?;
                     let slot = self.slot_types.len();
                     let kind = value.kind;
                     self.slot_types.push(kind);
@@ -1184,6 +1190,19 @@ fn require_value(kind: ValueType, span: Span) -> Result<(), Diagnostic> {
     } else {
         Ok(())
     }
+}
+
+pub(crate) fn require_annotation(
+    annotation: Option<crate::ast::TypeAnnotation>,
+    found: ValueType,
+    span: Span,
+) -> Result<(), Diagnostic> {
+    if let Some(annotation) = annotation {
+        require_type(found, annotation.kind, span).map_err(|error| {
+            error.with_related(annotation.span, "the binding's type is declared here")
+        })?;
+    }
+    Ok(())
 }
 
 pub(crate) fn require_type(

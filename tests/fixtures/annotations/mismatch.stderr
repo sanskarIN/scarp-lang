@@ -1,0 +1,16 @@
+error[E0015]: expected float, found integer
+ --> mismatch.srp:2:27
+  |
+2 | pub bind invalid: float = 1 / 0;
+  |                           ^^^^^
+ = note: the binding's type is declared here
+ --> mismatch.srp:2:19
+  |
+2 | pub bind invalid: float = 1 / 0;
+  |                   ^^^^^
+ = note: constant initialized here
+ --> mismatch.srp:2:10
+  |
+2 | pub bind invalid: float = 1 / 0;
+  |          ^^^^^^^
+ = help: keep primitive types consistent; numeric operands must share a numeric kind, logic requires booleans

@@ -31,6 +31,19 @@ impl fmt::Display for ValueType {
 }
 
 impl ValueType {
+    pub(crate) fn from_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "unit" => Self::Unit,
+            "integer" => Self::Integer,
+            "float" => Self::Float,
+            "vector" => Self::Vector,
+            "tile" => Self::Tile,
+            "boolean" => Self::Boolean,
+            "string" => Self::String,
+            _ => return None,
+        })
+    }
+
     pub(crate) fn is_numeric(self) -> bool {
         matches!(self, Self::Integer | Self::Float)
     }
