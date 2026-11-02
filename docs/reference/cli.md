@@ -1,5 +1,13 @@
 # Command-line reference
 
+Unreleased development adds `scarp modules [--] <path>` and per-command help.
+It loads, links and statically checks files, then reports imports, dependencies
+and typed public/private declarations. It never evaluates statements/defaults/
+contracts/arithmetic and rejects runtime-budget flags. Loading limits still
+apply. Failure writes a diagnostic with no partial inventory; successful
+inventory goes to stdout. See [module inspection](../module-inspection.md).
+The package version remains 0.0.5-alpha.1; released alpha.1 has no modules command.
+
 The 0.0.5-alpha.1 prerelease keeps these commands, options and exit codes. Tile and
 matrix calls work through `run` and `check`; `tokens` only lexes their source.
 `--max-vector-bytes` counts new vector and tile element buffers together, including

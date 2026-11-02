@@ -68,6 +68,22 @@ Expansion text is charged before cloning. The resulting syntax goes through the
 existing typed resolver and immutable execution plan; there is no second runtime.
 Public `ModuleInfo`/`SymbolInfo` expose types, visibility and owning source IDs.
 
+Unreleased tooling validates each import list before child-loader callbacks,
+using borrowed name maps instead of repeated alias/declaration scans. Cycle
+related spans identify actual edges and omit acyclic prefixes. Bounded spelling
+repairs iterate source-ordered candidates and filter imported names by visibility.
+
+`ModuleProgram` additionally owns import-site records and forward/reverse
+adjacency lists. Dependency edges deduplicate aliases; source order remains
+explicit rather than depending on hash iteration. Transitive queries traverse
+iteratively on demand. Per-module ranges pair original symbols with borrowed
+resolved signatures, avoiding a second cloned signature table. The static
+inventory writer uses separate incremental location trackers for source-ordered
+imports and symbols, avoiding a full prefix scan for every printed declaration.
+`SourceMap::locate_span` provides a strict UTF-8/file-membership query for hosts;
+defensive diagnostic rendering keeps its earlier clamping behavior.
+See [the inspection contract](proposals/0030-module-inspection.md).
+
 `ModuleProgram` owns the resolved plan and an immutable `Arc<SourceMap>`.
 Sources share one coordinate space: tokens are relocated before parsing, so all
 AST, resolver and runtime spans keep their existing public representation.

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased - module tooling toward 0.0.5-alpha.2
+
+- Add `scarp modules` for statically checked source inventories without executing
+  statements, defaults or contracts. Show import sites, dependencies, visibility
+  and typed original function signatures; preserve existing command behavior.
+- Add immutable import records, direct/transitive forward/reverse dependency
+  queries, borrowed per-module function details and validated source locations.
+- Validate complete import lists before dependency callbacks, remove repeated
+  namespace scans, locate the first exceeding import and report actual cycle
+  edges. Offer bounded deterministic spelling repairs for public names.
+- Add API/CLI/diagnostic/boundary regressions, a runnable example and reviewed
+  inventory, documentation and native inspection smoke checks. Keep the package
+  version, dependencies and all published release/tag/asset contents unchanged.
+
 ## 0.0.5-alpha.1 — prerelease, 2026-11-01
 
 - Add explicit relative source imports, qualified aliases, public/private

@@ -8,6 +8,12 @@ implements the **0.0.5-alpha.1 source-modules prerelease**, extending the
 values, a lexer, parser, name resolver, interpreter and command-line interface.
 Syntax and library APIs may change.
 
+Unreleased development toward alpha.2 adds
+[static module inspection](docs/module-inspection.md):
+`cargo run -- modules examples/module_inspection.srp` lists imports, dependencies
+and typed public/private declarations without executing the program. The package
+version remains 0.0.5-alpha.1; published alpha.1 binaries lack this new command.
+
 Use immutable `bind` and mutable `var` declarations, checked integers, finite floats, strings,
 booleans, conditionals, while/repeat loops, and explicit output streams.
 [Typed `funcra` functions](docs/functions.md) support named/default arguments,

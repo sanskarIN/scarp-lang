@@ -16,18 +16,10 @@ struct Table {
     symbols: HashMap<String, Symbol>,
     ordered: Vec<SymbolInfo>,
     aliases: HashMap<String, SourceId>,
+    alias_order: Vec<String>,
 }
 fn syntax(span: Span, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(Kind::ModuleSyntax,span,message).with_help("library files contain imports, functions and immutable scalar literals; put executable statements in the entry file")
-}
-fn duplicate(name: &str, span: Span, previous: Span) -> Diagnostic {
-    Diagnostic::new(
-        Kind::DuplicateBinding,
-        span,
-        format!("module symbol {name:?} is already declared"),
-    )
-    .with_related(previous, "the conflicting declaration is here")
-    .with_help("choose distinct import aliases and exported declaration names")
 }
 fn consume(remaining: &mut usize, count: usize, span: Span) -> Result<(), Diagnostic> {
     if count > *remaining {
@@ -96,6 +88,7 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
             symbols: HashMap::new(),
             ordered: Vec::new(),
             aliases: HashMap::new(),
+            alias_order: Vec::new(),
         };
         for wrapped in &module.program.statements {
             let (statement, public) = match wrapped {
@@ -197,38 +190,8 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
             table.symbols.insert(symbol.info.name.clone(), symbol);
         }
         for (import, target) in &module.dependencies {
-            crate::resolver::check_name(&import.alias, import.alias_span)?;
-            if let Some(previous) = module
-                .dependencies
-                .iter()
-                .take_while(|(earlier, _)| earlier.alias_span != import.alias_span)
-                .find(|(earlier, _)| earlier.alias == import.alias)
-            {
-                return Err(duplicate(
-                    &import.alias,
-                    import.alias_span,
-                    previous.0.alias_span,
-                ));
-            }
-            for wrapped in &module.program.statements {
-                let statement = match wrapped {
-                    Statement::Export { declaration, .. } => declaration.as_ref(),
-                    s => s,
-                };
-                let declaration = match statement {
-                    Statement::Function(f) => Some((&f.name, f.name_span)),
-                    Statement::Declaration {
-                        name, name_span, ..
-                    } => Some((name, *name_span)),
-                    _ => None,
-                };
-                if let Some((name, span)) = declaration {
-                    if name == &import.alias {
-                        return Err(duplicate(name, import.alias_span, span));
-                    }
-                }
-            }
             table.aliases.insert(import.alias.clone(), *target);
+            table.alias_order.push(import.alias.clone());
         }
         // A root script binding cannot silently replace a public constant.
         if id == 0 {
@@ -278,7 +241,10 @@ impl Rewriter<'_> {
                     span,
                     format!("unknown module alias {alias:?}"),
                 )
-                .with_help("declare an import with this alias before using qualified members")
+                .with_help(match spelling_hint(alias, self.tables[self.id].alias_order.iter().map(String::as_str)) {
+                    Some(hint) => format!("did you mean module alias {hint:?}? use an import declared in this file"),
+                    None => "declare an import with this alias before using qualified members".into(),
+                })
             })?;
             let symbol = self.tables[*target].symbols.get(member).ok_or_else(|| {
                 Diagnostic::new(
@@ -286,7 +252,10 @@ impl Rewriter<'_> {
                     span,
                     format!("module {alias:?} has no symbol {member:?}"),
                 )
-                .with_help("check the imported module's public declarations")
+                .with_help(match spelling_hint(member, self.tables[*target].ordered.iter().filter(|s| s.public).map(|s| s.name.as_str())) {
+                    Some(hint) => format!("did you mean {alias}.{hint}? check the imported module's public declarations"),
+                    None => "check the imported module's public declarations".into(),
+                })
             })?;
             if !symbol.info.public {
                 return Err(Diagnostic::new(
@@ -527,11 +496,16 @@ pub(super) fn resolve(mut graph: ModuleGraph) -> Result<ModuleProgram, ModuleDia
     })();
     let sources = Arc::new(graph.sources);
     match result {
-        Ok((program, modules)) => Ok(ModuleProgram {
-            program,
-            sources,
-            modules,
-        }),
+        Ok((program, modules)) => {
+            let inspection = inspection::Inspection::new(&graph.modules, &modules);
+            debug_assert_eq!(inspection.function_count(), program.functions().len());
+            Ok(ModuleProgram {
+                program,
+                sources,
+                modules,
+                inspection,
+            })
+        }
         Err(diagnostic) => Err(ModuleDiagnostic {
             diagnostic,
             sources,

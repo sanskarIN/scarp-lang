@@ -1,0 +1,14 @@
+modules: 2, imports: 1
+module [0] "module_inspection.srp"
+  import tools = "modules/inspection.srp" -> [1] @ 1:8
+  dependencies: [1]
+  dependents: none
+  symbols: none
+module [1] "modules/inspection.srp"
+  imports: none
+  dependencies: none
+  dependents: [0]
+  pub bind label: string @ 1:10
+  private bind offset: integer @ 2:6
+  pub pure funcra adjusted(value: integer, step: integer = <default>) -> integer @ 4:17
+  private pure funcra helper(value: integer) -> integer @ 11:13

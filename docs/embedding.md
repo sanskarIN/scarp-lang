@@ -83,6 +83,11 @@ and writes both streams. Compiled programs are immutable and reusable across
 threads, with independent execution state.
 
 `program.modules()` exposes module identities, imports and typed symbols.
+The unreleased [inspection APIs](module-inspection.md#embed-the-metadata) add
+source-located import records, direct/transitive dependency queries, borrowed
+per-module signatures and a static inventory writer. Existing metadata fields
+and execution entry points remain unchanged. These additions are not present
+in published alpha.1; the package version has not yet changed.
 `program.sources()` retains file names and source text. Module errors own this
 map, so `ModuleDiagnostic::render` and Display identify each primary/related
 location even after the loader or source files disappear. `ModuleRunError`

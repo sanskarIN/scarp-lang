@@ -44,7 +44,8 @@ cargo run --locked -- run examples/escapes.srp
 cargo run --locked -- check examples/escapes.srp
 cargo run --locked -- run examples/control_escapes.srp
 cargo run --locked -- check examples/control_escapes.srp
-for example in vectors vector_probabilities coefficient_fit scaled_norm terminal_recursion vector_allocation logit_loss classification_training vector_windows matrix_inference linear_transform matrix_classification matrix_probabilities matrix_targets matrix_forward tile_windows module_demo; do
+for example in vectors vector_probabilities coefficient_fit scaled_norm terminal_recursion vector_allocation logit_loss classification_training vector_windows matrix_inference linear_transform matrix_classification matrix_probabilities matrix_targets matrix_forward tile_windows module_demo module_inspection; do
     cargo run --locked -- run "examples/$example.srp"
     cargo run --locked -- check "examples/$example.srp"
 done
+cargo run --locked -- modules examples/module_inspection.srp
