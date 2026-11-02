@@ -6,6 +6,11 @@ language feature.
 
 ## Local setup
 
+Use the [feature matrix](docs/development/feature-matrix.md) to select coherent
+work. Update its implementation status together with tests, runnable examples and
+documentation. Review historical branches against current main before reusing them.
+Development does not authorize a release, version change or tag.
+
 Install Rust and Cargo with rustfmt and Clippy. Clone the repository, create a
 feature branch, and run the checks before changing anything:
 

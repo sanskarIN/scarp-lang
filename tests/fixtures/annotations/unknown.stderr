@@ -1,0 +1,6 @@
+error[E0004]: invalid binding type "number"
+ --> unknown.srp:1:15
+  |
+1 | bind invalid: number = 42;
+  |               ^^^^^^
+ = help: binding types are integer, float, vector, tile, boolean or string; an initializer is required

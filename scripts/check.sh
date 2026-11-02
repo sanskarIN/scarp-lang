@@ -50,3 +50,5 @@ for example in vectors vector_probabilities coefficient_fit scaled_norm terminal
 done
 cargo run --locked -- modules examples/module_inspection.srp
 cargo run --locked -- modules examples/constant_expressions.srp
+cargo run --locked -- run examples/typed_declarations.srp
+cargo run --locked -- check examples/typed_declarations.srp

@@ -1,5 +1,11 @@
 # Version and API compatibility
 
+Unreleased typed declarations preserve valid existing source. The public AST gains
+`Statement::Declaration.annotation: Option<TypeAnnotation>` with kind/type-token
+span. Hosts constructing declaration literals must add `annotation: None`; hosts
+destructuring all fields must add the field or `..`. This documented AST schema
+extension does not change compile entry points, ValueType variants or runtime options.
+
 Unreleased [constant expressions](constant-expressions.md) extend module scalar
 initializers. Ordinary bindings and literal constants remain compatible. Existing
 ModuleLimits and compile signatures are unchanged; ConstantLimits is additive.

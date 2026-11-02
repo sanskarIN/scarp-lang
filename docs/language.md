@@ -58,6 +58,11 @@ preserved; token dumps escape string values for readability.
 
 ## Grammar
 
+Unreleased development extends declarations with optional primitive type
+annotations and [computed scalar module constants](constant-expressions.md).
+Published alpha.1 lacks these extensions. An annotation must match inference;
+`unit` is a function-result type only and does not permit an uninitialized binding.
+
 Trivia means whitespace and line comments. Trivia can appear between tokens.
 The following base grammar applies after trivia has been removed.
 Beta.3 extends it with typed function declarations, call
@@ -77,7 +82,8 @@ loop_control    = ("break" | "continue"), ";" ;
 conditional     = "if", expression, block,
                   { "elif", expression, block }, [ "else", block ] ;
 block           = "{", { statement }, "}" ;
-declaration     = ("bind" | "var"), IDENTIFIER, "=", expression, ";" ;
+declaration     = ("bind" | "var"), IDENTIFIER, [ ":", binding_type ], "=", expression, ";" ;
+binding_type    = "integer" | "float" | "boolean" | "string" | "vector" | "tile" ;
 assignment      = IDENTIFIER, assign_operator, expression, ";" ;
 assign_operator = "=" | "+=" | "-=" | "*=" | "/=" ;
 output_statement = output_name, "(", [ argument_list ], ")", ";" ;

@@ -2,6 +2,12 @@
 
 ## Unreleased - compiler development toward 0.0.5-alpha.2
 
+- Integrate verified module inspection and constant expressions in dependency order.
+- Add optional primitive declaration annotations with exact inferred-type matching,
+  required initialization and source-aware errors; preserve lexical scope and budgets.
+- Record a comprehensive feature matrix and document the additive declaration AST
+  schema migration. Add annotation API/CLI fixtures and a runnable numerical example.
+
 - Compile bounded scalar module constant expressions with declaration ordering,
   checked arithmetic/logic, imported public references and iterative cycle checks.
   Preserve ordinary entry-script runtime bindings and literal-only programs.

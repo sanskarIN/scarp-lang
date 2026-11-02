@@ -29,6 +29,12 @@ returns errors; the CLI renders them using the source and path it already owns.
 
 ## Modules and responsibilities
 
+Declaration annotations retain the type-token span separately from inferred
+initializer types. Parameter and annotation parsing share primitive type-name
+lookup. One resolver helper checks exact annotation compatibility for ordinary
+bindings and module constants; the latter check precedes selected arithmetic.
+Annotations do not introduce new runtime slots, conversions or retirement paths.
+
 | Module | Responsibility |
 | --- | --- |
 | `lexer` | Skip trivia, decode strings, retain original byte spans |

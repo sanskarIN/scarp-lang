@@ -15,6 +15,10 @@ backends, a package manager and website deployment remain separate.
 
 ## Guides and what each adds
 
+The [feature-completeness matrix](development/feature-matrix.md) distinguishes
+implemented features, historical experiments and future dependencies. Unreleased
+declarations also accept explicit primitive annotations; see [variables](variables.md).
+
 The current checkout additionally contains unreleased
 [module inspection](module-inspection.md) and [constant expressions](constant-expressions.md)
 toward alpha.2. Its package version is
