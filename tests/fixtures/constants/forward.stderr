@@ -1,0 +1,11 @@
+error[E0042]: constant "later" is declared after this initializer
+ --> forward.srp:1:20
+  |
+1 | pub bind invalid = later * 2;
+  |                    ^^^^^
+ = note: the later constant is declared here
+ --> forward.srp:2:10
+  |
+2 | pub bind later = 21;
+  |          ^^^^^
+ = help: move the referenced constant before this declaration

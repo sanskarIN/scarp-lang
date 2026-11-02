@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased - module tooling toward 0.0.5-alpha.2
+## Unreleased - compiler development toward 0.0.5-alpha.2
+
+- Compile bounded scalar module constant expressions with declaration ordering,
+  checked arithmetic/logic, imported public references and iterative cycle checks.
+  Preserve ordinary entry-script runtime bindings and literal-only programs.
+- Add independent ConstantLimits and immutable source-located constant-reference
+  metadata without changing existing ModuleLimits or compile signatures.
+- Reuse the existing expression type checker and checked evaluator; improve operand,
+  argument and return-type notes, and add API/CLI/golden/boundary regressions and a
+  runnable three-file constant example. No releases, tags or version changes.
 
 - Add `scarp modules` for statically checked source inventories without executing
   statements, defaults or contracts. Show import sites, dependencies, visibility

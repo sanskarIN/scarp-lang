@@ -16,7 +16,8 @@ backends, a package manager and website deployment remain separate.
 ## Guides and what each adds
 
 The current checkout additionally contains unreleased
-[module inspection](module-inspection.md) toward alpha.2. Its package version is
+[module inspection](module-inspection.md) and [constant expressions](constant-expressions.md)
+toward alpha.2. Its package version is
 intentionally unchanged; the published alpha.1 snapshot has no `modules` command.
 
 | Document | Use it to |
@@ -25,6 +26,7 @@ intentionally unchanged; the published alpha.1 snapshot has no `modules` command
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
 | [Source modules](modules.md) | Organize files, choose public/private declarations and understand loading limits |
 | [Module inspection](module-inspection.md) | Inspect files, import edges, dependencies, signatures and source locations without execution |
+| [Constant expressions](constant-expressions.md) | Compile bounded scalar expressions, use earlier/imported constants and inspect reference metadata |
 | [Import tutorial](tutorials/modules.md) | Run a three-file numerical program and repair private-member/cycle errors |
 | [Finite floats](floats.md) | Use the alpha's binary64 scalars, numeric diagnostics, and function integration |
 | [Numerical vectors](vectors.md) | Use immutable numerical data, pure kernels, typed vector calls and bounded allocation |

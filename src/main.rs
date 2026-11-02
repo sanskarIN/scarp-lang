@@ -77,7 +77,8 @@ const MODULES_HELP: &str = "Usage: scarp modules [--] <file.srp>
 
 Load and statically check the module graph, then list files, imports, dependencies
 and public/private declarations with typed function signatures and source locations.
-No statements, defaults, contracts or arithmetic execute. No runtime-budget options.
+No runtime statements, defaults or contracts execute. Scalar module constants are
+evaluated during compilation with separate work limits. No runtime-budget options.
 Uses the same trusted source root and default module-loading limits as run/check.
 Filenames are escaped; dependency labels use the loader's canonical paths.
 Example: scarp modules examples/module_inspection.srp

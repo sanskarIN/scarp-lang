@@ -10,10 +10,12 @@ explicit bounded module compiler, including visibility and static type checking,
 then prints the loaded files, import aliases/specifiers/targets and locations,
 direct dependencies/dependents and public/private declarations. Function summaries
 include original names, parameter names/types/default presence, purity and result
-types. Constant values and default expressions are not evaluated or printed.
+types. Constant values and default expressions are not printed. Defaults are not
+evaluated; [Proposal 0031](0031-constant-expressions.md) extends compilation with
+restricted constant initializer evaluation.
 Ordinary script bindings are not module constants and are omitted.
 
-Inspection never evaluates statements, defaults, needs/ensures or arithmetic.
+Inspection never executes runtime statements, defaults or needs/ensures.
 It can therefore inspect a statically valid program that would fail or loop when
 run. Loading/linking failures produce diagnostics and no partial inventory.
 Writer failures retain the existing CLI broken-pipe/exit-code contract.

@@ -1,0 +1,11 @@
+error[E0037]: calls are not allowed in module constant expressions
+ --> call.srp:2:20
+  |
+2 | pub bind invalid = compute();
+  |                    ^^^^^^^
+ = note: constant initialized here
+ --> call.srp:2:10
+  |
+2 | pub bind invalid = compute();
+  |          ^^^^^^^
+ = help: use scalar operators and earlier constants; call functions at runtime

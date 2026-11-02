@@ -1,0 +1,3 @@
+pub bind base = 10;
+pub bind multiplier = 4;
+pub bind label = "constant expressions";

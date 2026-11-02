@@ -1,0 +1,2 @@
+pub bind count = 3;
+pub bind invalid = count + (1.5 * 2.0);

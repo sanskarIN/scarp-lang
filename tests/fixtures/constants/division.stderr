@@ -1,0 +1,11 @@
+error[E0008]: division by zero
+ --> division.srp:3:23
+  |
+3 | pub bind invalid = 10 / divisor;
+  |                       ^
+ = note: constant initialized here
+ --> division.srp:3:10
+  |
+3 | pub bind invalid = 10 / divisor;
+  |          ^^^^^^^
+ = help: the divisor must evaluate to a nonzero integer

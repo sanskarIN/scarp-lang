@@ -362,7 +362,7 @@ struct Resolver<'a> {
     loops: Vec<LoopContext>,
     functions: &'a [FunctionInfo],
     names: &'a HashMap<String, usize>,
-    result: Option<ValueType>,
+    result: Option<(ValueType, Span)>,
     pure: bool,
 }
 
@@ -423,7 +423,7 @@ impl<'a> Resolver<'a> {
                     ))
                 }
                 Statement::Return { value, span } => {
-                    let expected = self.result.ok_or_else(|| {
+                    let (expected, declaration) = self.result.ok_or_else(|| {
                         Diagnostic::new(
                             DiagnosticKind::InvalidReturn,
                             span,
@@ -435,7 +435,7 @@ impl<'a> Resolver<'a> {
                         (None, ValueType::Unit) => {}
                         (Some(value), kind) if kind != ValueType::Unit && value.kind == kind => {}
                         _ => {
-                            return Err(Diagnostic::new(
+                            let mut error = Diagnostic::new(
                                 DiagnosticKind::InvalidReturn,
                                 span,
                                 format!(
@@ -446,7 +446,22 @@ impl<'a> Resolver<'a> {
                                         format!("produce {expected}")
                                     }
                                 ),
-                            ))
+                            )
+                            .with_related(
+                                declaration,
+                                format!("function declares result type {expected} here"),
+                            );
+                            if let Some(value) = &value {
+                                error = error.with_related(
+                                    value.syntax.nodes()[value.syntax.root()].span,
+                                    format!("returned expression has type {}", value.kind),
+                                );
+                            }
+                            return Err(error.with_help(if expected == ValueType::Unit {
+                                "use a bare return in a unit function".into()
+                            } else {
+                                format!("return an expression of type {expected}")
+                            }));
                         }
                     }
                     self.emit(ResolvedStatement::Return { value }, span);
@@ -1018,17 +1033,13 @@ fn resolve_expression(
                         syntax.nodes()[argument.expression].span,
                     )
                     .map_err(|error| {
-                        if function.name.contains("::") {
-                            error.with_related(
-                                function.parameters[parameter].span,
-                                format!(
-                                    "parameter {:?} is declared here",
-                                    function.parameters[parameter].name
-                                ),
-                            )
-                        } else {
-                            error
-                        }
+                        error.with_related(
+                            function.parameters[parameter].span,
+                            format!(
+                                "parameter {:?} is declared here",
+                                function.parameters[parameter].name
+                            ),
+                        )
                     })?;
                     supplied[parameter] = true;
                     parameters.push(parameter);
@@ -1105,7 +1116,6 @@ fn resolve_expression(
                 match operator {
                     BinaryOperator::Equal | BinaryOperator::NotEqual => {
                         require_value(types[*left], *operator_span)?;
-                        require_type(types[*right], types[*left], *operator_span)?;
                     }
                     _ => {
                         if !types[*left].is_numeric() {
@@ -1115,9 +1125,19 @@ fn resolve_expression(
                                 types[*left],
                             ));
                         }
-                        require_type(types[*right], types[*left], *operator_span)?;
                     }
                 }
+                require_type(types[*right], types[*left], *operator_span).map_err(|error| {
+                    error
+                        .with_related(
+                            syntax.nodes()[*left].span,
+                            format!("left operand has type {}", types[*left]),
+                        )
+                        .with_related(
+                            syntax.nodes()[*right].span,
+                            format!("right operand has type {}", types[*right]),
+                        )
+                })?;
                 let kind = match operator {
                     BinaryOperator::Add
                     | BinaryOperator::Subtract
@@ -1144,7 +1164,14 @@ fn resolve_expression(
 pub(crate) fn resolve_standalone(
     expression: &Expression,
 ) -> Result<ResolvedExpression, Diagnostic> {
-    resolve_expression(expression.clone(), &[], &[], &HashMap::new(), false)
+    resolve_closed_expression(expression.clone())
+}
+
+/// Resolve an owned expression whose names have already been closed over.
+pub(crate) fn resolve_closed_expression(
+    syntax: Expression,
+) -> Result<ResolvedExpression, Diagnostic> {
+    resolve_expression(syntax, &[], &[], &HashMap::new(), false)
 }
 
 fn require_value(kind: ValueType, span: Span) -> Result<(), Diagnostic> {

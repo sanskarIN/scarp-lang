@@ -1,0 +1,2 @@
+pub bind maximum = 9223372036854775807;
+pub bind invalid = maximum + 1;

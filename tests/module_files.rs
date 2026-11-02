@@ -11,6 +11,78 @@ use std::{
 };
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
+#[test]
+fn constant_diagnostic_fixtures_match_embedding_and_all_compiling_cli_modes() {
+    use scarp::modules::MemorySourceLoader;
+    let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/constants");
+    for name in ["division", "overflow", "type", "forward", "cycle", "call"] {
+        let filename = format!("{name}.srp");
+        let source = fs::read_to_string(directory.join(&filename)).unwrap();
+        let mut loader = MemorySourceLoader::new();
+        loader.insert(&filename, &source).unwrap();
+        let error =
+            modules::compile_with_loader(&filename, &loader, ModuleLimits::default()).unwrap_err();
+        let expected = fs::read_to_string(directory.join(format!("{name}.stderr"))).unwrap();
+        assert_eq!(format!("{}\n", error.render()), expected, "{name}");
+        for mode in ["run", "check", "modules"] {
+            let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+                .current_dir(&directory)
+                .args([mode, &filename])
+                .output()
+                .unwrap();
+            assert_eq!(result.status.code(), Some(1), "{name}/{mode}");
+            assert!(result.stdout.is_empty());
+            assert_eq!(
+                String::from_utf8(result.stderr).unwrap(),
+                expected,
+                "{name}/{mode}"
+            );
+        }
+    }
+}
+
+#[test]
+fn constant_compilation_precedes_output_and_native_limits_are_additive() {
+    let fixture = Fixture::new();
+    let entry = fixture.file(
+        "main.srp",
+        "print(\"hidden\"); eprint(\"hidden\"); import \"lib.srp\" as lib; print(lib.value);",
+    );
+    fixture.file("lib.srp", "pub bind value=1/0;");
+    for mode in ["run", "check", "modules"] {
+        let result = Command::new(env!("CARGO_BIN_EXE_scarp"))
+            .arg(mode)
+            .arg(&entry)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        let stderr = String::from_utf8(result.stderr).unwrap();
+        assert!(stderr.contains("E0008") && stderr.contains("lib.srp:1:"));
+        assert!(!stderr.contains("hidden"));
+    }
+    fixture.file("lib.srp", "pub bind value=2*3;");
+    let error = modules::compile_file_with_constant_limits(
+        &entry,
+        ModuleLimits::default(),
+        modules::ConstantLimits {
+            max_nodes: 2,
+            max_steps: 4,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(error.diagnostic.kind, Kind::ModuleLimit);
+    modules::compile_file_with_constant_limits(
+        &entry,
+        ModuleLimits::default(),
+        modules::ConstantLimits {
+            max_nodes: 3,
+            max_steps: 4,
+        },
+    )
+    .unwrap();
+}
+
 #[cfg(windows)]
 #[test]
 fn windows_case_aliases_share_the_canonical_file_identity() {
@@ -304,7 +376,7 @@ fn module_inspection_help_and_usage_are_validated_before_file_io() {
         assert!(result.status.success() && result.stderr.is_empty());
         assert!(String::from_utf8(result.stdout)
             .unwrap()
-            .contains("No statements, defaults, contracts"));
+            .contains("No runtime statements, defaults or contracts"));
     }
     for args in [
         vec!["modules"],

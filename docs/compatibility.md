@@ -1,5 +1,10 @@
 # Version and API compatibility
 
+Unreleased [constant expressions](constant-expressions.md) extend module scalar
+initializers. Ordinary bindings and literal constants remain compatible. Existing
+ModuleLimits and compile signatures are unchanged; ConstantLimits is additive.
+Primary error codes/spans stay intact; type errors can include new related notes.
+
 Unreleased work toward alpha.2 adds the `modules` CLI command and additive
 module inspection APIs while keeping Cargo at 0.0.5-alpha.1. Published alpha.1
 has neither. Existing ModuleInfo/SymbolInfo/SymbolKind fields, Span/Diagnostic

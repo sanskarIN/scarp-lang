@@ -44,12 +44,13 @@ are permitted only at file scope.
 
 ## Declarations and execution
 
-Library files contain imports, functions and immutable scalar literal bindings.
-Constants may be integers, finite floats, booleans or strings, optionally grouped
-or numerically negated. They are typed literals substituted at their uses;
-there is no runtime module initialization. A library cannot contain file-level
-prints, calls, loops, mutable bindings, vector/tile bindings or computed constant
-initializers. Put numerical construction and computation inside functions.
+Library files contain imports, functions and immutable scalar constants.
+Published alpha.1 accepts literals, grouping and numeric negation. Unreleased
+development also supports [constant expressions](constant-expressions.md): scalar
+arithmetic, comparisons, logic and earlier/imported public constant references.
+Folded typed values are substituted at uses without runtime module initialization.
+A library cannot contain file-level prints, calls, loops, mutable bindings or
+vector/tile constants. Calls are forbidden in constant initializers too.
 
 Entry files retain ordinary script statements. An entry's `pub bind` is a
 declarative scalar constant too; ordinary `bind` statements keep their existing
@@ -128,7 +129,7 @@ does not include these tooling changes.
 | --- | --- | --- |
 | E0037 | Nested import, unsupported library statement or source-only API | Move declarations to file scope, move computation inside a function, or select a module API |
 | E0038 | Missing/unreadable file or invalid UTF-8 | Check the path relative to its importing file and save UTF-8 |
-| E0039 | Import cycle | Follow the related import locations; extract shared helpers into a third library |
+| E0039 | Import or constant cycle | Follow related references; remove the cyclic dependency |
 | E0040 | Source graph/expansion limit | Reduce the graph or explicitly choose suitable host limits |
 | E0041 | Private member | Mark the intended function/constant `pub`, or call a public wrapper |
 | E0042 | Unknown alias/member or wrong symbol use | Check alias spelling, the member's declaration and whether it is callable |

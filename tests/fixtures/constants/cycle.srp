@@ -1,0 +1,3 @@
+pub bind prefix = first;
+pub bind first = second;
+pub bind second = first;

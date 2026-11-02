@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     ast::{Expression, ExpressionKind, PrintArgument, Statement},
-    value::{FiniteFloat, ValueType},
+    value::{Value, ValueType},
 };
 use std::collections::{HashMap, HashSet};
 
@@ -19,7 +19,7 @@ struct Table {
     alias_order: Vec<String>,
 }
 fn syntax(span: Span, message: impl Into<String>) -> Diagnostic {
-    Diagnostic::new(Kind::ModuleSyntax,span,message).with_help("library files contain imports, functions and immutable scalar literals; put executable statements in the entry file")
+    Diagnostic::new(Kind::ModuleSyntax,span,message).with_help("library files contain imports, functions and immutable scalar constants; put executable statements in the entry file")
 }
 fn consume(remaining: &mut usize, count: usize, span: Span) -> Result<(), Diagnostic> {
     if count > *remaining {
@@ -28,68 +28,27 @@ fn consume(remaining: &mut usize, count: usize, span: Span) -> Result<(), Diagno
     *remaining -= count;
     Ok(())
 }
-fn scalar(expression: &Expression) -> Result<ExpressionKind, Diagnostic> {
-    let mut id = expression.root();
-    let mut signs = Vec::new();
-    let mut value = loop {
-        match &expression.nodes()[id].kind {
-            ExpressionKind::Group { expression } => id = *expression,
-            ExpressionKind::Negate {
-                operand,
-                operator_span,
-            } => {
-                signs.push(*operator_span);
-                id = *operand;
-            }
-            kind @ (ExpressionKind::Integer(_)
-            | ExpressionKind::Float(_)
-            | ExpressionKind::Boolean(_)
-            | ExpressionKind::String(_)) => break kind.clone(),
-            _ => {
-                return Err(syntax(
-                    expression.nodes()[id].span,
-                    "module constants require a scalar literal, not an executable initializer",
-                ))
-            }
-        }
-    };
-    for span in signs.into_iter().rev() {
-        value = match value {
-            ExpressionKind::Integer(n) => {
-                ExpressionKind::Integer(n.checked_neg().ok_or_else(|| {
-                    Diagnostic::new(
-                        Kind::ArithmeticOverflow,
-                        span,
-                        "integer literal negation overflows",
-                    )
-                })?)
-            }
-            ExpressionKind::Float(n) => {
-                ExpressionKind::Float(FiniteFloat::new(-n.get()).expect("finite negation"))
-            }
-            _ => return Err(syntax(span, "only numeric module literals can be negated")),
-        };
-    }
-    Ok(value)
-}
-fn scalar_type(kind: &ExpressionKind) -> ValueType {
-    match kind {
-        ExpressionKind::Integer(_) => ValueType::Integer,
-        ExpressionKind::Float(_) => ValueType::Float,
-        ExpressionKind::Boolean(_) => ValueType::Boolean,
-        ExpressionKind::String(_) => ValueType::String,
-        _ => unreachable!("checked scalar literal"),
-    }
-}
-fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Diagnostic> {
-    let mut tables = Vec::new();
-    for (id, module) in graph.modules.iter().enumerate() {
+fn collect(
+    graph: &ModuleGraph,
+    remaining: &mut usize,
+    limits: ConstantLimits,
+) -> Result<(Vec<Table>, Vec<ConstantDependency>), Diagnostic> {
+    let mut tables: Vec<Option<Table>> = (0..graph.modules.len()).map(|_| None).collect();
+    let mut dependencies = vec![Vec::new(); graph.modules.len()];
+    let mut work = constants::Work::new(limits);
+    for &id in &graph.completion_order {
+        let module = &graph.modules[id];
         let mut table = Table {
             symbols: HashMap::new(),
             ordered: Vec::new(),
             aliases: HashMap::new(),
             alias_order: Vec::new(),
         };
+        for (import, target) in &module.dependencies {
+            table.aliases.insert(import.alias.clone(), *target);
+            table.alias_order.push(import.alias.clone());
+        }
+        work.validate(module, id == 0)?;
         for wrapped in &module.program.statements {
             let (statement, public) = match wrapped {
                 Statement::Export { declaration, .. } => (declaration.as_ref(), true),
@@ -150,14 +109,49 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                     if *mutable {
                         return Err(syntax(*name_span, "library variables cannot be mutable"));
                     }
-                    let value = scalar(initializer)?;
+                    let value = work.evaluate(initializer, |name, span| {
+                        let symbol = lookup_symbol(&table, |target| tables[target].as_ref().expect("completed dependency"), name, span)?
+                            .ok_or_else(|| crate::resolver::unknown_name(name, span)
+                                .with_help("constant initializers may reference only earlier module constants or imported public constants"))?;
+                        let value = symbol.constant.as_ref().ok_or_else(|| Diagnostic::new(Kind::ModuleSymbol, span,
+                            format!("{name:?} is a function, not a scalar constant"))
+                            .with_related(symbol.info.span, "function declared here")
+                            .with_help("call functions at runtime; use a scalar constant in this initializer"))?;
+                        if let ExpressionKind::String(text) = value { consume(remaining, text.len(), span)?; }
+                        dependencies[id].push(ConstantDependency {
+                            source: id, declaration: *name_span,
+                            target: name.split_once('.').map_or(id, |(alias, _)| table.aliases[alias]),
+                            target_declaration: symbol.info.span, span,
+                        });
+                        Ok(value.clone())
+                    }).map_err(|error| error.with_related(*name_span, "constant initialized here"))?;
+                    let kind = value.kind();
+                    let value = match value {
+                        Value::Integer(n) => ExpressionKind::Integer(n),
+                        Value::Float(n) => ExpressionKind::Float(n),
+                        Value::Boolean(b) => ExpressionKind::Boolean(b),
+                        Value::String(text) => {
+                            // Literal storage remains covered by source limits,
+                            // as before. Reference-derived strings create new
+                            // folded storage in addition to substitution text.
+                            if initializer
+                                .nodes()
+                                .iter()
+                                .any(|node| matches!(&node.kind, ExpressionKind::Name(_)))
+                            {
+                                consume(remaining, text.len(), *name_span)?;
+                            }
+                            ExpressionKind::String(text.to_string())
+                        }
+                        _ => unreachable!("validated scalar constant"),
+                    };
                     Symbol {
                         definition: *name_span,
                         info: SymbolInfo {
                             name: name.clone(),
                             public,
                             span: *name_span,
-                            kind: SymbolKind::Constant(scalar_type(&value)),
+                            kind: SymbolKind::Constant(kind),
                         },
                         target: None,
                         constant: Some(value),
@@ -189,10 +183,6 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
             table.ordered.push(symbol.info.clone());
             table.symbols.insert(symbol.info.name.clone(), symbol);
         }
-        for (import, target) in &module.dependencies {
-            table.aliases.insert(import.alias.clone(), *target);
-            table.alias_order.push(import.alias.clone());
-        }
         // A root script binding cannot silently replace a public constant.
         if id == 0 {
             for statement in &module.program.statements {
@@ -206,9 +196,63 @@ fn collect(graph: &ModuleGraph, remaining: &mut usize) -> Result<Vec<Table>, Dia
                 }
             }
         }
-        tables.push(table);
+        tables[id] = Some(table);
     }
-    Ok(tables)
+    Ok((
+        tables
+            .into_iter()
+            .map(|table| table.expect("completed source graph"))
+            .collect(),
+        dependencies.into_iter().flatten().collect(),
+    ))
+}
+
+/// One visibility/spelling policy for constant compilation and runtime lowering.
+fn lookup_symbol<'a>(
+    local: &'a Table,
+    table: impl Fn(SourceId) -> &'a Table,
+    name: &str,
+    span: Span,
+) -> Result<Option<&'a Symbol>, Diagnostic> {
+    if let Some((alias, member)) = name.split_once('.') {
+        let target = local.aliases.get(alias).ok_or_else(|| {
+            Diagnostic::new(
+                Kind::ModuleSymbol,
+                span,
+                format!("unknown module alias {alias:?}"),
+            )
+            .with_help(
+                match spelling_hint(alias, local.alias_order.iter().map(String::as_str)) {
+                    Some(hint) => format!(
+                        "did you mean module alias {hint:?}? use an import declared in this file"
+                    ),
+                    None => {
+                        "declare an import with this alias before using qualified members".into()
+                    }
+                },
+            )
+        })?;
+        let target = table(*target);
+        let symbol = target.symbols.get(member).ok_or_else(|| {
+            Diagnostic::new(Kind::ModuleSymbol, span, format!("module {alias:?} has no symbol {member:?}"))
+                .with_help(match spelling_hint(member, target.ordered.iter().filter(|s| s.public).map(|s| s.name.as_str())) {
+                    Some(hint) => format!("did you mean {alias}.{hint}? check the imported module's public declarations"),
+                    None => "check the imported module's public declarations".into(),
+                })
+        })?;
+        if !symbol.info.public {
+            return Err(Diagnostic::new(
+                Kind::ModuleVisibility,
+                span,
+                format!("{name} is private"),
+            )
+            .with_related(symbol.info.span, "the private declaration is here")
+            .with_help("mark the declaration pub in its defining module"));
+        }
+        Ok(Some(symbol))
+    } else {
+        Ok(local.symbols.get(name))
+    }
 }
 
 struct Rewriter<'a> {
@@ -234,42 +278,12 @@ impl Rewriter<'_> {
         Ok(())
     }
     fn symbol(&self, name: &str, span: Span) -> Result<Option<&Symbol>, Diagnostic> {
-        if let Some((alias, member)) = name.split_once('.') {
-            let target = self.tables[self.id].aliases.get(alias).ok_or_else(|| {
-                Diagnostic::new(
-                    Kind::ModuleSymbol,
-                    span,
-                    format!("unknown module alias {alias:?}"),
-                )
-                .with_help(match spelling_hint(alias, self.tables[self.id].alias_order.iter().map(String::as_str)) {
-                    Some(hint) => format!("did you mean module alias {hint:?}? use an import declared in this file"),
-                    None => "declare an import with this alias before using qualified members".into(),
-                })
-            })?;
-            let symbol = self.tables[*target].symbols.get(member).ok_or_else(|| {
-                Diagnostic::new(
-                    Kind::ModuleSymbol,
-                    span,
-                    format!("module {alias:?} has no symbol {member:?}"),
-                )
-                .with_help(match spelling_hint(member, self.tables[*target].ordered.iter().filter(|s| s.public).map(|s| s.name.as_str())) {
-                    Some(hint) => format!("did you mean {alias}.{hint}? check the imported module's public declarations"),
-                    None => "check the imported module's public declarations".into(),
-                })
-            })?;
-            if !symbol.info.public {
-                return Err(Diagnostic::new(
-                    Kind::ModuleVisibility,
-                    span,
-                    format!("{name} is private"),
-                )
-                .with_related(symbol.info.span, "the private declaration is here")
-                .with_help("mark the declaration pub in its defining module"));
-            }
-            Ok(Some(symbol))
-        } else {
-            Ok(self.tables[self.id].symbols.get(name))
-        }
+        lookup_symbol(
+            &self.tables[self.id],
+            |target| &self.tables[target],
+            name,
+            span,
+        )
     }
     fn expression(&mut self, expression: &mut Expression) -> Result<(), Diagnostic> {
         for node in &mut expression.nodes {
@@ -454,10 +468,13 @@ impl Rewriter<'_> {
     }
 }
 
-pub(super) fn resolve(mut graph: ModuleGraph) -> Result<ModuleProgram, ModuleDiagnostic> {
-    let result = (|| -> Result<(ResolvedProgram, Vec<ModuleInfo>), Diagnostic> {
+pub(super) fn resolve(
+    mut graph: ModuleGraph,
+    constants: ConstantLimits,
+) -> Result<ModuleProgram, ModuleDiagnostic> {
+    let result = (|| -> Result<_, Diagnostic> {
         let mut remaining = graph.limits.max_expansion_bytes;
-        let tables = collect(&graph, &mut remaining)?;
+        let (tables, dependencies) = collect(&graph, &mut remaining, constants)?;
         let mut statements = Vec::new();
         let mut info = Vec::new();
         for (id, module) in graph.modules.iter_mut().enumerate() {
@@ -492,11 +509,15 @@ pub(super) fn resolve(mut graph: ModuleGraph) -> Result<ModuleProgram, ModuleDia
                 symbols: tables[id].ordered.clone(),
             });
         }
-        Ok((crate::resolver::resolve(Program { statements })?, info))
+        Ok((
+            crate::resolver::resolve(Program { statements })?,
+            info,
+            dependencies,
+        ))
     })();
     let sources = Arc::new(graph.sources);
     match result {
-        Ok((program, modules)) => {
+        Ok((program, modules, constant_dependencies)) => {
             let inspection = inspection::Inspection::new(&graph.modules, &modules);
             debug_assert_eq!(inspection.function_count(), program.functions().len());
             Ok(ModuleProgram {
@@ -504,6 +525,7 @@ pub(super) fn resolve(mut graph: ModuleGraph) -> Result<ModuleProgram, ModuleDia
                 sources,
                 modules,
                 inspection,
+                constant_dependencies,
             })
         }
         Err(diagnostic) => Err(ModuleDiagnostic {

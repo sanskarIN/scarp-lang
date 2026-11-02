@@ -14,6 +14,10 @@ Unreleased development toward alpha.2 adds
 and typed public/private declarations without executing the program. The package
 version remains 0.0.5-alpha.1; published alpha.1 binaries lack this new command.
 
+The checkout also adds [compile-time scalar constant expressions](docs/constant-expressions.md)
+with checked arithmetic/logic, earlier/imported constant references and separate
+compiler work limits. Try `cargo run -- run examples/constant_expressions.srp`.
+
 Use immutable `bind` and mutable `var` declarations, checked integers, finite floats, strings,
 booleans, conditionals, while/repeat loops, and explicit output streams.
 [Typed `funcra` functions](docs/functions.md) support named/default arguments,
@@ -133,7 +137,7 @@ the CLI does not reject other filename extensions.
 - `while` and counted `repeat` loops, nearest-loop `break`/`continue`.
 - Typed file-level `funcra`, positional/named/default arguments, forward and
   mutual recursion, explicit returns, verified purity, and executable contracts.
-- Relative source modules, public/private functions and scalar literal constants,
+- Relative source modules, public/private functions and scalar constants,
   explicit filesystem/in-memory loaders, cycle diagnostics and bounded graphs.
 - Heap call frames and seven deterministic CLI/embedding resource limits shared
   by `run` and `check`; see [budgets](docs/budgets.md).

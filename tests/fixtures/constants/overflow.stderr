@@ -1,0 +1,11 @@
+error[E0007]: integer arithmetic overflow
+ --> overflow.srp:2:28
+  |
+2 | pub bind invalid = maximum + 1;
+  |                            ^
+ = note: constant initialized here
+ --> overflow.srp:2:10
+  |
+2 | pub bind invalid = maximum + 1;
+  |          ^^^^^^^
+ = help: each result must fit in a signed 64-bit integer

@@ -1,0 +1,16 @@
+error[E0039]: constant dependency cycle reaches "first"
+ --> cycle.srp:3:19
+  |
+3 | pub bind second = first;
+  |                   ^^^^^
+ = note: constant in this cycle declared here
+ --> cycle.srp:2:10
+  |
+2 | pub bind first = second;
+  |          ^^^^^
+ = note: this constant reference continues the cycle
+ --> cycle.srp:2:18
+  |
+2 | pub bind first = second;
+  |                  ^^^^^^
+ = help: break the cycle; constants may reference only earlier constants in the same file

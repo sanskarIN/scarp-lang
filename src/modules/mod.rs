@@ -21,7 +21,9 @@ use crate::{
 };
 use std::{collections::HashMap, fmt, io, path::Path, sync::Arc};
 
+mod constants;
 mod inspection;
+pub use constants::{ConstantDependency, ConstantLimits};
 mod spelling;
 use spelling::spelling_hint;
 mod linker;
@@ -233,8 +235,13 @@ pub struct ModuleProgram {
     sources: Arc<SourceMap>,
     modules: Vec<ModuleInfo>,
     inspection: inspection::Inspection,
+    constant_dependencies: Vec<ConstantDependency>,
 }
 impl ModuleProgram {
+    /// Direct constant uses in module discovery, declaration and reference order.
+    pub fn constant_dependencies(&self) -> &[ConstantDependency] {
+        &self.constant_dependencies
+    }
     pub fn program(&self) -> &ResolvedProgram {
         &self.program
     }
@@ -294,6 +301,7 @@ pub struct ModuleGraph {
     limits: ModuleLimits,
     source_bytes: usize,
     imports: usize,
+    completion_order: Vec<SourceId>,
 }
 impl ModuleGraph {
     pub fn sources(&self) -> &SourceMap {
@@ -421,7 +429,7 @@ impl ModuleGraph {
         // Cached diamonds must obey the longest graph path, not only the path
         // on which each source happened to be discovered first.
         let mut heights = vec![0usize; self.modules.len()];
-        for id in ordered {
+        for &id in &ordered {
             for (import, child) in &self.modules[id].dependencies {
                 let height = heights[*child]
                     .checked_add(1)
@@ -432,6 +440,7 @@ impl ModuleGraph {
                 heights[id] = heights[id].max(height);
             }
         }
+        self.completion_order = ordered;
         Ok(())
     }
 }
@@ -530,6 +539,7 @@ fn load_identity(
         limits,
         source_bytes: 0,
         imports: 0,
+        completion_order: Vec::new(),
     };
     match graph.discover(entry, loader, identity) {
         Ok(()) => Ok(graph),
@@ -540,7 +550,14 @@ fn load_identity(
     }
 }
 pub fn resolve(graph: ModuleGraph) -> Result<ModuleProgram, ModuleDiagnostic> {
-    linker::resolve(graph)
+    resolve_with_constant_limits(graph, ConstantLimits::default())
+}
+/// Link/type-check a loaded graph with separate compile-time scalar work limits.
+pub fn resolve_with_constant_limits(
+    graph: ModuleGraph,
+    limits: ConstantLimits,
+) -> Result<ModuleProgram, ModuleDiagnostic> {
+    linker::resolve(graph, limits)
 }
 pub fn compile_with_loader(
     entry: &str,
@@ -549,9 +566,26 @@ pub fn compile_with_loader(
 ) -> Result<ModuleProgram, ModuleDiagnostic> {
     resolve(load(entry, loader, limits)?)
 }
+/// Compile using explicit loading and constant-evaluation allowances.
+pub fn compile_with_loader_and_constant_limits(
+    entry: &str,
+    loader: &dyn SourceLoader,
+    limits: ModuleLimits,
+    constants: ConstantLimits,
+) -> Result<ModuleProgram, ModuleDiagnostic> {
+    resolve_with_constant_limits(load(entry, loader, limits)?, constants)
+}
 pub fn compile_file(
     path: impl AsRef<Path>,
     limits: ModuleLimits,
+) -> Result<ModuleProgram, ModuleDiagnostic> {
+    compile_file_with_constant_limits(path, limits, ConstantLimits::default())
+}
+/// Native-path compilation with explicit scalar constant limits.
+pub fn compile_file_with_constant_limits(
+    path: impl AsRef<Path>,
+    limits: ModuleLimits,
+    constants: ConstantLimits,
 ) -> Result<ModuleProgram, ModuleDiagnostic> {
     let path = path.as_ref();
     let label = path.to_string_lossy().into_owned();
@@ -577,7 +611,10 @@ pub fn compile_file(
             entry: label.clone(),
         }),
     })?;
-    resolve(load_identity(&label, &loader, limits, Some(identity))?)
+    resolve_with_constant_limits(
+        load_identity(&label, &loader, limits, Some(identity))?,
+        constants,
+    )
 }
 fn shift(span: &mut Span, base: usize) {
     span.start += base;

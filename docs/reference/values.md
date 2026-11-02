@@ -6,6 +6,10 @@ bindings and string-valued expressions require the development stack.
 
 ## Primitive values
 
+Unreleased module compilation adds [scalar constant expressions](../constant-expressions.md),
+using the same types and checked operators below. Module constants evaluate during
+compilation; ordinary script bindings retain runtime behavior.
+
 | Kind | Examples | Rules |
 | --- | --- | --- |
 | Integer | `0`, `42`, `-7` | Signed 64-bit values; decimal ASCII digits |

@@ -143,6 +143,24 @@ try {
     if ($staticInventory.ExitCode -ne 0 -or $staticInventory.Stderr.Length -ne 0 -or -not [System.Text.Encoding]::UTF8.GetString($staticInventory.Stdout).Contains('pub pure funcra fail(n: integer = <default>) -> integer')) {
         throw 'Packaged module inspection must not execute defaults or contracts'
     }
+    [System.IO.File]::WriteAllText($moduleEntry, 'import "module-library.srp" as lib; print(lib.value);')
+    foreach ($case in @(
+        @('pub bind value=1/0;', 'E0008'),
+        @('pub bind value=9223372036854775807+1;', 'E0007'),
+        @('pub bind value=1+true;', 'E0015'),
+        @('pub bind value=value;', 'E0039'),
+        @('pub bind value=later; bind later=1;', 'E0042'),
+        @('pub bind value=true or (sqrt(4.0)>0.0);', 'E0037')
+    )) {
+        [System.IO.File]::WriteAllText($moduleLibrary, $case[0])
+        foreach ($verb in @('run', 'check', 'modules')) {
+            $failed = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, $moduleEntry)
+            $diagnostic = [System.Text.Encoding]::UTF8.GetString($failed.Stderr)
+            if ($failed.ExitCode -ne 1 -or $failed.Stdout.Length -ne 0 -or -not $diagnostic.StartsWith(('error[' + $case[1] + ']')) -or -not $diagnostic.Contains('module-library.srp')) {
+                throw 'Packaged constant compilation diagnostic or stream atomicity failed'
+            }
+        }
+    }
     [System.IO.File]::WriteAllText($moduleEntry, 'import "absent-module.srp" as absent;')
     $moduleTokens = Invoke-ScarpProcess -Executable $executable -Arguments @('tokens', $moduleEntry)
     if ($moduleTokens.ExitCode -ne 0 -or $moduleTokens.Stderr.Length -ne 0) {
