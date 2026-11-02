@@ -55,6 +55,8 @@ E0037–E0043 for modules. Existing assignments are unchanged.
 | `E0041` | Private imported member | Expose the intended declaration with pub or call a public wrapper |
 | `E0042` | Unknown module alias/member or wrong symbol kind | Check spelling and whether the member is a function or constant |
 | `E0043` | Invalid module path | Use a relative /-separated .srp path inside the trusted root |
+| `E0044` | Inexact or out-of-range numeric conversion | Supply an exactly representable integer or integral in-range float |
+| `E0045` | Invalid text scalar index | Use a nonnegative index below text_len; count Unicode scalars rather than bytes |
 
 Run/check file-read and UTF-8 failures use E0038; imported-file failures also
 identify the import location. Tokens file-read failures and output I/O failures

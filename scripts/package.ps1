@@ -168,6 +168,24 @@ try {
     if ($moduleTokens.ExitCode -ne 0 -or $moduleTokens.Stderr.Length -ne 0) {
         throw 'Packaged tokens must not follow imports'
     }
+    $scalarSource = Join-Path $stagingRoot 'scalar-text.srp'
+    foreach ($case in @(
+        @('print(to_float(9223372036854775807));', 'E0044'),
+        @('print(to_integer(1.5));', 'E0044'),
+        @('print(text_codepoint("a", 1));', 'E0045')
+    )) {
+        [System.IO.File]::WriteAllText($scalarSource, $case[0])
+        foreach ($verb in @('run', 'check')) {
+            $failed = Invoke-ScarpProcess -Executable $executable -Arguments @($verb, $scalarSource)
+            if ($failed.ExitCode -ne 1 -or $failed.Stdout.Length -ne 0 -or -not [System.Text.Encoding]::UTF8.GetString($failed.Stderr).StartsWith(('error[' + $case[1] + ']'))) {
+                throw 'Packaged scalar/text domain diagnostic or atomic output failed'
+            }
+        }
+        $static = Invoke-ScarpProcess -Executable $executable -Arguments @('modules', $scalarSource)
+        if ($static.ExitCode -ne 0 -or $static.Stderr.Length -ne 0) {
+            throw 'Module inspection must not execute scalar/text runtime calls'
+        }
+    }
     $streamSource = Join-Path $stagingRoot 'streams.srp'
     [System.IO.File]::WriteAllText($streamSource, 'bind word="ready"; write(word, true,); eprint("warning", 2); ewrite("tail");')
     $streams = Invoke-ScarpProcess -Executable $executable -Arguments @('run', $streamSource)

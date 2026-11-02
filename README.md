@@ -23,6 +23,9 @@ Optional [declaration annotations](docs/variables.md) accept forms such as
 The [feature matrix](docs/development/feature-matrix.md) records current gaps and
 the implementation roadmap; historical native commands remain unavailable on main.
 
+Unreleased [scalar and text built-ins](docs/scalar-text.md) add exact numeric
+conversions and budgeted Unicode length, codepoint and search queries.
+
 Use immutable `bind` and mutable `var` declarations, checked integers, finite floats, strings,
 booleans, conditionals, while/repeat loops, and explicit output streams.
 [Typed `funcra` functions](docs/functions.md) support named/default arguments,

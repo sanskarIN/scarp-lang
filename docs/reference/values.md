@@ -6,6 +6,10 @@ bindings and string-valued expressions require the development stack.
 
 ## Primitive values
 
+Unreleased [scalar conversions and text queries](../scalar-text.md) add explicit,
+exact numeric conversion and Unicode-scalar string operations. Annotations and
+operators remain strict; `text_bytes` is a byte count, not a byte-sequence type.
+
 Unreleased module compilation adds [scalar constant expressions](../constant-expressions.md),
 using the same types and checked operators below. Module constants evaluate during
 compilation; ordinary script bindings retain runtime behavior.

@@ -1,5 +1,11 @@
 # Version and API compatibility
 
+Unreleased [scalar/text intrinsics](scalar-text.md) add Builtin variants and
+NumericConversion/TextIndex diagnostic variants (E0044/E0045). Exhaustive host
+matches need new arms. Existing names, codes, ValueType and execution layouts stay
+unchanged. Conversion names occupy built-in call position; local funcra declarations
+still take precedence, and ordinary binding names retain their value meaning.
+
 Unreleased typed declarations preserve valid existing source. The public AST gains
 `Statement::Declaration.annotation: Option<TypeAnnotation>` with kind/type-token
 span. Hosts constructing declaration literals must add `annotation: None`; hosts
