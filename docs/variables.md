@@ -10,6 +10,14 @@ This document describes implemented variable behavior on development main. The p
 
 ## Immutable bindings
 
+Unreleased declaration annotations optionally state a primitive kind:
+`bind count: integer = 42;` or `var total: float = 0.0;`. Supported binding types
+are integer, float, boolean, string, vector and tile. Initializers remain mandatory
+and must infer exactly that kind; annotations never convert values. The same rule
+applies to module constants, function locals and nested scopes. A mismatch is E0015
+at the initializer with a related type-token location. Shadowing initializers still
+read the outer scope. See the [runnable example](../examples/typed_declarations.srp).
+
 Incomplete variable statements report help for the form being written. A missing
 name shows the selected `bind` or `var` declaration; a missing initializer asks
 for an expression after `=`; a missing terminator asks for `;`. Assignment errors

@@ -18,6 +18,11 @@ The checkout also adds [compile-time scalar constant expressions](docs/constant-
 with checked arithmetic/logic, earlier/imported constant references and separate
 compiler work limits. Try `cargo run -- run examples/constant_expressions.srp`.
 
+Optional [declaration annotations](docs/variables.md) accept forms such as
+`bind count: integer = 42;`, with exact type checking and required initialization.
+The [feature matrix](docs/development/feature-matrix.md) records current gaps and
+the implementation roadmap; historical native commands remain unavailable on main.
+
 Use immutable `bind` and mutable `var` declarations, checked integers, finite floats, strings,
 booleans, conditionals, while/repeat loops, and explicit output streams.
 [Typed `funcra` functions](docs/functions.md) support named/default arguments,

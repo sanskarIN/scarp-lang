@@ -148,6 +148,8 @@ try {
         @('pub bind value=1/0;', 'E0008'),
         @('pub bind value=9223372036854775807+1;', 'E0007'),
         @('pub bind value=1+true;', 'E0015'),
+        @('pub bind value: float=1;', 'E0015'),
+        @('pub bind value: number=1;', 'E0004'),
         @('pub bind value=value;', 'E0039'),
         @('pub bind value=later; bind later=1;', 'E0042'),
         @('pub bind value=true or (sqrt(4.0)>0.0);', 'E0037')

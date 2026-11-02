@@ -23,12 +23,12 @@ requires separate architecture and multiple implementation phases.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | UTF-8 source and lexical rules | Implemented; ASCII identifiers | Unicode identifier policy, additional escapes | Lexer/source spans | P2 | M | BOM, invalid UTF-8, boundaries, truncation | Lexical grammar |
 | Parser and AST | Flat expressions, bounded nested statements | Typed declarations in this cycle; later richer types | Existing colon/type grammar | P0 | S | AST spans, malformed annotations, depth | Grammar/API migration |
-| Immutable/mutable bindings | Implemented bind/var | Optional explicit type annotations | Parser, typed resolver | P0 | S | Inferred/annotated parity, mismatch, shadowing | Variables/tutorial |
+| Immutable/mutable bindings | Implemented bind/var and optional annotations | Deferred initialization remains intentionally absent | Parser, typed resolver | P0 | S | Inferred/annotated parity, mismatch, shadowing | Variables/tutorial |
 | Initialization analysis | Initializers mandatory; resolve before insertion | Deferred/conditional initialization not designed | CFG/data-flow first | P2 | L | Self-use, branch joins, loops | Initialization contract |
 | Lexical shadowing | Implemented | Rich pattern bindings | Resolver scopes | P2 | M | Shadowing initializer, duplicates, captures | Scope rules |
 | Assignments | =, +=, -=, *=, /= | Additional operators after bitwise design review | Operator/type contract | P2 | M | Type preservation, overflow, atomic output | Operators |
 | Integer and finite-float math | Checked i64 and finite binary64 | Exact explicit conversions in this cycle | Built-in registry and evaluator | P0 | S | Bounds, signed zero, loss of precision | Numeric reference |
-| Scalar constants | Implemented by #71 | Typed annotations; later approved intrinsics | Shared expression typing/evaluation | P0 | M | Order/cycles, import visibility, task/node bounds | Constant guide |
+| Scalar constants | Implemented by #71; annotations checked before evaluation | Approved constant intrinsics only after separate design | Shared expression typing/evaluation | P0 | M | Order/cycles, import visibility, task/node bounds | Constant guide |
 | Bitwise/radix/remainder | Historical PR #19 only | Port reviewed semantics to current AST/codes | Reconcile old branch and diagnostics | P1 | M | All counts, overflow, precedence, parity | New current proposal |
 | Strings | UTF-8 literals, equality, shared immutable storage | Unicode scalar queries in this cycle; later construction | Typed pure built-ins and work charging | P0 | M | Combining marks, emoji, empty input, limits | Text indexing contract |
 | Characters and bytes | Missing | Distinct types, decoding and conversion rules | Type representation and allocation limits | P2 | L | Encoding/invalid sequences, host parity | Type proposal |
