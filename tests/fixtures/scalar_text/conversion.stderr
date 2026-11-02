@@ -1,0 +1,6 @@
+error[E0044]: integer cannot be represented exactly as a float
+ --> conversion.srp:2:16
+  |
+2 | print(to_float(9223372036854775807));
+  |                ^^^^^^^^^^^^^^^^^^^
+ = help: conversions must be exact: use an integral in-range float or an exactly representable integer

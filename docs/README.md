@@ -26,6 +26,7 @@ intentionally unchanged; the published alpha.1 snapshot has no `modules` command
 
 | Document | Use it to |
 | --- | --- |
+| [Scalar conversions and text](scalar-text.md) | Convert exactly and query immutable Unicode strings with bounded work |
 | [Getting started](getting-started.md) | Select a version, build the intended checkout, and verify your executable |
 | [Your first program](tutorials/first-program.md) | Learn the file-to-output workflow, comments, escapes, and a first syntax repair |
 | [Source modules](modules.md) | Organize files, choose public/private declarations and understand loading limits |

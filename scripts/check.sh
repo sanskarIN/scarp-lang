@@ -52,3 +52,7 @@ cargo run --locked -- modules examples/module_inspection.srp
 cargo run --locked -- modules examples/constant_expressions.srp
 cargo run --locked -- run examples/typed_declarations.srp
 cargo run --locked -- check examples/typed_declarations.srp
+for example in scalar_conversions unicode_text; do
+    cargo run --locked -- run "examples/$example.srp"
+    cargo run --locked -- check "examples/$example.srp"
+done

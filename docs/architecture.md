@@ -29,6 +29,11 @@ returns errors; the CLI renders them using the source and path it already owns.
 
 ## Modules and responsibilities
 
+The existing typed built-in registry also dispatches exact conversions and
+Unicode text queries into `numeric::scalar_text`. This preserves public host
+paths and one arity/type/argument-span boundary. Scans spend conservative byte
+work allowances before execution; queries allocate no string or numerical results.
+
 Declaration annotations retain the type-token span separately from inferred
 initializer types. Parameter and annotation parsing share primitive type-name
 lookup. One resolver helper checks exact annotation compatibility for ordinary

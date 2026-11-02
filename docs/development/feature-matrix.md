@@ -22,15 +22,15 @@ requires separate architecture and multiple implementation phases.
 | Feature | Current status | Missing subfeatures | Dependencies | Priority | Complexity | Required tests | Documentation |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | UTF-8 source and lexical rules | Implemented; ASCII identifiers | Unicode identifier policy, additional escapes | Lexer/source spans | P2 | M | BOM, invalid UTF-8, boundaries, truncation | Lexical grammar |
-| Parser and AST | Flat expressions, bounded nested statements | Typed declarations in this cycle; later richer types | Existing colon/type grammar | P0 | S | AST spans, malformed annotations, depth | Grammar/API migration |
+| Parser and AST | Flat expressions, bounded statements, typed declarations | Composite type grammar | Existing colon/type grammar | P0 | S | AST spans, malformed annotations, depth | Grammar/API migration |
 | Immutable/mutable bindings | Implemented bind/var and optional annotations | Deferred initialization remains intentionally absent | Parser, typed resolver | P0 | S | Inferred/annotated parity, mismatch, shadowing | Variables/tutorial |
 | Initialization analysis | Initializers mandatory; resolve before insertion | Deferred/conditional initialization not designed | CFG/data-flow first | P2 | L | Self-use, branch joins, loops | Initialization contract |
 | Lexical shadowing | Implemented | Rich pattern bindings | Resolver scopes | P2 | M | Shadowing initializer, duplicates, captures | Scope rules |
 | Assignments | =, +=, -=, *=, /= | Additional operators after bitwise design review | Operator/type contract | P2 | M | Type preservation, overflow, atomic output | Operators |
-| Integer and finite-float math | Checked i64 and finite binary64 | Exact explicit conversions in this cycle | Built-in registry and evaluator | P0 | S | Bounds, signed zero, loss of precision | Numeric reference |
+| Integer and finite-float math | Checked i64/binary64 and exact explicit conversions | Additional scalar math after domain design | Built-in registry and evaluator | P0 | S | Bounds, signed zero, loss of precision | Numeric reference |
 | Scalar constants | Implemented by #71; annotations checked before evaluation | Approved constant intrinsics only after separate design | Shared expression typing/evaluation | P0 | M | Order/cycles, import visibility, task/node bounds | Constant guide |
 | Bitwise/radix/remainder | Historical PR #19 only | Port reviewed semantics to current AST/codes | Reconcile old branch and diagnostics | P1 | M | All counts, overflow, precedence, parity | New current proposal |
-| Strings | UTF-8 literals, equality, shared immutable storage | Unicode scalar queries in this cycle; later construction | Typed pure built-ins and work charging | P0 | M | Combining marks, emoji, empty input, limits | Text indexing contract |
+| Strings | UTF-8 literals/equality, shared storage and seven bounded scalar queries | Construction, slicing, normalization with allocation policy | Typed pure built-ins and work charging | P0 | M | Combining marks, emoji, empty input, limits | Text indexing contract |
 | Characters and bytes | Missing | Distinct types, decoding and conversion rules | Type representation and allocation limits | P2 | L | Encoding/invalid sequences, host parity | Type proposal |
 | Tuples/fixed arrays | Missing | Types, literals, destructuring, indexing | Composite type representation | P1 | L | Nested types, length/index/type errors | Grammar/types |
 | Dynamic typed lists | Numeric vectors only | General element types and mutation policy | Composite types, allocation budgets | P2 | XL | Aliasing, shape, limits, retirement | Collection contract |
@@ -59,7 +59,7 @@ requires separate architecture and multiple implementation phases.
 | Native backend | Historical PR #20 only | Rebase scalar subset on current functions/modules/IR | Bitwise branch review, current safety budgets | P1 | XL | Differential interpreter/C, all rejected forms | Experimental subset |
 | Native build/compile CLI | Historical PR #22 only; unavailable on main | Current backend integration and toolchain boundary | Backend, platform compiler/error handling | P2 | L | Artifact overwrite, subprocess/path/ABI | Build contract |
 | Math/linear algebra library | 35 checked vector/tile built-ins | Scalar conversions now; later scalar math catalogue | Pure intrinsic dispatch | P0 | M | Numeric domains, finiteness, exact budgets | Built-in reference |
-| General text/algorithms | Missing beyond string equality | Text queries now; sorting/search later | Allocation/work policy, collection types | P0 | M | Unicode semantics, deterministic search, limits | Standard library |
+| General text/algorithms | Unicode length/codepoint/search/prefix/suffix implemented | General collection sorting/search | Allocation/work policy, collection types | P0 | M | Unicode semantics, deterministic search, limits | Standard library |
 | Formatting/JSON/serialization | No language JSON library | Module JSON tool now; data JSON later | Error/composite values; bounded parsing | P1 | L | Escaping, schemas, invalid data, limits | Format/version policy |
 | Filesystem/network/process I/O | Explicit source loader only | External capability model and structured errors | Effects, permissions, errors | P2 | XL | Denied access, roots, no ambient authority | Security model |
 | Dates/time/random/environment | Missing | Explicit nondeterministic host capabilities | Effects/host interfaces | P3 | L | Seed/replay, denied host calls | Capability APIs |
@@ -91,7 +91,7 @@ contain historical CLI/bind/output/function stacks already superseded on main.
 Development also has project-manifest/CLI experiments. No historical branches were
 deleted, and no claim of native, project, tensor or GPU support is made.
 
-## Current complete vertical slices
+## This cycle's complete vertical slices
 
 1. Integrate verified inspection/constants (#70 then #71).
 2. Optional binding/constant type annotations with strict inference compatibility.

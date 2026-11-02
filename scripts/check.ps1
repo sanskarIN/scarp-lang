@@ -56,6 +56,10 @@ try {
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'modules', 'examples/constant_expressions.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', 'examples/typed_declarations.srp')
     Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', 'examples/typed_declarations.srp')
+    foreach ($example in @('scalar_conversions', 'unicode_text')) {
+        Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'run', "examples/$example.srp")
+        Invoke-Cargo -CargoArguments @('run', '--locked', '--', 'check', "examples/$example.srp")
+    }
 }
 finally {
     $env:CARGO_INCREMENTAL = $previousIncremental

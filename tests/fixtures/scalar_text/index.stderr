@@ -1,0 +1,6 @@
+error[E0045]: text scalar index 3 is outside the string
+ --> index.srp:2:29
+  |
+2 | print(text_codepoint("aé🌍", 3));
+  |                             ^
+ = help: use a nonnegative index below text_len(text); indices count Unicode scalar values, not UTF-8 bytes

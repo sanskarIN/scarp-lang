@@ -2,6 +2,12 @@
 
 ## Unreleased - compiler development toward 0.0.5-alpha.2
 
+- Add lossless to_float/to_integer and seven pure Unicode text queries, sharing
+  strict built-in typing, argument locations and deterministic execution budgets.
+  Preserve scalar-vs-byte/grapheme distinctions and reject invalid indices/rounding.
+- Add boundary/reference-model/host/CLI tests, exact E0044/E0045 fixtures and two
+  runnable examples; no string-result allocation, external effects or version change.
+
 - Integrate verified module inspection and constant expressions in dependency order.
 - Add optional primitive declaration annotations with exact inferred-type matching,
   required initialization and source-aware errors; preserve lexical scope and budgets.

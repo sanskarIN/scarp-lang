@@ -1,0 +1,4 @@
+bind count: integer = 42;
+bind scaled: float = to_float(count) / 4.0;
+bind exact: integer = to_integer(12.0);
+print(scaled, exact, to_integer(-0.0));
